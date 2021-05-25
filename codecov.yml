@@ -1,0 +1,15 @@
+comment:
+  after_n_builds: 8
+
+coverage:
+  status:
+    project:
+      default: false  # disable the default status that measures entire project
+      source:
+        paths:
+          - "wax/"
+        target: 98.99%
+        threshold: 0.002
+    patch:
+      default:
+        target: 98%  # new contributions should have a coverage at least equal to target

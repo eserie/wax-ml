@@ -1,0 +1,16 @@
+*.pyc
+*.so
+*.egg-info
+*.whl
+dist/
+.ipynb_checkpoints
+.DS_Store
+.mypy_cache/
+docs/_build/
+docs/notebooks/.ipynb_checkpoints/
+docs/_autosummary
+.idea
+.coverage
+coverage.xml
+htmlcov/
+venv

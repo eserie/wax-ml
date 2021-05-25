@@ -1,0 +1,4 @@
+*.dvi
+*.ps
+.DS_Store
+texput.fls

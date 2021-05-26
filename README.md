@@ -131,6 +131,7 @@ Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
 * [Development](#development)
 * [References](#references)
 * [License](#license)
+* [Citing WAX](#citing-wax)
 * [Reference documentation](#reference-documentation)
 
 
@@ -553,6 +554,21 @@ deluca, jax and xarray are  available under a "Apache" license:
 - xarray: `wax/datasets/generate_temperature_data.py`
 
 The full text of these `licenses` are included in the licenses directory.
+
+
+## Citing WAX
+
+To cite this repository:
+
+```
+@software{wax-ml2021github,
+  author = {Emmanuel Sérié},
+  title = {{WAX}: A {P}ython library for machine-learning on streaming data based on JAX},
+  url = {http://github.com/eserie/wax-ml},
+  version = {0.0.2},
+  year = {2021},
+}
+```
 
 ## Reference documentation
 

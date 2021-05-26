@@ -14,6 +14,7 @@ For an introduction to WAX, start at the
    notebooks/02_Synchronize_data_streams
    notebooks/03_ohlc_temperature
    notebooks/04_The_three_steps_workflow
+   notebooks/05_reconstructing_the_light_curve_of_stars
 
 .. toctree::
    :maxdepth: 1

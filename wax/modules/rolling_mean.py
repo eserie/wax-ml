@@ -13,6 +13,7 @@
 # limitations under the License.
 """Rolling mean."""
 import haiku as hk
+import jax.numpy as jnp
 
 from wax.modules.buffer import Buffer
 
@@ -20,13 +21,14 @@ from wax.modules.buffer import Buffer
 class RollingMean(hk.Module):
     """Rolling mean."""
 
-    def __init__(self, horizon, name=None):
+    def __init__(self, horizon, min_periods=1, name=None):
         super().__init__(name=name)
         self.horizon = horizon
-
-        # states
-        self._buffer = Buffer(self.horizon, return_state=True)
+        self.min_periods = min_periods
 
     def __call__(self, x):
-        buffer, attrs = self._buffer(x)
-        return buffer[attrs.i_start :].mean(axis=0)
+        buffer, attrs = Buffer(self.horizon, return_state=True)(x)
+        sum = jnp.where(jnp.logical_not(jnp.isnan(buffer)), buffer, 0.0).sum(axis=0)
+        count = jnp.where(jnp.logical_not(jnp.isnan(buffer)), 1, 0).sum(axis=0)
+        mean = jnp.where(count >= self.min_periods, sum / count, jnp.nan)
+        return mean

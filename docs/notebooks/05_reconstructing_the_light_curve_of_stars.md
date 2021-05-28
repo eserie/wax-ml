@@ -67,12 +67,32 @@ register_wax_accessors()
 ```
 
 ```{code-cell} ipython3
+2**6
+```
+
+```{code-cell} ipython3
+:tags: [parameters]
+
+# Parameters
+TOTAL_LEN = None
+TRAIN_STEPS = 2**16
+TRAIN_SIZE = 10000
+SEQ_LEN = 64
+TRAIN_SIZE = 2 ** 16
+STAR = "007609553"
+BATCH_SIZE = 8
+TRAIN_DATE = "2016"
+```
+
+```{code-cell} ipython3
 %%time
 # Downloading the csv file from Chrustioge Pere GitHub account
 download = requests.get(
     "https://raw.github.com/Christophe-pere/Time_series_RNN/master/kep_lightcurves.csv"
 ).content
 raw_dataframe = pd.read_csv(io.StringIO(download.decode("utf-8")))
+if TOTAL_LEN:
+    raw_dataframe = raw_dataframe.iloc[:TOTAL_LEN]
 raw_dataframe.index = pd.Index(
     pd.date_range("2009-03-07", periods=len(raw_dataframe.index), freq="h"), name="time"
 )
@@ -280,58 +300,6 @@ ax.legend(bbox_to_anchor=(0, 0, 1, 1), bbox_transform=lax.transAxes)
 lax.axis("off")
 ```
 
-```{code-cell} ipython3
-star = "007609553"
-print(f"Look at star: {star}")
-values = dataframe_mean[star].values
-```
-
-```{code-cell} ipython3
-values.shape
-```
-
-```{code-cell} ipython3
-scaler = MinMaxScaler(feature_range=(0, 1))
-dataset = scaler.fit_transform(values[~np.isnan(values)].reshape(-1, 1))
-dataset.shape
-```
-
-```{code-cell} ipython3
-train_size = int(len(dataset) * 0.8)
-test_size = len(dataset) - train_size
-train, test = dataset[:train_size], dataset[train_size:]
-```
-
-reshape into X=t and Y=t+1
-
-```{code-cell} ipython3
-def create_dataset(values, look_back=1):
-    """
-    Function to prepare a list of (x, y) data points to data for time series learning
-    @param values: (list) list of values
-    @param look_back: (int) number of values for the x list [x1, x2, x3, ... , xn] default 1
-    @return _x: x values for the time series
-    @return _y: y values for the time series
-    """
-    # set empty lists
-    _x, _y = [], []
-    for i in range(len(values) - look_back - 1):
-        a = values[i : (i + look_back)]  # stack a list of values
-        _x.append(a)  # set x
-        _y.append(values[i + look_back])  # set y
-    return np.array(_x), np.array(_y)
-```
-
-```{code-cell} ipython3
-look_back = 20
-train_x, train_y = create_dataset(train, look_back)
-test_x, test_y = create_dataset(test, look_back)
-```
-
-```{code-cell} ipython3
-train_x.shape, train_y.shape, test_x.shape, test_y.shape
-```
-
 ### Normalize data
 
 ```{code-cell} ipython3
@@ -385,10 +353,6 @@ dataframe_normed.stack().hist(bins=100)
 
 ```{code-cell} ipython3
 from wax.modules import FillNanInf, Lag
-```
-
-```{code-cell} ipython3
-SEQ_LEN = 64
 ```
 
 ```{code-cell} ipython3
@@ -484,8 +448,8 @@ def split_train_validation(dataframe, stars, train_size, look_back) -> TrainSpli
 ```
 
 ```{code-cell} ipython3
-TRAIN_SIZE = 2 ** 16
-train, valid = split_train_validation(dataframe_normed, [star], TRAIN_SIZE, SEQ_LEN)
+print(f"Look at star: {STAR}")
+train, valid = split_train_validation(dataframe_normed, [STAR], TRAIN_SIZE, SEQ_LEN)
 ```
 
 ```{code-cell} ipython3
@@ -540,10 +504,6 @@ class Dataset:
             assert end == 0  # Guaranteed by ctor assertion.
         self._idx = end
         return x, y
-```
-
-```{code-cell} ipython3
-BATCH_SIZE = 8
 ```
 
 ```{code-cell} ipython3
@@ -664,7 +624,7 @@ def train_model(
 :id: AssgDctokbl5
 
 %%time
-trained_params, records = train_model(train_ds, valid_ds, 10000)
+trained_params, records = train_model(train_ds, valid_ds, TRAIN_STEPS)
 ```
 
 ```{code-cell} ipython3
@@ -863,7 +823,6 @@ def split_train_validation_date(dataframe, stars, date, look_back) -> TrainSplit
 
 ```{code-cell} ipython3
 %%time
-TRAIN_DATE = "2016"
 train, valid = split_train_validation_date(dataframe_normed, stars, TRAIN_DATE, SEQ_LEN)
 TRAIN_SIZE = train[0].shape[1]
 print(f"TRAIN_SIZE = {TRAIN_SIZE}")
@@ -881,7 +840,7 @@ del train, valid  # Don't leak temporaries.
 
 ```{code-cell} ipython3
 %%time
-trained_params, records = train_model(train_ds, valid_ds, 10000)
+trained_params, records = train_model(train_ds, valid_ds, TRAIN_STEPS)
 ```
 
 ```{code-cell} ipython3

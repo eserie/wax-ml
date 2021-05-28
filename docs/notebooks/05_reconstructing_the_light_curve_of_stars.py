@@ -57,12 +57,28 @@ from wax.modules import RollingMean
 register_wax_accessors()
 # -
 
+2**6
+
+# + tags=["parameters"]
+# Parameters
+TOTAL_LEN = None
+TRAIN_STEPS = 2**16
+TRAIN_SIZE = 10000
+SEQ_LEN = 64
+TRAIN_SIZE = 2 ** 16
+STAR = "007609553"
+BATCH_SIZE = 8
+TRAIN_DATE = "2016"
+# -
+
 # %%time
 # Downloading the csv file from Chrustioge Pere GitHub account
 download = requests.get(
     "https://raw.github.com/Christophe-pere/Time_series_RNN/master/kep_lightcurves.csv"
 ).content
 raw_dataframe = pd.read_csv(io.StringIO(download.decode("utf-8")))
+if TOTAL_LEN:
+    raw_dataframe = raw_dataframe.iloc[:TOTAL_LEN]
 raw_dataframe.index = pd.Index(
     pd.date_range("2009-03-07", periods=len(raw_dataframe.index), freq="h"), name="time"
 )
@@ -225,47 +241,6 @@ ax.legend(bbox_to_anchor=(0, 0, 1, 1), bbox_transform=lax.transAxes)
 lax.axis("off")
 # -
 
-star = "007609553"
-print(f"Look at star: {star}")
-values = dataframe_mean[star].values
-
-values.shape
-
-scaler = MinMaxScaler(feature_range=(0, 1))
-dataset = scaler.fit_transform(values[~np.isnan(values)].reshape(-1, 1))
-dataset.shape
-
-train_size = int(len(dataset) * 0.8)
-test_size = len(dataset) - train_size
-train, test = dataset[:train_size], dataset[train_size:]
-
-# reshape into X=t and Y=t+1
-
-
-def create_dataset(values, look_back=1):
-    """
-    Function to prepare a list of (x, y) data points to data for time series learning
-    @param values: (list) list of values
-    @param look_back: (int) number of values for the x list [x1, x2, x3, ... , xn] default 1
-    @return _x: x values for the time series
-    @return _y: y values for the time series
-    """
-    # set empty lists
-    _x, _y = [], []
-    for i in range(len(values) - look_back - 1):
-        a = values[i : (i + look_back)]  # stack a list of values
-        _x.append(a)  # set x
-        _y.append(values[i + look_back])  # set y
-    return np.array(_x), np.array(_y)
-
-
-look_back = 20
-train_x, train_y = create_dataset(train, look_back)
-test_x, test_y = create_dataset(test, look_back)
-
-
-train_x.shape, train_y.shape, test_x.shape, test_y.shape
-
 # ### Normalize data
 
 dataframe_mean.stack().hist(bins=100)
@@ -314,8 +289,6 @@ dataframe_normed.stack().hist(bins=100)
 # ### Prepare train / validation datasets
 
 from wax.modules import FillNanInf, Lag
-
-SEQ_LEN = 64
 
 
 # +
@@ -412,8 +385,8 @@ def split_train_validation(dataframe, stars, train_size, look_back) -> TrainSpli
     return TrainSplit(train, valid)
 
 
-TRAIN_SIZE = 2 ** 16
-train, valid = split_train_validation(dataframe_normed, [star], TRAIN_SIZE, SEQ_LEN)
+print(f"Look at star: {STAR}")
+train, valid = split_train_validation(dataframe_normed, [STAR], TRAIN_SIZE, SEQ_LEN)
 
 train[0].shape, train[1].shape, valid[0].shape, valid[1].shape
 
@@ -462,8 +435,6 @@ class Dataset:
         self._idx = end
         return x, y
 
-
-BATCH_SIZE = 8
 
 train_ds = Dataset(train, BATCH_SIZE)
 valid_ds = Dataset(valid, BATCH_SIZE)
@@ -560,7 +531,7 @@ def train_model(
 
 # + colab={} colab_type="code" id="AssgDctokbl5"
 # %%time
-trained_params, records = train_model(train_ds, valid_ds, 10000)
+trained_params, records = train_model(train_ds, valid_ds, TRAIN_STEPS)
 # -
 
 # Plot losses
@@ -720,7 +691,6 @@ def split_train_validation_date(dataframe, stars, date, look_back) -> TrainSplit
 
 
 # %%time
-TRAIN_DATE = "2016"
 train, valid = split_train_validation_date(dataframe_normed, stars, TRAIN_DATE, SEQ_LEN)
 TRAIN_SIZE = train[0].shape[1]
 print(f"TRAIN_SIZE = {TRAIN_SIZE}")
@@ -732,7 +702,7 @@ valid_ds = Dataset(valid, BATCH_SIZE)
 del train, valid  # Don't leak temporaries.
 
 # %%time
-trained_params, records = train_model(train_ds, valid_ds, 10000)
+trained_params, records = train_model(train_ds, valid_ds, TRAIN_STEPS)
 
 # Plot losses
 losses = pd.DataFrame(records)

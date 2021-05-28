@@ -52,7 +52,7 @@ check-format: format
 .PHONY: flake8
 flake8:
 	# stop the build if there are Python syntax errors or undefined names
-	python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+	python -m flake8 --count --select=E9,F63,F7,F82 --show-source --statistics $(PACKAGE_NAME)
 	# all Python files should follow PEP8 (except some notebooks, see setup.cfg)
 	python -m flake8 $(PACKAGE_NAME)
 	# exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide

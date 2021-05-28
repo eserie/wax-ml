@@ -29,7 +29,6 @@ from typing import (
 )
 
 import eagerpy as ep
-import haiku as hk
 import jax
 import numpy as onp
 import pandas as pd
@@ -40,6 +39,7 @@ from jax import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from jax.tree_util import tree_multimap
 from tqdm.auto import tqdm
 
+from wax.compile import jit_init_apply
 from wax.encode import (
     Encoder,
     datetime64_encoder,
@@ -444,16 +444,24 @@ class Stream:
 
     def unroll_dataset(
         self,
-        dataset: xr.Dataset,
         module: Callable,
+        params: Any,
+        state: Any,
+        rng: Any,
+        skip_first: bool,
         encoders: EncoderMapping,
+        dataset: xr.Dataset,
     ) -> Any:
         """Unroll a module onto a dataset.
 
         Args:
-            dataset : dataset on which the transformation is applied
             module : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module
+            state : state for the module
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
             encoders : encoders used to encode numpy dtypes which are not supported by Jax.
+            dataset : dataset on which the transformation is applied
 
         Return:
             Unroll results of the module formated as a nested data structure with dataarray leaves.
@@ -479,17 +487,16 @@ class Stream:
             (np_data, np_index, xs), self.tensor_type
         )
 
-        from wax.compile import jit_init_apply
-
         @jit_init_apply
         @transform_with_state
         def transform_dataset(step):
             dataset = partial(tree_access_data, np_data, np_index)(step)
             return module(dataset)
 
-        seq = hk.PRNGSequence(42)
         # outputs, state = static_unroll(access_dataset, xs, next(seq))
-        outputs, state = dynamic_unroll(transform_dataset, xs, next(seq))
+        outputs, state = dynamic_unroll(
+            transform_dataset, params, state, rng, skip_first, xs
+        )
 
         if self.format_outputs:
             # outputs = ep.convert_to_tensors(outputs, "numpy")

@@ -14,9 +14,11 @@
 """Unroll modules on data along first axis."""
 import logging
 from collections import namedtuple
+from typing import Any
 
+import haiku as hk
 import jax
-from jax import numpy as onp
+import jax.numpy as jnp
 from jax import tree_flatten, tree_unflatten
 from jax._src.lax.control_flow import fori_loop
 from jax.tree_util import tree_map
@@ -25,19 +27,43 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 
-def dynamic_unroll(fun, xs, key=None, initial_state=None, skip_first=False):
-    """Implementation with jax.lax.scan."""
+def dynamic_unroll(
+    fun: hk.TransformedWithState,
+    params: Any,
+    initial_state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using jax.lax.scan.
 
-    def scan_f(prev_state, inputs):
-        outputs, next_state = fun.apply(params, prev_state, key, inputs)
-        return next_state, outputs
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if true, first value of the sequence is not used in apply.
+        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
 
+    Note:
+    """
+    xs = (args, kwargs)
     x0 = tree_map(lambda x: x[0], xs)
-    params, fun_init_state = fun.init(key, x0)
+    fun_init_params, fun_init_state = fun.init(rng, *x0[0], **x0[1])
     initial_state = fun_init_state if initial_state is None else initial_state
+    params = fun_init_params if params is None else params
 
     if skip_first:
         xs = tree_map(lambda x: x[1:], xs)
+
+    def scan_f(prev_state, inputs):
+        outputs, next_state = fun.apply(
+            params, prev_state, rng, *inputs[0], **inputs[1]
+        )
+        return next_state, outputs
+
     final_state, output_sequence = jax.lax.scan(scan_f, init=initial_state, xs=xs)
     return output_sequence, final_state
 
@@ -58,8 +84,7 @@ def iter_first_axis(xs, pbar=False):
 def static_scan(scan_f, init, xs, length=None, pbar=False):
     """Scan a function over leading array axes while carrying along state.
 
-    Python implementation of jax.lax.scan
-
+    Note:  Python implementation of jax.lax.scan
     See https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html#jax-lax-scan
     """
     if xs is None:
@@ -75,26 +100,52 @@ def static_scan(scan_f, init, xs, length=None, pbar=False):
         for ys_, y_ in zip(ys, y):
             ys_.append(y_)
 
-    ys = map(onp.stack, ys)
+    ys = map(jnp.stack, ys)
     ys = tree_unflatten(treedef, ys)
     return carry, ys
 
 
-def static_unroll(fun, xs, key=None, initial_state=None, skip_first=False, pbar=True):
-    def scan_f(prev_state, inputs):
-        outputs, next_state = fun.apply(fun_params, prev_state, key, inputs)
-        return next_state, outputs
+def static_unroll(
+    fun: hk.TransformedWithState,
+    params: Any,
+    initial_state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    pbar: bool = False,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using static_scan.
 
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if True, first value of the sequence is not used in apply.
+        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
+        pbar : if True, activate progress bar.
+    """
     # init
+    xs = (args, kwargs)
     x0 = tree_map(lambda x: x[0], xs)
-    fun_params, fun_init_state = fun.init(key, x0)
-    init_state = fun_init_state if initial_state is None else initial_state
+    fun_init_params, fun_init_state = fun.init(rng, *x0[0], **x0[1])
+    initial_state = fun_init_state if initial_state is None else initial_state
+    params = fun_init_params if params is None else params
 
     # apply
     if skip_first:
         xs = tree_map(lambda x: x[1:], xs)
+
+    def scan_f(prev_state, inputs):
+        outputs, next_state = fun.apply(
+            params, prev_state, rng, *inputs[0], **inputs[1]
+        )
+        return next_state, outputs
+
     final_state, output_sequence = static_scan(
-        scan_f, init=init_state, xs=xs, pbar=pbar
+        scan_f, init=initial_state, xs=xs, pbar=pbar
     )
 
     return output_sequence, final_state
@@ -116,7 +167,7 @@ def static_unroll(fun, xs, key=None, initial_state=None, skip_first=False, pbar=
 #
 #
 # def static_unroll_generator(
-#     fun, xs, key=None, initial_state=None, skip_first=False, pbar=True
+#     fun, params, initial_state, key, xs, skip_first=False, pbar=True
 # ):
 #     """Generator version of static_unroll"""
 #     # inline static_unroll
@@ -135,13 +186,44 @@ def static_unroll(fun, xs, key=None, initial_state=None, skip_first=False, pbar=
 #         yield carry, y
 
 
-def dynamic_unroll_fori_loop(fun, x, key=None, initial_state=None):
+def dynamic_unroll_fori_loop(
+    fun: hk.TransformedWithState,
+    params: Any,
+    initial_state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    **kwargs,
+):
     LoopState = namedtuple("LoopState", "params, state, rng, x, output_sequence")
+
+    xs = (args, kwargs)
+
+    # Initialize loop
+    x0 = tree_map(lambda x: x[0], xs)
+    fun_init_params, fun_init_state = fun.init(rng, *x0[0], **x0[1])
+    initial_state = fun_init_state if initial_state is None else initial_state
+    params = fun_init_params if params is None else params
+
+    if skip_first:
+        xs = tree_map(lambda x: x[1:], xs)
+
+    output_template, _ = fun.apply(params, initial_state, rng, *x0[0], **x0[1])
+    T = len(tree_flatten(xs)[0][0])
+    output_sequence = tree_map(
+        lambda x: jnp.full((T,) + x.shape, jnp.nan, x.dtype), output_template
+    )
+
+    # run loop
+    loop_state = LoopState(params, initial_state, rng, xs, output_sequence)
 
     @jax.jit
     def body_fun(i, loop_state):
         params, prev_state, rng, inputs, output_sequence = loop_state
-        outputs, next_state = fun.apply(params, prev_state, rng, inputs[i])
+        inputs_i = tree_map(lambda x: x[i], inputs)
+        outputs, next_state = fun.apply(
+            params, prev_state, rng, *inputs_i[0], **inputs_i[1]
+        )
         output_sequence = jax.ops.index_update(output_sequence, i, outputs)
         return LoopState(
             params,
@@ -151,14 +233,6 @@ def dynamic_unroll_fori_loop(fun, x, key=None, initial_state=None):
             output_sequence,
         )
 
-    # Initialize loop
-    params, fun_init_state = fun.init(key, x[0])
-    initial_state = fun_init_state if initial_state is None else initial_state
-    output_sequence = onp.full_like(x, onp.nan)
-    loop_state = LoopState(params, initial_state, key, x, output_sequence)
-
-    # run loop
-    T = len(x)
     loop_state = fori_loop(0, T, body_fun, loop_state)
 
     # format results
@@ -179,19 +253,19 @@ def data_unroll(data_gen, pbar=True):
             xs = tuple([] for _ in x)
         for xs_, x_ in zip(xs, x):
             xs_.append(x_)
-    xs = map(lambda x: onp.stack(x, axis=0), xs)
+    xs = map(lambda x: jnp.stack(x, axis=0), xs)
     xs = tree_unflatten(treedef, xs)
     return xs
 
 
-# def gym_dynamic_unroll(gym_fun, data_generator, seq, skip_first=True):
+# def gym_dynamic_unroll(gym_fun, seq, data_generator, skip_first=True):
 #     """Unroll a function over a data generator and random number generator."""
 #     xs = data_unroll(data_generator)
 #     output, gym_state = dynamic_unroll(gym_fun, xs, next(seq), skip_first=skip_first)
 #     return output, gym_state
 
 
-def gym_static_unroll(gym_fun, data_generator, seq, skip_first=True, pbar=True):
+def gym_static_unroll(gym_fun, seq, data_generator, skip_first=True, pbar=True):
     """Unroll a function over a data generator and random number generator."""
     obs, info = next(data_generator)
     params, state = gym_fun.init(next(seq), obs)
@@ -213,6 +287,6 @@ def gym_static_unroll(gym_fun, data_generator, seq, skip_first=True, pbar=True):
         for ys_, y_ in zip(ys, y):
             ys_.append(y_)
 
-    ys = map(onp.stack, ys)
+    ys = map(jnp.stack, ys)
     ys = tree_unflatten(treedef, ys)
     return ys, state

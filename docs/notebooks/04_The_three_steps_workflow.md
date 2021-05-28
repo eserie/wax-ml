@@ -181,7 +181,7 @@ def transform_dataset(step):
 
 
 rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, xs, rng)
+outputs, state = dynamic_unroll(transform_dataset,  None, None, rng,  False, xs)
 ```
 
 Once it has been compiled and "traced" by JAX, the function is much faster to execute:
@@ -190,7 +190,7 @@ Once it has been compiled and "traced" by JAX, the function is much faster to ex
 :tags: []
 
 %%time
-outputs, state = dynamic_unroll(transform_dataset, xs, rng)
+outputs, state = dynamic_unroll(transform_dataset,  None, None, rng,  False, xs)
 ```
 
 This is between 10x and 40x faster (time may vary) and 130 x faster than pandas implementation!

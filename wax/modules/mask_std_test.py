@@ -14,6 +14,7 @@
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import pytest
 
 from wax.modules.mask_std import MaskStd
 
@@ -32,13 +33,19 @@ def test_mask_std_no_mask():
     assert jnp.allclose(x_std, std_ref)
 
 
-def test_mask_std_with_mask():
+@pytest.mark.parametrize("assume_centered", [False, True])
+def test_mask_std_with_mask(assume_centered):
 
     rng = hk.PRNGSequence(42)
     x = jax.random.normal(next(rng), (10,))
-    x_std_ref = x[1:].std()
+    if assume_centered:
+        x_std_ref = jnp.sqrt((x[1:] ** 2).mean())
+    else:
+        x_std_ref = x[1:].std()
 
-    fun = hk.transform(lambda mask, x: MaskStd()(mask, x))
+    fun = hk.transform(
+        lambda mask, x: MaskStd(assume_centered=assume_centered)(mask, x)
+    )
 
     mask = jnp.full(x.shape, True)
     mask = jax.ops.index_update(mask, jax.ops.index[:1], False)

@@ -60,7 +60,7 @@ def test_run_ema_vs_pandas_not_adjust(window=10, min_periods=5):
     def rolling_mean(x):
         return RollingMean(window, min_periods)(x)
 
-    mean, state = dynamic_unroll(rolling_mean, x, key=next(seq))
+    mean, state = dynamic_unroll(rolling_mean, None, None, next(seq), False, x)
 
     mean_pandas = pd.DataFrame(x).rolling(window, min_periods).mean()
 

@@ -238,7 +238,7 @@ def test_stream_dataset_dynamic_unroll2():
 
     # outputs, state = static_unroll(access_dataset, xs, next(seq))
     # now test dynamic unroll
-    outputs, state = dynamic_unroll(access_dataset, xs, next(seq))
+    outputs, state = dynamic_unroll(access_dataset, None, None, next(seq), False, xs)
 
     check_outputs(outputs["news_time"], schema)
 
@@ -322,7 +322,7 @@ def test_stream_dataset_dynamic_unroll3():
 
     # outputs, state = static_unroll(access_dataset, xs, next(seq))
     # now test dynamic unroll
-    outputs, state = dynamic_unroll(access_dataset, xs, next(seq))
+    outputs, state = dynamic_unroll(access_dataset, None, None, next(seq), False, xs)
 
     # decode outputs
     assert outputs["NEWS"].shape == (124, 3)

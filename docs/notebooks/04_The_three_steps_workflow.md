@@ -57,7 +57,6 @@ import numpy as onp
 import pandas as pd
 import xarray as xr
 from eagerpy import convert_to_tensors
-
 from wax.accessors import register_wax_accessors
 from wax.compile import jit_init_apply
 from wax.format import format_dataframe
@@ -75,12 +74,17 @@ register_wax_accessors()
 ### Generate data
 
 ```{code-cell} ipython3
+:tags: [parameters]
+
+T = 1.0e6
+N = 1000
+```
+
+```{code-cell} ipython3
 :tags: []
 
 %%time
-T = int(1.0e6)
-N = 1000
-
+T, N = map(int, (T, N))
 dataframe = pd.DataFrame(
     onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T, freq="s")
 )
@@ -181,7 +185,7 @@ def transform_dataset(step):
 
 
 rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset,  None, None, rng,  False, xs)
+outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
 ```
 
 Once it has been compiled and "traced" by JAX, the function is much faster to execute:
@@ -190,7 +194,7 @@ Once it has been compiled and "traced" by JAX, the function is much faster to ex
 :tags: []
 
 %%time
-outputs, state = dynamic_unroll(transform_dataset,  None, None, rng,  False, xs)
+outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
 ```
 
 This is between 10x and 40x faster (time may vary) and 130 x faster than pandas implementation!

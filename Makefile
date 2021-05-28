@@ -66,7 +66,7 @@ mypy:
 
 .PHONY: tests
 tests:
-	python -m py.test \
+	python -m pytest \
 	--doctest-modules \
 	-n auto \
 	--durations=30 \
@@ -74,8 +74,7 @@ tests:
 
 .PHONY: coverage
 coverage:
-	python -m py.test \
-	--cov ./ \
+	python -m pytest \
 	--cov-report xml  \
 	--cov-report html  \
 	--cov-report term \

@@ -15,6 +15,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Tuple, Union
 
+import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
 import xarray as xr
@@ -36,12 +37,22 @@ class StreamDataset(Stream):
     accessor: xr.Dataset = field(default_factory=xr.Dataset)
 
     def apply(
-        self, module: Callable, format_dims: Union[Tuple, onp.ndarray] = ()
+        self,
+        module: Callable,
+        params: Any = None,
+        state: Any = None,
+        rng: jnp.ndarray = None,
+        skip_first: bool = False,
+        format_dims: Union[Tuple, onp.ndarray] = (),
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module.
+            state : state for the module.
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
             format_dims : nested data structure with specification of dims for dataarray formatting.
 
         Return:
@@ -49,7 +60,9 @@ class StreamDataset(Stream):
         """
         dataset = self.accessor._obj
         schema = get_dataset_schema(dataset)
-        outputs = self.unroll_dataset(dataset, module, schema.encoders)
+        outputs = self.unroll_dataset(
+            module, params, state, rng, skip_first, schema.encoders, dataset
+        )
         if self.return_state:
             outputs, state = outputs
         if self.format_outputs:
@@ -75,11 +88,23 @@ class StreamDataArray(Stream):
 
     accessor: xr.Dataset = field(default_factory=xr.Dataset)
 
-    def apply(self, module: Callable, format_dims: Any = None) -> Any:
+    def apply(
+        self,
+        module: Callable,
+        params: Any = None,
+        state: Any = None,
+        rng: jnp.ndarray = None,
+        skip_first: bool = False,
+        format_dims: Any = None,
+    ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module.
+            state : state for the module.
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
             format_dims : nested data structure with specification of dims for dataarray formatting.
 
 
@@ -94,7 +119,9 @@ class StreamDataArray(Stream):
             array = dataset["dataarray"]
             return module(array)
 
-        outputs = self.unroll_dataset(dataset, module_dataset, schema.encoders)
+        outputs = self.unroll_dataset(
+            module_dataset, params, state, rng, skip_first, schema.encoders, dataset
+        )
         if self.return_state:
             outputs, state = outputs
 
@@ -127,12 +154,20 @@ class StreamDataFrame(Stream):
     def apply(
         self,
         module: Callable,
+        params: Any = None,
+        state: Any = None,
+        rng: jnp.ndarray = None,
+        skip_first: bool = False,
         format_dims: Any = None,
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module.
+            state : state for the module.
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
             format_dims : nested data structure with specification of dims for dataarray formatting.
 
         Return:
@@ -161,7 +196,9 @@ class StreamDataFrame(Stream):
             array = dataset["dataarray"]
             return module(array)
 
-        outputs = self.unroll_dataset(dataset, module_dataset, schema.encoders)
+        outputs = self.unroll_dataset(
+            module_dataset, params, state, rng, skip_first, schema.encoders, dataset
+        )
         if self.return_state:
             outputs, state = outputs
 
@@ -204,13 +241,22 @@ class StreamSeries(Stream):
     def apply(
         self,
         module: Callable,
+        params: Any = None,
+        state: Any = None,
+        rng: jnp.ndarray = None,
+        skip_first: bool = False,
         format_dims: Any = None,
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module.
+            state : state for the module.
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
             format_dims : nested data structure with specification of dims for dataarray formatting.
+
         Return:
             Unroll results of the module formated as a nested data structure with dataarray leaves.
         """
@@ -223,7 +269,9 @@ class StreamSeries(Stream):
             array = dataset["dataarray"]
             return module(array)
 
-        outputs = self.unroll_dataset(dataset, module_dataset, schema.encoders)
+        outputs = self.unroll_dataset(
+            module_dataset, params, state, rng, skip_first, schema.encoders, dataset
+        )
         if self.return_state:
             outputs, state = outputs
 
@@ -259,9 +307,14 @@ class ExponentialMovingWindow:
     def mean(self):
         from wax.modules import EWMA
 
-        def _apply_ema(accessor, alpha, adjust, *args, **kwargs):
+        def _apply_ema(
+            accessor, alpha, adjust, params=None, state=None, *args, **kwargs
+        ):
             return accessor.stream(*args, **kwargs).apply(
-                lambda x: EWMA(alpha, adjust)(x)
+                lambda x: EWMA(alpha, adjust)(x),
+                params=params,
+                state=state,
+                rng=None,
             )
 
         return _apply_ema(**self.__dict__)

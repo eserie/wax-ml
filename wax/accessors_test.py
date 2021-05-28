@@ -213,7 +213,7 @@ def _compute_ewma_direct(dataarray):
     def model(x):
         return EWMA(0.1, adjust=True)(x)
 
-    ema3, state3 = dynamic_unroll(model, x, next(seq))
+    ema3, state3 = dynamic_unroll(model, None, None, next(seq), False, x)
     return ema3, state3
 
 

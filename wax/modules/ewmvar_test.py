@@ -89,7 +89,7 @@ def test_run_var_vs_pandas_not_adjust():
     def model(x):
         return EWMVar(0.1, adjust=False)(x)
 
-    var, state = dynamic_unroll(model, x, key=next(seq))
+    var, state = dynamic_unroll(model, None, None, next(seq), False, x)
     var = pd.DataFrame(var)
 
     @jit_init_apply
@@ -97,7 +97,7 @@ def test_run_var_vs_pandas_not_adjust():
     def model2(x):
         return EWMVar_v2(0.1, adjust=False)(x)
 
-    var2, state2 = dynamic_unroll(model2, x, key=next(seq))
+    var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
     var2 = pd.DataFrame(var2)
     assert jnp.allclose(var, var2)
 
@@ -119,7 +119,7 @@ def test_run_var_vs_pandas_adjust():
     def model(x):
         return EWMVar(0.1, adjust=True)(x)
 
-    var, state = dynamic_unroll(model, x, next(seq))
+    var, state = dynamic_unroll(model, None, None, next(seq), False, x)
     var = pd.DataFrame(var)
 
     @jit_init_apply
@@ -127,7 +127,7 @@ def test_run_var_vs_pandas_adjust():
     def model2(x):
         return EWMVar_v2(0.1, adjust=True)(x)
 
-    var2, state2 = dynamic_unroll(model2, x, key=next(seq))
+    var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
     var2 = pd.DataFrame(var2)
     assert jnp.allclose(var, var2)
 
@@ -150,7 +150,7 @@ def test_run_var_vs_pandas_adjust_finite():
     def model(x):
         return EWMVar(0.1, adjust="linear")(x)
 
-    var, state = dynamic_unroll(model, x, next(seq))
+    var, state = dynamic_unroll(model, None, None, next(seq), False, x)
     var = pd.DataFrame(var)
 
     @jit_init_apply
@@ -158,7 +158,7 @@ def test_run_var_vs_pandas_adjust_finite():
     def model2(x):
         return EWMVar_v2(0.1, adjust=True)(x)
 
-    var2, state2 = dynamic_unroll(model2, x, key=next(seq))
+    var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
     var2 = pd.DataFrame(var2)
     assert not jnp.allclose(var, var2)
     # TODO: understand why the two implementations are

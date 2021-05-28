@@ -17,6 +17,11 @@
 # # 🌡 Binning temperatures 🌡
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/03_ohlc_temperature.ipynb)
+#
+# In Colab install wax by executing this line in a cell:
+# ```python
+# # ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
+# ```
 
 # Let's again considering the air temperatures dataset.
 # It is sampled at a hourly resolution.

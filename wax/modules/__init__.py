@@ -13,14 +13,19 @@
 # limitations under the License.
 
 
+from wax.modules.apply_mask import ApplyMask
 from wax.modules.buffer import Buffer
 from wax.modules.diff import Diff
 from wax.modules.ewma import EWMA
 from wax.modules.ewmcov import EWMCov
 from wax.modules.ewmvar import EWMVar
+from wax.modules.fill_nan_inf import FillNanInf
 from wax.modules.gym_feedback import GymFeedback
 from wax.modules.has_changed import HasChanged
 from wax.modules.lag import Lag
+from wax.modules.mask_mean import MaskMean
+from wax.modules.mask_normalize import MaskNormalize
+from wax.modules.mask_std import MaskStd
 from wax.modules.ohlc import OHLC
 from wax.modules.pct_change import PctChange
 from wax.modules.rolling_mean import RollingMean
@@ -39,4 +44,9 @@ __all__ = [
     "PctChange",
     "RollingMean",
     "UpdateOnEvent",
+    "FillNanInf",
+    "ApplyMask",
+    "MaskMean",
+    "MaskStd",
+    "MaskNormalize",
 ]

@@ -16,7 +16,10 @@ formats:
 
 .PHONY: run
 run: sync
-	for f in $(TARGETS_IPYNB); do jupytext --execute $${f}; done
+	papermill 01_*.ipynb /dev/null 
+	papermill 02_*.ipynb /dev/null 
+	papermill 03_*.ipynb /dev/null 
+	papermill 04_*.ipynb /dev/null -p T 100 -p N 10
 	$(MAKE) sync
 
 .PHONY: kernel

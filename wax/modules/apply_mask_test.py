@@ -67,3 +67,20 @@ def test_apply_mask_axis_1():
     x_mask = fun.apply(params, next(rng), mask, x)
 
     assert jnp.allclose(x_mask[:, 0], 0.0)
+
+
+def test_apply_mask_axis_2_raises():
+    rng = hk.PRNGSequence(42)
+    x = jax.random.normal(next(rng), (2, 3, 1))
+
+    mask = jnp.full(x.shape[1], True)
+    mask = jax.ops.index_update(mask, 0, False)
+
+    # check that an error is raised if axis is not specified
+    fun = hk.transform(lambda mask, x: ApplyMask(axis=2)(mask, x))
+    with pytest.raises(ValueError) as err:
+        fun.init(next(rng), mask, x)
+    assert (
+        str(err.value)
+        == "ApplyMask is not implemented for axis different from None, 0, 1."
+    )

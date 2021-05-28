@@ -17,7 +17,11 @@
 # # 🔭 Reconstructing the light curve of stars 🔭
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/05_reconstructing_the_light_curve_of_stars.ipynb)
-#
+# In Colab install wax by executing this line in a cell:
+# ```python
+# # ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
+# ```
+
 # Let's take a walk through the stars...
 #
 # This notebook is based on the study done in
@@ -35,11 +39,6 @@
 # ## Download the data
 
 # %matplotlib inline
-
-# In Colab install wax by executing this line in a cell:
-# ```python
-# # ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-# ```
 
 import io
 

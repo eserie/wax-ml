@@ -20,6 +20,7 @@ In Colab install wax by executing this line in a cell:
 ```python
 ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
 ```
+
 +++
 
 Let's take a walk through the stars...

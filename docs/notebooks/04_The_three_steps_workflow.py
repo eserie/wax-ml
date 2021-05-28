@@ -52,6 +52,7 @@ import numpy as onp
 import pandas as pd
 import xarray as xr
 from eagerpy import convert_to_tensors
+
 from wax.accessors import register_wax_accessors
 from wax.compile import jit_init_apply
 from wax.format import format_dataframe

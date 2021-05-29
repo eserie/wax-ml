@@ -192,10 +192,12 @@ Currently, the types of temporal representations supported by WAX are quite limi
 should collaborate with the pandas, xarray and [Astropy](https://www.astropy.org/) teams
 to further develop time manipulation tools in WAX. (see "WEP1" in `WEP.md`).
 
-## Accessors
+## pandas and xarray accessors
 
-WAX comes with accessors to run Haiku functions** on xarray (`Dataset`, `DataArray`) and
-pandas (`DataFrame`, `Series`) data containers.
+WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning algorithms with
+high-level data APIs :
+- pandas's `DataFrame` and `Series`
+- xarray's `Dataset` and `DataArray`.
 
 To load the accessors, run:
 ```python
@@ -238,7 +240,30 @@ WAX ewma:
 air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 ```
 
-WAX accessors also permits to work as easily on xarray datasets.
+
+### Apply a custom function to a Dataset
+
+Now let's illustrate how WAX accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
+
+```{code-cell} ipython3
+from wax.modules import EWMA
+
+
+def my_custom_function(da):
+    return {
+        "air_10": EWMA(1.0 / 10.0)(da["air"]),
+        "air_100": EWMA(1.0 / 100.0)(da["air"]),
+    }
+
+
+da = xr.tutorial.open_dataset("air_temperature")
+output, state = da.wax.stream().apply(my_custom_function, format_dims=da.air.dims)
+
+_ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
+```
+
+![](docs/_static/my_custom_function_on_dataset.png)
+
 You can see our [Documentation](https://wax-ml.readthedocs.io/en/latest/) for examples with
 EWMA or Binning on the air temperature dataset.
 
@@ -304,6 +329,8 @@ results, state = (
 ```python
 results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
 ```
+
+![](docs/_static/synchronize_data_streams.png)
 
 ## ⚡ Performance on big dataframes ⚡
 

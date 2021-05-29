@@ -73,7 +73,7 @@ def test_unroll_dataset_accessor():
         )
 
     xoutput, state = dataset.wax.stream(
-        master_time="time",
+        local_time="time",
         freqs={"day": "d"},
         ffills={"day": True},
         buffer_maxlen={"news_time": 3},
@@ -179,7 +179,7 @@ def test_unroll_dataset_accessor_module_map():
     module = module_map
     register_wax_accessors()
     dataset = prepare_test_data()
-    xoutput, state = dataset.wax.stream(master_time="time").apply(
+    xoutput, state = dataset.wax.stream(local_time="time").apply(
         module, format_dims=["time"]
     )
     assert isinstance(xoutput, dict)

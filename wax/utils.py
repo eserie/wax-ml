@@ -19,9 +19,9 @@ def dict_map(fun, col):
     return {key: fun(val) for key, val in col.items()}
 
 
-def time_less(stream_time, main_time, embed):
-    main_time_embedded = embed(main_time)
-    is_less = stream_time < main_time_embedded
+def time_less(stream_time, local_time, embed):
+    local_time_embedded = embed(local_time)
+    is_less = stream_time < local_time_embedded
     return is_less
 
 

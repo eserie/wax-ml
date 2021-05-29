@@ -68,7 +68,7 @@ def my_custom_function(da):
 ```
 
 ```{code-cell} ipython3
-results, state = da.wax.stream(master_time="time", pbar=True).apply(
+results, state = da.wax.stream(local_time="time", pbar=True).apply(
     my_custom_function, format_dims=da.air.dims
 )
 ```

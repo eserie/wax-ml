@@ -175,7 +175,7 @@ def test_stream_dataset_dynamic_unroll2():
     schema = get_dataset_schema(dataset, check=True)
     ffills = {"day": True}
     freqs = {"day": "d"}
-    master_time = "time"
+    local_time = "time"
     buffer_maxlen = {"news_time": 3}
 
     datasets = split_dataset_from_time_dims(dataset)
@@ -183,7 +183,7 @@ def test_stream_dataset_dynamic_unroll2():
     assert datasets["news_time"]["NEWS"].shape == (14, 2)
 
     stream = Stream(
-        master_time,
+        local_time,
         freqs,
         ffills,
         buffer_maxlen,
@@ -249,14 +249,14 @@ def test_stream_dataset_dynamic_unroll3():
     schema = get_dataset_schema(dataset, check=True)
     ffills = {"day": True}
     freqs = {"day": "d"}
-    master_time = "time"
+    local_time = "time"
     buffer_maxlen = {"news_time": 3}
 
     time_dataset = get_time_dataset(dataset)
 
     time_datasets = split_dataset_from_time_dims(time_dataset)
     stream = Stream(
-        master_time, freqs, ffills, buffer_maxlen, verbose=["time"], pbar=True
+        local_time, freqs, ffills, buffer_maxlen, verbose=["time"], pbar=True
     )
     streams = stream.start_dataset_streams(time_datasets)
     trace = stream.merge(streams)

@@ -17,6 +17,11 @@ kernelspec:
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
 
+In Colab install wax by executing this line in a cell:
+```python
+! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
+```
+
 +++
 
 It is already very useful to be able to execute a JAX function on a dataframe in a single work step

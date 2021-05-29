@@ -13,7 +13,7 @@ kernelspec:
   name: python3
 ---
 
-# xarray and pandas accessors
+# 〰 Compute exponential moving averages with xarray and pandas accessors 〰
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/01_demo_EWMA.ipynb)
 

@@ -79,7 +79,7 @@ CACHE_DIR = Path("./cached_data/")
 # %%time
 filename = CACHE_DIR / "kep_lightcurves.parquet"
 try:
-    raw_dataframe = pd.read_parquet(open(filename, "rb"))    
+    raw_dataframe = pd.read_parquet(open(filename, "rb"))
     print(f"data read from {filename}")
 except FileNotFoundError:
     # Downloading the csv file from Chrustioge Pere GitHub account

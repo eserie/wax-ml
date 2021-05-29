@@ -57,12 +57,12 @@ from wax.modules import RollingMean
 register_wax_accessors()
 # -
 
-2**6
+2 ** 6
 
 # + tags=["parameters"]
 # Parameters
 TOTAL_LEN = None
-TRAIN_STEPS = 2**16
+TRAIN_STEPS = 2 ** 16
 TRAIN_SIZE = 10000
 SEQ_LEN = 64
 TRAIN_SIZE = 2 ** 16

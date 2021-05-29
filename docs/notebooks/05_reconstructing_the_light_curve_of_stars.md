@@ -67,7 +67,7 @@ register_wax_accessors()
 ```
 
 ```{code-cell} ipython3
-2**6
+2 ** 6
 ```
 
 ```{code-cell} ipython3
@@ -75,7 +75,7 @@ register_wax_accessors()
 
 # Parameters
 TOTAL_LEN = None
-TRAIN_STEPS = 2**16
+TRAIN_STEPS = 2 ** 16
 TRAIN_SIZE = 10000
 SEQ_LEN = 64
 TRAIN_SIZE = 2 ** 16

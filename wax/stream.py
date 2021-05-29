@@ -196,7 +196,7 @@ def get_dataset_time_coords(dataset):
     time_coords = {
         dim for dim, vals in dataset.coords.items() if vals.dtype.type is onp.datetime64
     }
-    assert len(time_coords)
+    assert len(time_coords), "No time coordinate found"
     return time_coords
 
 

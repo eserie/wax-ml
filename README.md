@@ -244,14 +244,34 @@ EWMA or Binning on the air temperature dataset.
 
 ## ⏱ Synchronize streams ⏱
 
-WAX makes it easy to synchronize data streams with different time resolutions.
+Physicists, and not the least 😅, have brought a solution to the synchronization
+problem.  See [Poincaré-Einstein synchronization Wikipedia
+page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details.
+
+In WAX-ML we strive to follow their recommendations and implement a synchronization
+mechanism between different data streams.  Using the terminology of Henri Poincaré (see
+link above) we introduce the notion of "local time" to unravel the main stream in which
+the user wants to work in. We call the others "secondary streams».  They can work at
+different frequencies, lower or higher.  The data from these secondary streams will be
+represented in the "local time" either with the use of a forward filling mechanism for
+lower frequencies or a buffering mechanism for higher frequencies.
+
+We implement a "data tracing" mechanism to optimize access to out-of-sync data streams.
+This mechanism works on in-memory data streams.  We perform a first pass on the data,
+without actually reading accessing to them, in order to identify indices necessary to
+later acces to it.  Doing so we strives to be vigilant to not let any "future"
+information pass through and thus guaranty a data processing that respects causality.
+
+The buffering mechanism used in the case of higher frequencies, works with a fixed
+buffer size (see the WAX module
+[`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))
+which allows us to use JAX / XLA optimizations and have efficient processing.
 
 Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.
 
 Let's use the dataset "air temperature" with :
 - An air temperature defined with hourly resolution.
 - A "fake" ground temperature defined with a daily resolution as the air temperature minus 10 degrees.
-
 
 ```python
 import xarray as xr

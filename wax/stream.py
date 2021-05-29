@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Define `Stream` object."""
+"""Define `Stream` object used to synchronize in-memory data streams and
+unroll data transformations on it.
+"""
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from functools import partial
@@ -48,7 +50,7 @@ from wax.encode import (
     string_encoder,
 )
 from wax.unroll import dynamic_unroll
-from wax.utils import get_unique_dtype, time_less
+from wax.utils import get_unique_dtype
 
 # DTypeLike = TypeVar("DTypeLike")
 DTypeLike = str
@@ -80,6 +82,28 @@ DTYPE_INIT_VALUES = {
     bool: False,
     onp.bool_: False,
 }
+
+
+def timestamp_is_before_local(
+    embed: Callable,
+    local_timestamp: onp.ndarray,
+    secondary_timestamp: onp.ndarray,
+) -> bool:
+    """Says if a secondary timestamp is before the local timestamp. It uses an `embed` callable
+    to convert the `local_time` into the `other_time` referential and thus allowing
+    comparison.
+
+    Args:
+        embed : callable used to embed `local_time` in `other_time`.
+        local_timestamp : local timestamp
+        secondary_timestamp : other timestamp
+
+    Returns:
+        true if first timestamp is before the second,
+        false otherwise.
+    """
+    local_time_embedded = embed(local_timestamp)
+    return secondary_timestamp < local_time_embedded
 
 
 class StreamObservation(NamedTuple):
@@ -408,9 +432,34 @@ def tree_access_data(data, index, step):
 
 @dataclass(frozen=True)
 class Stream:
-    """
+    """Stream object used to synchronize in-memory data streams and
+    unroll data transformations on it.
+
+    Physicists, and not the least 😅, have brought a solution to the synchronization
+    problem.  See [Poincaré-Einstein synchronization Wikipedia
+    page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details.
+
+    In WAX-ML we strive to follow their recommendations and implement a synchronization
+    mechanism between different data streams.  Using the terminology of Henri Poincaré (see
+    link above) we introduce the notion of "local time" to unravel the main stream in which
+    the user wants to work in. We call the others "secondary streams».  They can work at
+    different frequencies, lower or higher.  The data from these secondary streams will be
+    represented in the "local time" either with the use of a forward filling mechanism for
+    lower frequencies or a buffering mechanism for higher frequencies.
+
+    We implement a "data tracing" mechanism to optimize access to out-of-sync data streams.
+    This mechanism works on in-memory data streams.  We perform a first pass on the data,
+    without actually reading accessing to them, in order to identify indices necessary to
+    later acces to it.  Doing so we strives to be vigilant to not let any "future"
+    information pass through and thus guaranty a data processing that respects causality.
+
+    The buffering mechanism used in the case of higher frequencies, works with a fixed
+    buffer size (see the WAX module
+    [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))  # noqa
+    which allows us to use JAX / XLA optimizations and have efficient processing.
+
     Args:
-        local_time : dimension along which we want to iterate
+        local_time : dimension along which we want to iterate.
         freqs : mapping of frequencies used to embed local_time in lower frequency streams.
         ffills : mapping of bool to ffill secondary streams.
         buffer_maxlen : mapping of int describing buffer size for secondary streams
@@ -426,6 +475,12 @@ class Stream:
         format_outputs : if true, format outputs in numpy array, otherwise return outputs
             in raw format (Jax tensors).
         return_state: if true, return state, otherwise only return unrolled outputs.
+
+    *Terminology*: We use the name `local_time` to describe the time referential,
+    taken from those identified in the input data, in which the user wants to work at the end.
+    This terminology is the same as that used by Henri Poincaré in his discussion of
+    the synchronization problem.
+    See https://en.wikipedia.org/wiki/Einstein_synchronisation for more details.
     """
 
     local_time: str = ""
@@ -629,35 +684,38 @@ class Stream:
                 return
 
             output[local_time] = local_obs
-            local_time = local_obs.time
+            local_timestamp = local_obs.time
 
             if _is_verbose(self.verbose, local_time):
-                print(f"[MultiStream] '{local_time}' proceed data : {local_time}")
+                print(f"[MultiStream] '{local_time}' proceed data : {local_timestamp}")
 
             for time_dim, stream in streams.items():
-                stream_time = stream_obs[time_dim].time
+                stream_timestamp = stream_obs[time_dim].time
 
                 if time_dim in self.freqs:
                     embed = cast(
                         Callable[[Any], Any],
                         partial(floor_datetime, freq=self.freqs[time_dim]),
                     )
+                    _is_before_local = partial(
+                        timestamp_is_before_local, embed, local_timestamp
+                    )
                 else:
+                    _is_before_local = partial(
+                        timestamp_is_before_local, lambda x: x, local_timestamp
+                    )
 
-                    def embed(x):
-                        return x
-
-                if time_less(stream_time, local_time, embed):
+                if _is_before_local(stream_timestamp):
                     # put last readed observation
                     if _is_verbose(self.verbose, time_dim):
-                        print(f"'{time_dim}' proceed data : {stream_time}")
+                        print(f"'{time_dim}' proceed data : {stream_timestamp}")
                     buffer_output = buffers[time_dim](stream_obs[time_dim])
                     output[time_dim] = buffer_output
 
-                while time_less(stream_time, local_time, embed):
+                while _is_before_local(stream_timestamp):
                     try:
                         stream_obs[time_dim] = next(stream)
-                        stream_time = stream_obs[time_dim].time
+                        stream_timestamp = stream_obs[time_dim].time
                     except StopIteration:
                         del stream_obs[time_dim]
 
@@ -665,11 +723,11 @@ class Stream:
                         del original_streams[time_dim]
                         break
 
-                    if time_less(stream_time, local_time, embed):
+                    if _is_before_local(stream_timestamp):
                         buffer_output = buffers[time_dim](stream_obs[time_dim])
                         output[time_dim] = buffer_output
                         if _is_verbose(self.verbose, time_dim):
-                            print(f"'{time_dim}' proceed data : {stream_time}")
+                            print(f"'{time_dim}' proceed data : {stream_timestamp}")
 
                 if _is_verbose(self.verbose, time_dim):
 
@@ -738,7 +796,6 @@ class Stream:
         """
         Args:
             datasets: mapping of datasets.
-            trace : if True, perform data tracing returning only indexes instead of actual data.
 
         Returns:
             Dict of generators.

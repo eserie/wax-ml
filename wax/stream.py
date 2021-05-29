@@ -410,11 +410,11 @@ def tree_access_data(data, index, step):
 class Stream:
     """
     Args:
-        master_time : dimension along which we want to iterate
-        freqs : mapping of frequencies used to embed master_time in lower frequency streams.
+        local_time : dimension along which we want to iterate
+        freqs : mapping of frequencies used to embed local_time in lower frequency streams.
         ffills : mapping of bool to ffill secondary streams.
         buffer_maxlen : mapping of int describing buffer size for secondary streams
-            during one iteration of the main stream_data.
+            during one iteration of the local stream_data.
             This is needed to guaranty a known in advance data indexing scheme
             compatible with XLA compilation.
             If not specified, only the last observation of secondary streams is conserved.
@@ -428,7 +428,7 @@ class Stream:
         return_state: if true, return state, otherwise only return unrolled outputs.
     """
 
-    master_time: str = ""
+    local_time: str = ""
     freqs: Dict[str, str] = field(default_factory=dict)
     ffills: Dict[str, bool] = field(default_factory=dict)
     buffer_maxlen: Dict[str, int] = field(default_factory=dict)
@@ -512,17 +512,17 @@ class Stream:
         else:
             return outputs
 
-    def get_master_time(self, time_datasets):
-        if not self.master_time:
+    def get_local_time(self, time_datasets):
+        if not self.local_time:
             if not len(time_datasets) == 1:
                 raise ValueError(
-                    "master_time must be specified since multiple time index have been detected.",
+                    "local_time must be specified since multiple time index have been detected.",
                     f"It should be in {time_datasets.keys()}",
                 )
-            master_time = next(iter(time_datasets.keys()))
+            local_time = next(iter(time_datasets.keys()))
         else:
-            master_time = self.master_time
-        return master_time
+            local_time = self.local_time
+        return local_time
 
     def trace_dataset(self, dataset: xr.Dataset) -> Any:
         """Trace dataset time indices in order to syncrhonize them an prepare data access
@@ -536,7 +536,7 @@ class Stream:
         """
         time_dataset = get_time_dataset(dataset)
         time_datasets = split_dataset_from_time_dims(time_dataset)
-        master_time = self.get_master_time(time_datasets)
+        local_time = self.get_local_time(time_datasets)
 
         if len(time_datasets) > 1:
             streams = self.start_dataset_streams(time_datasets)
@@ -544,9 +544,9 @@ class Stream:
             time_index = unroll_stream(stream_merged, pbar=self.pbar)
             # now convert in index for the original dataset.
         else:
-            times = time_datasets[master_time][master_time].values
-            index = dataset_to_numpy(time_datasets[master_time])
-            time_index = {master_time: StreamObservation(times, index)}
+            times = time_datasets[local_time][local_time].values
+            index = dataset_to_numpy(time_datasets[local_time])
+            time_index = {local_time: StreamObservation(times, index)}
         time_dataset_index = get_dataset_index_from_stream_index(time_index)
         dataset_index = get_dataset_index(dataset, time_dataset_index)
         # convert to dict of numpy
@@ -554,7 +554,7 @@ class Stream:
         np_index = dataset_to_numpy(dataset_index)
 
         # prepare steps
-        xs = onp.arange(len(time_dataset_index[master_time]))
+        xs = onp.arange(len(time_dataset_index[local_time]))
         return np_data, np_index, xs
 
     def merge(
@@ -612,27 +612,27 @@ class Stream:
         # yield _output_values
 
         original_streams = streams.copy()
-        master_time = self.get_master_time(streams)
+        local_time = self.get_local_time(streams)
         while True:
-            # main loop
+            # local loop
             streams = original_streams.copy()
 
             output_values, stream_obs = generator_state
 
-            main_stream = streams.pop(master_time)
+            local_stream = streams.pop(local_time)
 
             # initialize outputs with initial values
             output = output_values.copy()
             try:
-                main_obs = cast(StreamObservation, next(main_stream))
+                local_obs = cast(StreamObservation, next(local_stream))
             except StopIteration:
                 return
 
-            output[master_time] = main_obs
-            main_time = main_obs.time
+            output[local_time] = local_obs
+            local_time = local_obs.time
 
-            if _is_verbose(self.verbose, master_time):
-                print(f"[MultiStream] '{master_time}' proceed data : {main_time}")
+            if _is_verbose(self.verbose, local_time):
+                print(f"[MultiStream] '{local_time}' proceed data : {local_time}")
 
             for time_dim, stream in streams.items():
                 stream_time = stream_obs[time_dim].time
@@ -647,14 +647,14 @@ class Stream:
                     def embed(x):
                         return x
 
-                if time_less(stream_time, main_time, embed):
+                if time_less(stream_time, local_time, embed):
                     # put last readed observation
                     if _is_verbose(self.verbose, time_dim):
                         print(f"'{time_dim}' proceed data : {stream_time}")
                     buffer_output = buffers[time_dim](stream_obs[time_dim])
                     output[time_dim] = buffer_output
 
-                while time_less(stream_time, main_time, embed):
+                while time_less(stream_time, local_time, embed):
                     try:
                         stream_obs[time_dim] = next(stream)
                         stream_time = stream_obs[time_dim].time
@@ -665,7 +665,7 @@ class Stream:
                         del original_streams[time_dim]
                         break
 
-                    if time_less(stream_time, main_time, embed):
+                    if time_less(stream_time, local_time, embed):
                         buffer_output = buffers[time_dim](stream_obs[time_dim])
                         output[time_dim] = buffer_output
                         if _is_verbose(self.verbose, time_dim):

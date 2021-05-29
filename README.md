@@ -276,7 +276,7 @@ da["ground"] = da.air.resample(time="d").last().rename({"time": "day"}) - 10
 ```python
 results, state = (
 	da.wax
-	.stream(master_time="time", pbar=True)
+	.stream(local_time="time", pbar=True)
 	.apply(my_custom_function, format_dims=da.air.dims)
 	)
 ```

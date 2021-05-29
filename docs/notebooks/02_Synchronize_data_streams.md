@@ -31,9 +31,9 @@ page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details.
 In WAX-ML we strive to follow their recommendations and implement a synchronization
 mechanism between different data streams. Using the terminology of Henri Poincaré (see
 link above) we introduce the notion of "local time" to unravel the main stream in which
-the user wants to apply transformations. We call the other streams "secondary streams". 
-They can work at different frequencies, lower or higher.  The data from these secondary 
-streams will be represented in the "local time" either with the use of a forward filling 
+the user wants to apply transformations. We call the other streams "secondary streams".
+They can work at different frequencies, lower or higher.  The data from these secondary
+streams will be represented in the "local time" either with the use of a forward filling
 mechanism for lower frequencies or a buffering mechanism for higher frequencies.
 
 We implement a "data tracing" mechanism to optimize access to out-of-sync streams.

@@ -14,14 +14,14 @@
 #     name: python3
 # ---
 
+# +
+# Uncomment to run the notebook in Colab
+# # ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+# -
+
 # # 🎛 The 3-steps workflow 🎛
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
-#
-# In Colab install wax by executing this line in a cell:
-# ```python
-# # ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-# ```
 
 # It is already very useful to be able to execute a JAX function on a dataframe in a single work step
 # and with a single command line thanks to WAX accessors.
@@ -166,7 +166,7 @@ outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
 # Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 
 # + tags=[]
-# %%time
+# %%timeit
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
 # -
 

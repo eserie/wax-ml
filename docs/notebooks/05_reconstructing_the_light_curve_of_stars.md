@@ -13,13 +13,14 @@ kernelspec:
   name: python3
 ---
 
+```{code-cell} ipython3
+# Uncomment to run the notebook in Colab
+# ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+```
+
 # 🔭 Reconstructing the light curve of stars 🔭
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/05_reconstructing_the_light_curve_of_stars.ipynb)
-In Colab install wax by executing this line in a cell:
-```python
-! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-```
 
 +++
 

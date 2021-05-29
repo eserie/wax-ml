@@ -13,14 +13,14 @@ kernelspec:
   name: python3
 ---
 
+```{code-cell} ipython3
+# Uncomment to run the notebook in Colab
+# ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+```
+
 # 🎛 The 3-steps workflow 🎛
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
-
-In Colab install wax by executing this line in a cell:
-```python
-! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-```
 
 +++
 
@@ -199,7 +199,7 @@ Once it has been compiled and "traced" by JAX, the function is much faster to ex
 ```{code-cell} ipython3
 :tags: []
 
-%%time
+%%timeit
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
 ```
 

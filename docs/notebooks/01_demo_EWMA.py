@@ -14,18 +14,18 @@
 #     name: python3
 # ---
 
+# +
+# Uncomment to run the notebook in Colab
+# # ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+# -
+
 # # 〰 Compute exponential moving averages with xarray and pandas accessors 〰
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/01_demo_EWMA.ipynb)
-#
-# In Colab install wax by executing this line in a cell:
-# ```python
-# # ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-# ```
 
-# WAX implements pandas and xarray "accessors" to ease the usage of machine-learning algorithms with
+# WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning algorithms with
 # high-level data APIs :
-# - pandas's `DataFrame` and `Series` and
+# - pandas's `DataFrame` and `Series`
 # - xarray's `Dataset` and `DataArray`.
 #
 # These accessors allow to easily execute any function using Haiku modules

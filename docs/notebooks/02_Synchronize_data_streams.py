@@ -14,14 +14,14 @@
 #     name: python3
 # ---
 
+# +
+# Uncomment to run the notebook in Colab
+# # ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+# -
+
 # # ⏱ Synchronize data streams ⏱
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/02_Synchronize_data_streams.ipynb)
-#
-# In Colab install wax by executing this line in a cell:
-# ```python
-# # ! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-# ```
 
 # Physicists, and not the least 😅, have brought a solution to the synchronization
 # problem.  See [Poincaré-Einstein synchronization Wikipedia

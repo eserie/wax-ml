@@ -13,14 +13,14 @@ kernelspec:
   name: python3
 ---
 
+```{code-cell} ipython3
+# Uncomment to run the notebook in Colab
+# ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+```
+
 # 🌡 Binning temperatures 🌡
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/03_ohlc_temperature.ipynb)
-
-In Colab install wax by executing this line in a cell:
-```python
-! pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
-```
 
 +++
 

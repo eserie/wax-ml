@@ -47,6 +47,7 @@ before calling a "standard" deep-learning workflow.
 
 ```{code-cell} ipython3
 import io
+from pathlib import Path
 ```
 
 ```{code-cell} ipython3
@@ -67,35 +68,47 @@ register_wax_accessors()
 ```
 
 ```{code-cell} ipython3
-2 ** 6
-```
-
-```{code-cell} ipython3
 :tags: [parameters]
 
 # Parameters
-TOTAL_LEN = None
-TRAIN_STEPS = 2 ** 16
-TRAIN_SIZE = 10000
-SEQ_LEN = 64
-TRAIN_SIZE = 2 ** 16
 STAR = "007609553"
+SEQ_LEN = 64
 BATCH_SIZE = 8
+TRAIN_STEPS = 2 ** 16
+TRAIN_SIZE = 2 ** 16
+TOTAL_LEN = None
 TRAIN_DATE = "2016"
+CACHE_DIR = Path("./cached_data/")
 ```
 
 ```{code-cell} ipython3
 %%time
-# Downloading the csv file from Chrustioge Pere GitHub account
-download = requests.get(
-    "https://raw.github.com/Christophe-pere/Time_series_RNN/master/kep_lightcurves.csv"
-).content
-raw_dataframe = pd.read_csv(io.StringIO(download.decode("utf-8")))
+filename = CACHE_DIR / "kep_lightcurves.parquet"
+try:
+    raw_dataframe = pd.read_parquet(open(filename, "rb"))
+    # set date index
+    raw_dataframe.index = pd.Index(
+        pd.date_range("2009-03-07", periods=len(raw_dataframe.index), freq="h"),
+        name="time",
+    )
+    print(f"data read from {filename}")
+except FileNotFoundError:
+    # Downloading the csv file from Chrustioge Pere GitHub account
+    download = requests.get(
+        "https://raw.github.com/Christophe-pere/Time_series_RNN/master/kep_lightcurves.csv"
+    ).content
+    raw_dataframe = pd.read_csv(io.StringIO(download.decode("utf-8")))
+
+    # save dataframe locally in CACHE_DIR
+    CACHE_DIR.mkdir(exist_ok=True)
+    raw_dataframe.to_parquet(filename)
+    print(f"data saved in {filename}")
+```
+
+```{code-cell} ipython3
+# shortening of data to speed up the execution of the notebook in the CI
 if TOTAL_LEN:
     raw_dataframe = raw_dataframe.iloc[:TOTAL_LEN]
-raw_dataframe.index = pd.Index(
-    pd.date_range("2009-03-07", periods=len(raw_dataframe.index), freq="h"), name="time"
-)
 ```
 
 Let's visualize the description of this dataset:

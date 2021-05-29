@@ -12,17 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Some utils functions used in WAX."""
+
 from jax import tree_flatten
 
 
 def dict_map(fun, col):
     return {key: fun(val) for key, val in col.items()}
-
-
-def time_less(stream_time, local_time, embed):
-    local_time_embedded = embed(local_time)
-    is_less = stream_time < local_time_embedded
-    return is_less
 
 
 def get_unique_dtype(current_values_):

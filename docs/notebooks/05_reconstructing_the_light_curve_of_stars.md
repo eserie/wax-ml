@@ -34,8 +34,14 @@ We will repeat this study on starlight using the LSTM architecture to predict th
 
 Our LSTM implementation is based on this [notebook from Haiku's github repository](https://github.com/deepmind/dm-haiku/blob/master/examples/haiku_lstms.ipynb).
 
-We will see how to use WAX to facilitate the preparation of time series data stored in dataframes and having Nans
+We'll see how to use WAX-ML to ease the preparation of time series data stored in dataframes and having Nans
 before calling a "standard" deep-learning workflow.
+
+## Disclaimer
+
+Despite the fact that this code works with real data, the results presented here should not be considered as scientific knowledge insights, to the knowledge of the authors of WAX-ML, neither the results nor the data source have been reviewed by an astrophysics pair.
+
+The purpose of this notebook is only to demonstrate how WAX-ML can be used when applying a "standard" machine learning workflow, here LSTM, to analyze time series.
 
 +++
 
@@ -85,12 +91,7 @@ CACHE_DIR = Path("./cached_data/")
 %%time
 filename = CACHE_DIR / "kep_lightcurves.parquet"
 try:
-    raw_dataframe = pd.read_parquet(open(filename, "rb"))
-    # set date index
-    raw_dataframe.index = pd.Index(
-        pd.date_range("2009-03-07", periods=len(raw_dataframe.index), freq="h"),
-        name="time",
-    )
+    raw_dataframe = pd.read_parquet(open(filename, "rb"))    
     print(f"data read from {filename}")
 except FileNotFoundError:
     # Downloading the csv file from Chrustioge Pere GitHub account
@@ -98,7 +99,11 @@ except FileNotFoundError:
         "https://raw.github.com/Christophe-pere/Time_series_RNN/master/kep_lightcurves.csv"
     ).content
     raw_dataframe = pd.read_csv(io.StringIO(download.decode("utf-8")))
-
+    # set date index
+    raw_dataframe.index = pd.Index(
+        pd.date_range("2009-03-07", periods=len(raw_dataframe.index), freq="h"),
+        name="time",
+    )
     # save dataframe locally in CACHE_DIR
     CACHE_DIR.mkdir(exist_ok=True)
     raw_dataframe.to_parquet(filename)

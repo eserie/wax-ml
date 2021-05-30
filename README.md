@@ -187,16 +187,16 @@ To do so, WAX-ML implements:
 - an encoding scheme for `datetime64` relying on pairs of 32-bit integers similar to `PRNGKey` in JAX.
 - an encoding scheme for `string_` relying on `LabelEncoder` of [scikit-learn](https://scikit-learn.org/stable/).
 
-Since JAX does not currently support the `datetime64` and `string_` dtypes, this WAX-ML
-encoding scheme allows easily use JAX algorithms on data with these dtypes.
+By providing these two encoding schemes, WAX-ML makes it easy to use JAX algorithms on data of these types.
 
-Currently, the types of temporal representations supported by WAX-ML are quite limited, we
-should collaborate with the pandas, xarray and [Astropy](https://www.astropy.org/) teams
-to further develop time manipulation tools in WAX-ML. (see "WEP1" in `WEP.md`).
+Currently, the types of time offsets supported by WAX-ML are quite limited and we
+collaborate with the pandas, xarray and [Astropy](https://www.astropy.org/) teams
+to further develop the time manipulation tools in WAX-ML (see "WEP1" in `WEP.md`).
 
 ## pandas and xarray accessors
 
-WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning algorithms with
+WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning algorithms implemented
+with Haiku functions** on
 high-level data APIs :
 - pandas's `DataFrame` and `Series`
 - xarray's `Dataset` and `DataArray`.
@@ -214,8 +214,18 @@ Then run the "one-liner" syntax:
 
 ** We call a "Haiku function" any function implemented with Haiku modules.
 
+## Already implemented modules
+
 We have some Haiku modules ready to be used in `wax.modules` (see our [api
 documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
+
+
+For now, WAX-ML offers direct access to some modules through specific accessors for xarray
+and pandas.
+For instance, we have an implementation of the "exponential moving average" directly
+accessible through the accessor `<data-container>.ewm(...).mean()` which provides a
+drop-in replacement for the exponential moving average of pandas.
+
 
 For now, WAX-ML offer direct access to some modules through specific accessors for xarray
 and pandas.

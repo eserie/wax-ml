@@ -1,4 +1,4 @@
-# Copyright 2021 The Wax Authors
+# Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ gh_url = ""
 
 # -- Project information -----------------------------------------------------
 
-project = "WAX"
-copyright = "2021, WAX Authors"
-author = "The WAX Authors"
+project = "WAX-ML"
+copyright = "2021, WAX-ML Authors"
+author = "The WAX-ML Authors"
 
 # The short X.Y version
 version = ""
@@ -228,8 +228,8 @@ latex_elements: Dict = {
 #  author, documentclass [howto, manual, or own class]).
 
 latex_documents = [
-    (main_doc, 'WAX.tex', 'WAX Documentation',
-     'The WAX authors', 'manual'),
+    (main_doc, 'WAX-ML.tex', 'WAX-ML Documentation',
+     'The WAX-ML authors', 'manual'),
 ]
 
 
@@ -238,7 +238,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (main_doc, "wax", "WAX Documentation", [author], 1)
+    (main_doc, "wax", "WAX-ML Documentation", [author], 1)
 ]
 
 
@@ -250,10 +250,10 @@ man_pages = [
 texinfo_documents = [
     (
         main_doc,
-        "WAX",
-        "WAX Documentation",
+        "WAX-ML",
+        "WAX-ML Documentation",
         author,
-        "WAX",
+        "WAX-ML",
         "Oneline description of project."
         "Miscellaneous",
     )

@@ -1,10 +1,10 @@
-Welcome to WAX
+Welcome to WAX-ML
 ==============
 
-WAX is a library for machine-learning on streaming data.
+WAX-ML is a library for machine-learning on streaming data.
 
-For an introduction to WAX, start at the
-`WAX GitHub page <https://github.com/eserie/wax-ml>`_.
+For an introduction to WAX-ML, start at the
+`WAX-ML GitHub page <https://github.com/eserie/wax-ml>`_.
 
 .. toctree::
    :maxdepth: 1

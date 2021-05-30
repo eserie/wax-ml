@@ -16,8 +16,8 @@
 
 # +
 # Uncomment to run the notebook in Colab
-# # ! pip install "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
+# # ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 # -
 
 # # 〰 Compute exponential moving averages with xarray and pandas accessors 〰

@@ -16,8 +16,8 @@
 
 # +
 # Uncomment to run the notebook in Colab
-# # ! pip install "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
+# # ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 # -
 
 # check available devices
@@ -80,7 +80,7 @@ register_wax_accessors()
 # ### Generate data
 
 # + tags=["parameters"]
-T = 1.0e6
+T = 1.0e5
 N = 1000
 
 # + tags=[]
@@ -116,13 +116,20 @@ df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
 # -
 
+type(df_ewma_wax_no_format)
+
+# Let's check the device on which the calculation was performed (if you have GPU available, this should be `GpuDevice` otherwise it will be `CpuDevice`):
+
+df_ewma_wax_no_format.device()
+
 # That's better! In fact (see below)
 # there is a performance problem in the final formatting step.
 # See WEP3 for a proposal to improve the formatting step.
 
 # ### Generate data (in dataset format)
 #
-# WAX-ML `Sream` object works on datasets to we'll move form dataframe to datasets.
+# WAX-ML `Sream` object works on datasets.
+# So let's transform the `DataFrame` into a xarray `Dataset`:
 
 dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
 
@@ -140,6 +147,15 @@ dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
 stream = dataframe.wax.stream()
 np_data, np_index, xs = stream.trace_dataset(dataset)
 jnp_data, jnp_index, jxs = convert_to_tensors((np_data, np_index, xs), "jax")
+
+from jax.tree_util import tree_leaves, tree_map
+
+# We explicitly set data on CPUs (the is not needed if you only have CPUs)
+cpus = jax.devices("cpu")
+jnp_data, jnp_index, jxs = tree_map(
+    lambda x: jax.device_put(x, cpus[0]), (jnp_data, jnp_index, jxs)
+)
+print("data copied to CPU device.")
 
 
 # We have now "JAX-ready" data for later fast access.
@@ -170,6 +186,8 @@ rng = next(hk.PRNGSequence(42))
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 # -
 
+outputs.device()
+
 # Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 
 # + tags=[]
@@ -184,9 +202,6 @@ outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 #
 # (The 3x factor is obtained by measuring the execution with %timeit.
 # We don't know why, but when executing a code cell once at a time, then the execution time can vary a lot and we can observe some executions with a speed-up of 100x).
-
-53.3 * 1000 / 367
-53.3 / 15.9
 
 # ## Step(3) (format)
 # Let's come back to pandas/xarray:
@@ -204,10 +219,6 @@ y = format_dataframe(
 # ## GPU execution
 
 # Let's look with execution on GPU
-
-from jax.tree_util import tree_leaves, tree_map
-
-cpus = jax.devices("cpu")
 
 try:
     gpus = jax.devices("gpu")
@@ -250,6 +261,8 @@ if GPU_AVAILABLE:
 
     rng = next(hk.PRNGSequence(42))
     outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+
+outputs.device()
 
 # %%timeit
 if GPU_AVAILABLE:

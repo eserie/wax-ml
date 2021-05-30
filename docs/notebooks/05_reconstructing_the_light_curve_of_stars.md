@@ -18,7 +18,7 @@ kernelspec:
 # ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
 ```
 
-# 🔭 Reconstructing the light curve of stars 🔭
+# 🔭 Reconstructing the light curve of stars with LSTM 🔭
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/05_reconstructing_the_light_curve_of_stars.ipynb)
 

@@ -37,7 +37,7 @@
 #
 # We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
 # This mechanism works on in-memory data.  We perform a first pass on the data,
-# without actually accessing to it, with the goal to determine the indices necessary to
+# without actually accessing to it, and determine the indices necessary to
 # later acces to the data. Doing so we are vigilant to not let any "future"
 # information pass through and thus guaranty a data processing that respects causality.
 #

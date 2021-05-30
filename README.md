@@ -597,14 +597,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-WAX-ML bundles portions of astropy, dask, deluca, jax, xarray.
+WAX-ML bundles portions of astropy, dask, deluca, haiku, jax, xarray.
 
 dask, astropy are available under a "3-clause BSD" license:
 - dask: `wax/gym/callbacks/callbacks.py`
 - astropy: `CONTRIBUTING.md`
 
-deluca, jax and xarray are  available under a "Apache" license:
+deluca, haiku, jax and xarray are  available under a "Apache" license:
 - deluca: `wax/gym/entity.py`
+- haiku: `docs/notebooks/05_reconstructing_the_light_curve_of_stars.*`
 - jax: `docs/conf.py`, `docs/developer.md`
 - xarray: `wax/datasets/generate_temperature_data.py`
 

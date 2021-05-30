@@ -254,7 +254,7 @@ It's quite slow (see WEP3 enhancement proposal).
 Let's look with execution on GPU
 
 ```{code-cell} ipython3
-import jax
+from jax.tree_util import tree_leaves, tree_map
 ```
 
 ```{code-cell} ipython3
@@ -268,8 +268,10 @@ try:
         lambda x: jax.device_put(x, gpus[0]), (jnp_data, jnp_index, jxs)
     )
     print("data copied to GPU device.")
+    GPU_AVAILABLE = True
 except RuntimeError as err:
     print(err)
+    GPU_AVAILABLE = False
 ```
 
 Let's check that our data is on the GPUs:
@@ -288,31 +290,32 @@ jxs.device()
 
 ```{code-cell} ipython3
 %%time
-rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+if GPU_AVAILABLE:
+    rng = next(hk.PRNGSequence(42))
+    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 ```
 
 Let's redefine our function `transform_dataset` by explicitly specify to `jax.jit` the `device` option.
 
 ```{code-cell} ipython3
 %%time
+if GPU_AVAILABLE:
 
+    @hk.transform_with_state
+    def transform_dataset(step):
+        dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
+        return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
-@hk.transform_with_state
-def transform_dataset(step):
-    dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
-    return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
+    transform_dataset = type(transform_dataset)(
+        transform_dataset.init, jax.jit(transform_dataset.apply, device=gpus[0])
+    )
 
-
-transform_dataset = type(transform_dataset)(
-    transform_dataset.init, jax.jit(transform_dataset.apply, device=gpus[0])
-)
-
-rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+    rng = next(hk.PRNGSequence(42))
+    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 ```
 
 ```{code-cell} ipython3
 %%timeit
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+if GPU_AVAILABLE:
+    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 ```

@@ -1,14 +1,14 @@
 
 ## WEP1
 
-WAX wants to extend Jax with time series features like those developed in pandas,
+WAX-ML wants to extend Jax with time series features like those developed in pandas,
 xarray and astropy.
 
 To ease the execution of workloads in JAX-XLA with a 32-bit float configuration,
 we propose an encoding scheme for datetime64 as 32-bit integer pairs
 similar to the PRNG keys used by Jax to resume sampling pseudo-random numbers.
 In the same way that haiku introduces a generator to ease sampling of PRNG key sequences,
-WAX should provide a similar mechanism for generating sequences
+WAX-ML should provide a similar mechanism for generating sequences
 of encoded times according to a given scheme (sampling at a certain frequency, ...).
 
 ## WEP2
@@ -26,7 +26,7 @@ about performance when doing machine learning on datasets.
 ## WEP4
 
 To work with "real" streaming data, it should be possible to implement a buffer mechanism running
-on any python generator and to use the synchronization and data tracing mechanisms implemented in WAX to apply JAX
+on any python generator and to use the synchronization and data tracing mechanisms implemented in WAX-ML to apply JAX
 transformations on batches of data stored in memory.
 
 Design a `wax.dataset` high level API to stream data.
@@ -34,7 +34,7 @@ This should be well integrated with tensorflow `tf.dataset` library.
 
 ## WEP5
 
-WAX can implement other types of feedback loops, such as those typically
+WAX-ML can implement other types of feedback loops, such as those typically
 implemented in standard control "tool boxes."
 For instance, see:
 [python-control](https://github.com/python-control/python-control),
@@ -42,7 +42,7 @@ For instance, see:
 
 Many algorithms in this space are absent from the python ecosystem.
 If they are not implemented in other libraries,
-WAX aims to implement them via JAX and expose them with a simple API.
+WAX-ML aims to implement them via JAX and expose them with a simple API.
 
 An idiomatic example is the [Kalman filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman),
 a now-standard algorithm that dates back to the 1950s.
@@ -59,7 +59,7 @@ Because they have an object oriented API (which is very good!)
 offering them specific APIs very well adapted to specific problems
 of modern machine learning.
 
-The functional approach of WAX, inherited from JAX,
+The functional approach of WAX-ML, inherited from JAX,
 could well help to solve this 30 years old problem in the python ecosystem :smiley: !
 
 

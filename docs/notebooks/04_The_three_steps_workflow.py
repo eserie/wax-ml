@@ -24,9 +24,9 @@
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
 
 # It is already very useful to be able to execute a JAX function on a dataframe in a single work step
-# and with a single command line thanks to WAX accessors.
+# and with a single command line thanks to WAX-ML accessors.
 #
-# The 1-step WAX's stream API works like that:
+# The 1-step WAX-ML's stream API works like that:
 # ```python
 # .stream(...).apply(...)
 # ```
@@ -45,7 +45,7 @@
 # you are doing research.
 # You can then take full advantage of the JAX primitives, especially the `jit` primitive.
 #
-# Let's illustrate how to reimplement WAX EWMA yourself with the WAX 3-step workflow.
+# Let's illustrate how to reimplement WAX-ML EWMA yourself with the WAX-ML 3-step workflow.
 
 # ## Imports
 
@@ -91,7 +91,7 @@ dataframe = pd.DataFrame(
 df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 # -
 
-# ### WAX EWMA
+# ### WAX-ML EWMA
 
 # + tags=[]
 # %%time
@@ -100,7 +100,7 @@ df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 
 # It's a little faster, but not that much faster...
 
-# ### WAX EWMA (without format step)
+# ### WAX-ML EWMA (without format step)
 
 # Let's disable the final formatting step (the output is now in raw JAX format):
 
@@ -115,13 +115,13 @@ df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False
 
 # ### Generate data (in dataset format)
 #
-# WAX `Sream` object works on datasets to we'll move form dataframe to datasets.
+# WAX-ML `Sream` object works on datasets to we'll move form dataframe to datasets.
 
 dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
 
 # ## Step (1) (synchronize | data tracing | encode)
 #
-# In this step,  WAX do:
+# In this step,  WAX-ML do:
 # - "data tracing" : prepare the indices for fast access tin the JAX function `access_data`
 # - synchronize streams if there is multiple ones.
 #   This functionality have options : `freq`, `ffills`

@@ -1,4 +1,4 @@
-# Copyright 2021 The Wax Authors
+# Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -454,7 +454,7 @@ class Stream:
     information pass through and thus guaranty a data processing that respects causality.
 
     The buffering mechanism used in the case of higher frequencies, works with a fixed
-    buffer size (see the WAX module
+    buffer size (see the WAX-ML module
     [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))  # noqa
     which allows us to use JAX / XLA optimizations and have efficient processing.
 

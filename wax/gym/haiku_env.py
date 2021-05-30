@@ -1,4 +1,4 @@
-# Copyright 2021 The Wax Authors
+# Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Generator
 
-# Copyright 2021 The Wax Authors
+# Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

@@ -80,7 +80,7 @@ _ = df.plot(figsize=(12, 8))
 The `OHLC` module uses the primitive `wax.modules.UpdateOnEvent`.
 
 Its implementation required to complete Haiku with a central function
-`set_params_or_state_dict` which we have actually integrated in this WAX module.
+`set_params_or_state_dict` which we have actually integrated in this WAX-ML module.
 
 We have opened an [issue on the Haiku github](https://github.com/deepmind/dm-haiku/issues/126)
 to integrate it in Haiku.

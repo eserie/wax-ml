@@ -1,27 +1,27 @@
 Contributing to Wax
 ===================
 
-You can contribute to WAX by asking questions, proposing practical use cases
+You can contribute to WAX-ML by asking questions, proposing practical use cases
 or by contributing to the code.
 You can have a look at our
 [Developer Documentation](https://wax-ml.readthedocs.io/en/latest/developer.html).
 
-`WAX` contributing guidelines are a fork of
+`WAX-ML` contributing guidelines are a fork of
 [Astropy's CONTRIBUTING](https://github.com/astropy/astropy/blob/main/CONTRIBUTING.md)
-that we have adapted to `WAX` requirements.
+that we have adapted to `WAX-ML` requirements.
 
 Reporting Issues
 ----------------
 
 When opening an issue to report a problem, please try to provide a minimal code
 example that reproduces the issue along with details of the operating
-system and the Python, NumPy, and `WAX` versions you are using.
+system and the Python, NumPy, and `WAX-ML` versions you are using.
 
 Contributing
 ------------
 
-So you are interested in contributing code to the `WAX` Project? Excellent!
-We love contributions! `WAX` is open source, built on open source,
+So you are interested in contributing code to the `WAX-ML` Project? Excellent!
+We love contributions! `WAX-ML` is open source, built on open source,
 and we'd love to have you hang out in our community.
 
 **Imposter syndrome disclaimer**: We want your help. No, really.
@@ -52,8 +52,8 @@ Astropy based on its use in the README file for the
 
 ### How to Contribute, Best Practices
 
-All contributions to `WAX` are done via [pull requests](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests) from GitHub users'
-"forks" (i.e., copies) of the [WAX repository](https://github.com/eserie/wax-ml).
+All contributions to `WAX-ML` are done via [pull requests](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests) from GitHub users'
+"forks" (i.e., copies) of the [WAX-ML repository](https://github.com/eserie/wax-ml).
 
 Once you open a pull request (which should be opened against the ``main``
 branch, not against any of the other branches), please make sure to
@@ -69,9 +69,9 @@ include the following:
   many platforms/configurations). For more information about how to write
   tests, see our [testing guidelines](https://docs.astropy.org/en/latest/development/testguide.html).
 
-- **Documentation**: `WAX` does not yet have Documentation.
+- **Documentation**: `WAX-ML` does not yet have Documentation.
 
-- **Changelog entry**: `WAX` do not yet have Changelog.
+- **Changelog entry**: `WAX-ML` do not yet have Changelog.
 
 
 Other Tips
@@ -111,7 +111,7 @@ Checklist for Contributed Code
 ------------------------------
 
 A pull request for a new feature will be reviewed to see if it meets the
-following requirements. For any pull request, a `WAX` maintainer can help
+following requirements. For any pull request, a `WAX-ML` maintainer can help
 to make sure that the pull request meets the requirements for inclusion in the
 package.
 
@@ -124,7 +124,7 @@ package.
 **Code Quality**
   * Are the [coding guidelines](https://docs.astropy.org/en/latest/development/codeguide.html) followed?
   * Is the code compatible with Python >=3.7?
-  * Are there dependencies other than the `WAX` core and `WAX` requirements (see requirements.txt).
+  * Are there dependencies other than the `WAX-ML` core and `WAX-ML` requirements (see requirements.txt).
     * Are additional dependencies handled appropriately?
     * Do functions that require additional dependencies raise an `ImportError`
       if they are not present?
@@ -143,14 +143,15 @@ package.
   * Does mypy type checking pass? run the command `make mypy` to check.
 
 **Documentation**
-  * `WAX` does not yet have Documentation.
+  * `WAX-ML` does have a Documentation. See de Developer Documentation to
+	see how to update it.
 
 **License**
-  * Is the `WAX` license included at the top of the file? If not you can use the command `make license`
-    at the root of `WAX` project.
+  * Is the `WAX-ML` license included at the top of the file? If not you can use the command `make license`
+    at the root of `WAX-ML` project.
   * Are there any conflicts with this code and existing codes?
 
-**WAX requirements**
+**WAX-ML requirements**
   * Do all the GitHub Actions and CircleCI tests pass? If not, are they allowed to fail?
     You may run `make act` to test actions locally.
   * If applicable, has an entry been added into the changelog?

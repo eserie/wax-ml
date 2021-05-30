@@ -32,7 +32,7 @@ high-level data APIs :
 These accessors allow to easily execute any function using Haiku modules
 on these data containers.
 
-For instance, WAX propose an implementation of the exponential moving average realized
+For instance, WAX-ML propose an implementation of the exponential moving average realized
 with this mechanism.
 
 Let's show how it works.
@@ -100,7 +100,7 @@ air_temp_ewma = dataframe.ewm(alpha=1.0 / 10.0).mean()
 _ = air_temp_ewma.iloc[:, 0].plot()
 ```
 
-### EWMA with WAX
+### EWMA with WAX-ML
 
 ```{code-cell} ipython3
 %%time
@@ -108,15 +108,15 @@ air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 _ = air_temp_ewma.iloc[:, 0].plot()
 ```
 
-On small data, WAX's EWMA is slower than Pandas' because of the expensive data conversion steps.
-WAX's accessors are interesting to use on large data loads
+On small data, WAX-ML's EWMA is slower than Pandas' because of the expensive data conversion steps.
+WAX-ML's accessors are interesting to use on large data loads
 (See our [three-steps_workflow](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html))
 
 ## Apply a custom function to a Dataset
 
 +++
 
-Now let's illustrate how WAX accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
+Now let's illustrate how WAX-ML accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
 
 ```{code-cell} ipython3
 from wax.modules import EWMA

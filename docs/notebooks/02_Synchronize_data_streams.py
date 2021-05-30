@@ -42,7 +42,7 @@
 # information pass through and thus guaranty a data processing that respects causality.
 #
 # The buffering mechanism used in the case of higher frequencies, works with a fixed
-# buffer size (see the WAX module
+# buffer size (see the WAX-ML module
 # [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))
 # which allows us to use JAX / XLA optimizations and have efficient processing.
 #

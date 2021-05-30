@@ -353,7 +353,8 @@ see how you can use our "3-step workflow" to speed things up!
 # 🔥 Speed 🔥
 
 With WAX-ML, you can already compute an exponential moving average on a 1 millions rows
-dataframe with a 2x to 130x speedup (depending of the datacontainer you use) compared to
+dataframe with a 3x to 100x speedup
+(depending of the data container you use and speed measurement methodology) compared to
 pandas implementation.  (See our notebook in the
 [Quick Start Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html)
 or in

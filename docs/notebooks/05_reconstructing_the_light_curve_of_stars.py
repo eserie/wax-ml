@@ -16,8 +16,15 @@
 
 # +
 # Uncomment to run the notebook in Colab
-# # ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+# # ! pip install "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
+# # ! pip install --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 # -
+
+# check available devices
+import jax
+
+print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+jax.devices()
 
 # # 🔭 Reconstructing the light curve of stars with LSTM 🔭
 #
@@ -42,7 +49,6 @@
 # Despite the fact that this code works with real data, the results presented here should not be considered as scientific knowledge insights, to the knowledge of the authors of WAX-ML, neither the results nor the data source have been reviewed by an astrophysics pair.
 #
 # The purpose of this notebook is only to demonstrate how WAX-ML can be used when applying a "standard" machine learning workflow, here LSTM, to analyze time series.
-#
 
 # ## Download the data
 

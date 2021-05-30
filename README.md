@@ -48,16 +48,18 @@ and filtering...
 By adopting a "no-framework" approach WAX-ML aim to be an efficient tool to combine modern
 machine learning approaches with more traditional ones.
 
-Some recent work have been made in this directions, for instance see [2].
+Some work has been done in this direction, for example see [2] where transformer encoder architectures are massively accelerated, with limited accuracy costs, by replacing the self-attention sublayers with a standard, non-parameterized Fast Fourier Transform (FFT).
+Their implementation, not yet published, is based on Flax, a tool from the JAX ecosystem.
 
-WAX-ML may also be useful for developing research ideas in areas such as *online machine
-learning* (see [1]).
 
-## What is WAX-ML?
+WAX-ML may also be useful for developing research ideas in areas such as online machine
+learning (see [1]) and development of control, reinforcement learning and online-optimization methods.
+
+## What WAX-ML does?
 
 Well, WAX-ML has some pretty ambitious design and implementation goals.
 
-To do things right, we decided to start small and in an open-source design from the
+To do things right, we decided to start it small and in an open-source design from the
 beginning.
 
 For now, WAX-ML contains:
@@ -70,7 +72,7 @@ For now, WAX-ML contains:
 - A "stream" module permitting to synchronize data streams with different time
   resolutions (see [🌊 Streaming Data 🌊](#-streaming-data-))
 
-- Pandas and Xarray "accessors" permitting to apply any JAX/Haiku module on `DataFrame`,
+- pandas and xarray "accessors" permitting to apply any JAX/Haiku module on `DataFrame`,
   `Series`, `Dataset`, `DataArray` data containers.
 
 - Ready-to-use exponential moving average, variance and covariance filters.
@@ -80,8 +82,8 @@ For now, WAX-ML contains:
   - for pandas/xarray users: with drop-in replacement of pandas `ewm` accessor.
 
 - Building blocks for designing of feedback loops in reinforcement learning.  We provide
-  a Haiku module called `GymFeedback` that allows the implementation of a "gym feedback
-  loops" (see [Gym documentation](https://gym.openai.com/)).
+  a Haiku module called `GymFeedback` that allows the implementation of a Gym feedback
+  loops (see [Gym documentation](https://gym.openai.com/)).
 
 - universal functions: we use [EagerPy](https://github.com/jonasrauber/eagerpy) to
   implement "universal" modules that can work with
@@ -102,9 +104,9 @@ transformations or "programs" in a functional programming approach.
 
 If you already deal with time series and are a pandas or xarray user, but you want to
 use the impressive tools of the JAX ecosystem, then WAX-ML might be the right tool for you,
-as it implements xarray and pandas accessors to apply JAX functions.
+as it implements pandas and xarray accessors to apply JAX functions.
 
-If you are already a fan and/or user of JAX, you may be interested in adding WAX-ML to your
+If you are already a user of JAX, you may be interested in adding WAX-ML to your
 toolbox to address time series problems.
 
 ## Design
@@ -283,7 +285,7 @@ mechanism for lower frequencies or a buffering mechanism for higher frequencies.
 
 We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
 This mechanism works on in-memory data.  We perform a first pass on the data,
-without actually accessing to it, with the goal to determine the indices necessary to
+without actually accessing to it, and determine the indices necessary to
 later acces to the data. Doing so we are vigilant to not let any "future"
 information pass through and thus guaranty a data processing that respects causality.
 

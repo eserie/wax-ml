@@ -2,7 +2,7 @@
 <img src="https://github.com/eserie/wax-ml/blob/main/docs/_static/wax_logo.png" alt="logo" width="40%"></img>
 </div>
 
-# WAX: Machine learning for streaming data
+# WAX-ML: Machine learning for streaming data
 ![Continuous integration](https://github.com/eserie/wax-ml/actions/workflows/main.yml/badge.svg)
 ![PyPI version](https://img.shields.io/pypi/v/wax-ml)
 [![Documentation Status](https://readthedocs.org/projects/wax-ml/badge/?version=latest)](https://wax-ml.readthedocs.io/en/latest/)
@@ -13,28 +13,28 @@
 | [**Reference docs**](https://wax-ml.readthedocs.io/en/latest/)
 
 🌊 Wax is what you put on a surfboard to avoid slipping.  It is an essential tool to go
-surfing.  Similarly, WAX strives to be an essential tool for doing machine learning on
+surfing.  Similarly, WAX-ML strives to be an essential tool for doing machine learning on
 streaming data!  🌊
 
-WAX is a research oriented [python](https://www.python.org/) library which provides
+WAX-ML is a research oriented [python](https://www.python.org/) library which provides
 tools to design powerful machine learning algorithms working on streaming data.
 
 It strives to complement [JAX](https://jax.readthedocs.io/en/latest/) with tools
 dedicated to time-series.
 
-WAX aims to make JAX-based programs easier to use for end users working with [Pandas](https://pandas.pydata.org/) and [Xarray](http://xarray.pydata.org/en/stable/).
+WAX-ML aims to make JAX-based programs easier to use for end users working with [Pandas](https://pandas.pydata.org/) and [Xarray](http://xarray.pydata.org/en/stable/).
 
 ## Goal
 
-WAX's goal is to expose "traditional" algorithms that are often difficult to find in
+WAX-ML's goal is to expose "traditional" algorithms that are often difficult to find in
 standard python ecosystem and are related to time-series and more generally to streaming
 data.
 
-WAX wants to make easy to work with algorithms from very various computational domains
+WAX-ML wants to make easy to work with algorithms from very various computational domains
 such as machine learning, online learning, reinforcement learning, optimal control,
 time-series analysis, optimization, statistical modeling.
 
-For now, WAX focuses on **time series** algorithms as this is one of the areas of
+For now, WAX-ML focuses on **time series** algorithms as this is one of the areas of
 machine learning that lacks the most dedicated tools.  Working with time series is
 notoriously known to be difficult and often requires very specific algorithms
 (statistical modeling, filtering, optimal control).
@@ -45,22 +45,22 @@ problems require to keep using more traditional algorithms such as linear and no
 filters, FFT, the eigen-decomposition of matrices, Riccati solvers for optimal control
 and filtering...
 
-By adopting a "no-framework" approach WAX aim to be an efficient tool to combine modern
+By adopting a "no-framework" approach WAX-ML aim to be an efficient tool to combine modern
 machine learning approaches with more traditional ones.
 
 Some recent work have been made in this directions, for instance see [2].
 
-WAX may also be useful for developing research ideas in areas such as *online machine
+WAX-ML may also be useful for developing research ideas in areas such as *online machine
 learning* (see [1]).
 
-## What is WAX?
+## What is WAX-ML?
 
-Well, WAX has some pretty ambitious design and implementation goals.
+Well, WAX-ML has some pretty ambitious design and implementation goals.
 
 To do things right, we decided to start small and in an open-source design from the
 beginning.
 
-For now, WAX contains:
+For now, WAX-ML contains:
 
 - transformation tools that we call "unroll" transformations allowing to apply any
   transformation, possibly statefull, on sequential data.  It generalizes the RNN
@@ -98,26 +98,26 @@ differentiation, vectorization and parallelization.  It allows to build higher l
 transformations or "programs" in a functional programming approach.
 
 
-## Why to use WAX?
+## Why to use WAX-ML?
 
 If you already deal with time series and are a pandas or xarray user, but you want to
-use the impressive tools of the JAX ecosystem, then WAX might be the right tool for you,
+use the impressive tools of the JAX ecosystem, then WAX-ML might be the right tool for you,
 as it implements xarray and pandas accessors to apply JAX functions.
 
-If you are already a fan and/or user of JAX, you may be interested in adding WAX to your
+If you are already a fan and/or user of JAX, you may be interested in adding WAX-ML to your
 toolbox to address time series problems.
 
 ## Design
 
-WAX is research oriented library.  It relies on
+WAX-ML is research oriented library.  It relies on
 [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html) and
 [Haiku](https://github.com/deepmind/dm-haiku) functional programing paradigm to ease the
 development of research ideas.
 
-WAX is a bit like [Flux](https://fluxml.ai/Flux.jl/stable/)
+WAX-ML is a bit like [Flux](https://fluxml.ai/Flux.jl/stable/)
 in [Julia](https://julialang.org/) programming language.
 
-WAX is not a framework but either a set of tools which aim to complement [JAX
+WAX-ML is not a framework but either a set of tools which aim to complement [JAX
 Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
 
 # Contents
@@ -131,7 +131,7 @@ Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
 * [Development](#development)
 * [References](#references)
 * [License](#license)
-* [Citing WAX](#citing-wax)
+* [Citing WAX-ML](#citing-wax)
 * [Reference documentation](#reference-documentation)
 
 
@@ -156,9 +156,9 @@ Here are some starter notebooks:
 
 ## 🌊 Streaming Data 🌊
 
-WAX may complement JAX ecosystem by adding support for **streaming data**.
+WAX-ML may complement JAX ecosystem by adding support for **streaming data**.
 
-To do this, WAX implements a unique **data tracing** mechanism that prepares for fast
+To do this, WAX-ML implements a unique **data tracing** mechanism that prepares for fast
 access to in-memory data and allows the execution of JAX tractable functions such as
 `jit`, `grad`, `vmap`, or `pmap`.
 
@@ -173,24 +173,24 @@ The `wax.stream.Stream` object works on in-memory data stored in
 
 To work with "real" streaming data, it should be possible to implement a buffer
 mechanism running on any python generator and to use the synchronization and data
-tracing mechanisms implemented in WAX to apply JAX transformations on batches of data
+tracing mechanisms implemented in WAX-ML to apply JAX transformations on batches of data
 stored in memory. (See our WEP4 enhancement proposal)
 
 ## ⌛ Adding support for time dtypes in JAX ⌛
 
 At the moment `datetime64`and `string_` dtypes are not supported in JAX.
 
-WAX add support for `datetime64` and `string_` numpy dtypes in JAX.
-To do so, WAX implements:
+WAX-ML add support for `datetime64` and `string_` numpy dtypes in JAX.
+To do so, WAX-ML implements:
 - an encoding scheme for `datetime64` relying on pairs of 32-bit integers similar to `PRNGKey` in JAX.
 - an encoding scheme for `string_` relying on `LabelEncoder` of [scikit-learn](https://scikit-learn.org/stable/).
 
-Since JAX does not currently support the `datetime64` and `string_` dtypes, this WAX
+Since JAX does not currently support the `datetime64` and `string_` dtypes, this WAX-ML
 encoding scheme allows easily use JAX algorithms on data with these dtypes.
 
-Currently, the types of temporal representations supported by WAX are quite limited, we
+Currently, the types of temporal representations supported by WAX-ML are quite limited, we
 should collaborate with the pandas, xarray and [Astropy](https://www.astropy.org/) teams
-to further develop time manipulation tools in WAX. (see "WEP1" in `WEP.md`).
+to further develop time manipulation tools in WAX-ML. (see "WEP1" in `WEP.md`).
 
 ## pandas and xarray accessors
 
@@ -215,7 +215,7 @@ Then run the "one-liner" syntax:
 We have some Haiku modules ready to be used in `wax.modules` (see our [api
 documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
 
-For now, WAX offer direct access to some modules through specific accessors for xarray
+For now, WAX-ML offer direct access to some modules through specific accessors for xarray
 and pandas.
 
 For instance, you can see our implementation of the "exponential moving average".  This
@@ -235,7 +235,7 @@ Pandas ewma:
 air_temp_ewma = dataframe.ewm(alpha=1.0 / 10.0).mean()
 ```
 
-WAX ewma:
+WAX-ML ewma:
 ```python
 air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 ```
@@ -243,7 +243,7 @@ air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 
 ### Apply a custom function to a Dataset
 
-Now let's illustrate how WAX accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
+Now let's illustrate how WAX-ML accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
 
 ```{code-cell} ipython3
 from wax.modules import EWMA
@@ -276,9 +276,9 @@ page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details.
 In WAX-ML we strive to follow their recommendations and implement a synchronization
 mechanism between different data streams. Using the terminology of Henri Poincaré (see
 link above) we introduce the notion of "local time" to unravel the main stream in which
-the user wants to apply transformations. We call the other streams "secondary streams". 
-They can work at different frequencies, lower or higher.  The data from these secondary 
-streams will be represented in the "local time" either with the use of a forward filling 
+the user wants to apply transformations. We call the other streams "secondary streams".
+They can work at different frequencies, lower or higher.  The data from these secondary
+streams will be represented in the "local time" either with the use of a forward filling
 mechanism for lower frequencies or a buffering mechanism for higher frequencies.
 
 We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
@@ -288,7 +288,7 @@ later acces to the data. Doing so we are vigilant to not let any "future"
 information pass through and thus guaranty a data processing that respects causality.
 
 The buffering mechanism used in the case of higher frequencies, works with a fixed
-buffer size (see the WAX module
+buffer size (see the WAX-ML module
 [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))
 which allows us to use JAX / XLA optimizations and have efficient processing.
 
@@ -340,7 +340,7 @@ see how you can use our "3-step workflow" to speed things up!
 
 # 🔥 Speed 🔥
 
-With WAX, you can already compute an exponential moving average on a 1 millions rows
+With WAX-ML, you can already compute an exponential moving average on a 1 millions rows
 dataframe with a 2x to 130x speedup (depending of the datacontainer you use) compared to
 pandas implementation.  (See our notebook in the
 [Quick Start Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html)
@@ -348,18 +348,18 @@ or in
 [Colaboratory](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
 ).
 
-WAX algorithms are implemented in JAX, so they are fast!
+WAX-ML algorithms are implemented in JAX, so they are fast!
 
 The use of JAX allows for algorithm implementations that can be run in a highly
 optimized manner on various processing units such as the CPU, GPU and TPU.
 
-WAX does not want to reinvent the wheel by reimplementing every algorithm.  We want
+WAX-ML does not want to reinvent the wheel by reimplementing every algorithm.  We want
 existing machine learning libraries to work well together while trying to leverage their
 strength.
 
 # ⚒ Implementation ⚒
 
-Currently, WAX uses
+Currently, WAX-ML uses
 [the Haiku module API](https://dm-haiku.readthedocs.io/en/latest/api.html#modules-parameters-and-state)
 and
 [Haiku transformation functions](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku-transforms)
@@ -369,12 +369,12 @@ Haiku's module API integrates well with the functional paradigm of JAX and makes
 to develop "mini-languages" tailored to specific scientific domains.
 
 ** [Flax](https://github.com/google/flax)
-also has a module API. We should consider using it in WAX too!
+also has a module API. We should consider using it in WAX-ML too!
 
 
 ## Universal functions
 
-WAX uses [eagerpy](https://github.com/jonasrauber/eagerpy) to efficiently mix different
+WAX-ML uses [eagerpy](https://github.com/jonasrauber/eagerpy) to efficiently mix different
 types of tensors and develop high level APIs to work with
 e.g. [numpy](https://numpy.org/), [pandas](https://pandas.pydata.org/),
 [xarray](http://xarray.pydata.org/en/stable/).
@@ -390,23 +390,23 @@ wax.universal.modules.ewma.py
 wax.universal.modules.ewma_test.py
 ```
 
-For now, the core algorithms in WAX are only implemented in JAX in order to "stay
+For now, the core algorithms in WAX-ML are only implemented in JAX in order to "stay
 focused".  But if there is interest in implementing universal algorithms, more work
 could be done from this simple example.
 
-Currently, WAX uses an unpublished
+Currently, WAX-ML uses an unpublished
 [fork of eagerpy](https://github.com/eserie/eagerpy/tree/dev).  We have opened some pull requests
 in eagerpy that should allow us to go to the official eagerpy library as soon as they
 are accepted.
 
 ## Gym Feedback
 
-Wax implements **feedback loops** which are very natural when working with time series.
+WAX-ML implements **feedback loops** which are very natural when working with time series.
 
 For now, we only implement Gym feedback between an *agent* and an *environment* exposed in
 the JAX / Haiku functional API.
 
-WAX implements a `GymFeedback` module which is built from an agent and an environment:
+WAX-ML implements a `GymFeedback` module which is built from an agent and an environment:
 - An *agent* is a module with an `observation` input and an `action` output.
 - An *environment* is a module with a pair `(action, raw observation)` as input
   and a pair `(reward, observation)` as output.
@@ -422,26 +422,26 @@ following the Gym API for *agents* and *environments* implemented in
 [deluca](https://scikit-learn.org/stable/).  These wrappers are in the `wax.gym`
 package.
 
-WAX implements *callbacks* in the `wax.gym` package.  The callback API was inspired by
+WAX-ML implements *callbacks* in the `wax.gym` package.  The callback API was inspired by
 the one in the one in [dask](https://github.com/dask/dask).
 
-We would like to collaborate with the deluca team to develop this part of WAX.
+We would like to collaborate with the deluca team to develop this part of WAX-ML.
 
 The JAX ecosystem already has a library dedicated to reinforcement learning:
-[RLax](https://github.com/deepmind/rlax).  What is done in WAX could be transferred to
+[RLax](https://github.com/deepmind/rlax).  What is done in WAX-ML could be transferred to
 it.
 
 # Future plans
 
 ## Feedback loops and Control Toolbox
 
-We would like to implement other types of feedback loops in WAX.
+We would like to implement other types of feedback loops in WAX-ML.
 For instance, see:
 [python-control](https://github.com/python-control/python-control),
 [Slycot](https://github.com/python-control/Slycot).
 
 Many algorithms in this space are absent from the python ecosystem.  If they are not
-implemented in other libraries, WAX aims to implement them via JAX and expose them with
+implemented in other libraries, WAX-ML aims to implement them via JAX and expose them with
 a simple API.
 
 
@@ -462,7 +462,7 @@ Why didn't the Kalman filter find its place in these libraries?  Because they ha
 object oriented API (which is very good!)  offering them specific APIs very well adapted
 to specific problems of modern machine learning.
 
-The functional approach of WAX, inherited from JAX, could well help to integrate a
+The functional approach of WAX-ML, inherited from JAX, could well help to integrate a
 Kalman filter implementation in a machine learning ecosystem.  (See WEP5 for the
 integration plan)
 
@@ -507,20 +507,20 @@ The machine learning libraries [scikit-learn](https://scikit-learn.org/stable/),
 learning algorithms that should provide an excellent basis for linking or reimplementing
 in JAX.
 
-WAX could be the place where we reimplement some of these algorithms to work with the
+WAX-ML could be the place where we reimplement some of these algorithms to work with the
 JAX ecosystem.
 
 
 ## Other APIS
 
-As it did for the Gym API, WAX could add support for other high-level OO APIs like
+As it did for the Gym API, WAX-ML could add support for other high-level OO APIs like
 Keras, scikit-learn, river ...
 
 
 ## Collaborations
 
-The WAX team is open to discussion and collaboration with contributors from any field
-who interested in using WAX for their problems on streaming data.  We are looking for
+The WAX-ML team is open to discussion and collaboration with contributors from any field
+who interested in using WAX-ML for their problems on streaming data.  We are looking for
 use cases around data streaming in audio processing, natural language processing,
 astrophysics, biology, engineering ...
 
@@ -529,14 +529,14 @@ practical use cases and that the more diversified these use cases are, the more 
 developed functionalities will be guaranteed to be well implemented.
 
 We expect interactions with the projects cited in this README.  Do not hesitate to
-contact us if you think your project can have fruitful interactions with WAX.
+contact us if you think your project can have fruitful interactions with WAX-ML.
 
-By making this software public, we hope to find enthusiasts who aim to develop WAX
+By making this software public, we hope to find enthusiasts who aim to develop WAX-ML
 further!
 
 # Installation
 
-For now, WAX can only be installed from sources:
+For now, WAX-ML can only be installed from sources:
 
 ```bash
 pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
@@ -544,18 +544,18 @@ pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
 
 # Disclaimer
 
-WAX is in its early stages of development and its features and API are very likely to
+WAX-ML is in its early stages of development and its features and API are very likely to
 evolve.
 
 
 # Development
 
-You can contribute to WAX by asking questions, proposing practical use cases or by
+You can contribute to WAX-ML by asking questions, proposing practical use cases or by
 contributing to the code or the documentation.  You can have a look at our [Contributing
 Guidelines](https://github.com/eserie/wax-ml/CONTRIBUTING.md) and [Developer
 Documentation](https://wax-ml.readthedocs.io/en/latest/developer.html) .
 
-We maintain a "WAX Enhancement Proposals" in
+We maintain a "WAX-ML Enhancement Proposals" in
 [WEP.md](https://github.com/eserie/wax-ml/WEP.md) file.
 
 
@@ -569,7 +569,7 @@ We maintain a "WAX Enhancement Proposals" in
 # License
 
 ```
-Copyright 2021 The Wax Authors
+Copyright 2021 The WAX-ML Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -584,7 +584,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-WAX bundles portions of astropy, dask, deluca, jax, xarray.
+WAX-ML bundles portions of astropy, dask, deluca, jax, xarray.
 
 dask, astropy are available under a "3-clause BSD" license:
 - dask: `wax/gym/callbacks/callbacks.py`
@@ -598,14 +598,14 @@ deluca, jax and xarray are  available under a "Apache" license:
 The full text of these `licenses` are included in the licenses directory.
 
 
-## Citing WAX
+## Citing WAX-ML
 
 To cite this repository:
 
 ```
 @software{wax-ml2021github,
   author = {Emmanuel Sérié},
-  title = {{WAX}: A {P}ython library for machine-learning on streaming data based on JAX},
+  title = {{WAX-ML}: A {P}ython library for machine-learning on streaming data},
   url = {http://github.com/eserie/wax-ml},
   version = {0.0.2},
   year = {2021},
@@ -614,5 +614,5 @@ To cite this repository:
 
 ## Reference documentation
 
-For details about the WAX API, see the
+For details about the WAX-ML API, see the
 [reference documentation](https://wax-ml.readthedocs.io/en/latest/).

@@ -25,9 +25,9 @@ kernelspec:
 +++
 
 It is already very useful to be able to execute a JAX function on a dataframe in a single work step
-and with a single command line thanks to WAX accessors.
+and with a single command line thanks to WAX-ML accessors.
 
-The 1-step WAX's stream API works like that:
+The 1-step WAX-ML's stream API works like that:
 ```python
 .stream(...).apply(...)
 ```
@@ -46,7 +46,7 @@ It is actually very useful to iterate on step (2), the "calculation step" when
 you are doing research.
 You can then take full advantage of the JAX primitives, especially the `jit` primitive.
 
-Let's illustrate how to reimplement WAX EWMA yourself with the WAX 3-step workflow.
+Let's illustrate how to reimplement WAX-ML EWMA yourself with the WAX-ML 3-step workflow.
 
 +++
 
@@ -105,7 +105,7 @@ dataframe = pd.DataFrame(
 df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 ```
 
-### WAX EWMA
+### WAX-ML EWMA
 
 ```{code-cell} ipython3
 :tags: []
@@ -118,7 +118,7 @@ It's a little faster, but not that much faster...
 
 +++
 
-### WAX EWMA (without format step)
+### WAX-ML EWMA (without format step)
 
 +++
 
@@ -139,7 +139,7 @@ See WEP3 for a proposal to improve the formatting step.
 
 ### Generate data (in dataset format)
 
-WAX `Sream` object works on datasets to we'll move form dataframe to datasets.
+WAX-ML `Sream` object works on datasets to we'll move form dataframe to datasets.
 
 ```{code-cell} ipython3
 dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
@@ -147,7 +147,7 @@ dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
 
 ## Step (1) (synchronize | data tracing | encode)
 
-In this step,  WAX do:
+In this step,  WAX-ML do:
 - "data tracing" : prepare the indices for fast access tin the JAX function `access_data`
 - synchronize streams if there is multiple ones.
   This functionality have options : `freq`, `ffills`

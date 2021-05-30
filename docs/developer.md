@@ -1,6 +1,6 @@
 # Installing `wax`
 
-First, obtain the WAX source code:
+First, obtain the WAX-ML source code:
 
 ```
 git clone https://github.com/eserie/wax-ml
@@ -12,7 +12,7 @@ You can install `wax` by running:
 pip install -e .[complete]  # install wax
 ```
 
-To upgrade to the latest version from GitHub, just run `git pull` from the WAX
+To upgrade to the latest version from GitHub, just run `git pull` from the WAX-ML
 repository root. You shouldn't have to reinstall `wax` because `pip install -e`
 sets up symbolic links from site-packages into the repository.
 
@@ -23,7 +23,7 @@ pip install -e .[dev]  # install wax-development-tools
 
 # Running the tests
 
-To run all the WAX tests, we recommend using `pytest-xdist`, which can run tests in
+To run all the WAX-ML tests, we recommend using `pytest-xdist`, which can run tests in
 parallel. First, install `pytest-xdist` and `pytest-benchmark` by running
 `ip install -r build/test-requirements.txt`.
 Then, from the repository root directory run:
@@ -59,7 +59,7 @@ make mypy
 # Flake8
 
 We use `flake8` to check that the code follow the pep8 standard.
-To check the code, you can run 
+To check the code, you can run
 ```
 make flake8
 ```
@@ -68,7 +68,7 @@ make flake8
 
 We use `isort` and `black` to format the code.
 
-When you are in the root directory of the project, 
+When you are in the root directory of the project,
 to format code in the package, you can run:
 
 ```bash
@@ -169,7 +169,7 @@ make sync
 ```
 
 Alternatively, you can run this command via the [pre-commit](https://pre-commit.com/)
-framework by executing the following in the main WAX directory:
+framework by executing the following in the main WAX-ML directory:
 
 ```bash
 pre-commit run --all
@@ -204,10 +204,10 @@ See `exclude_patterns` in [conf.py](https://github.com/eserie/wax-ml/blob/master
 
 ## Documentation building on readthedocs.io
 
-WAX's auto-generated documentations is at <https://wax-ml.readthedocs.io/>.
+WAX-ML's auto-generated documentations is at <https://wax-ml.readthedocs.io/>.
 
 The documentation building is controlled for the entire project by the
-[readthedocs WAX settings](https://readthedocs.org/dashboard/wax-ml). The current settings
+[readthedocs WAX-ML settings](https://readthedocs.org/dashboard/wax-ml). The current settings
 trigger a documentation build as soon as code is pushed to the GitHub `main` branch.
 For each code version, the building process is driven by the
 `.readthedocs.yml` and the `docs/conf.py` configuration files.

@@ -1,5 +1,5 @@
 Welcome to WAX-ML
-==============
+=================
 
 WAX-ML is a library for machine-learning on streaming data.
 

@@ -15,8 +15,8 @@ kernelspec:
 
 ```{code-cell} ipython3
 # Uncomment to run the notebook in Colab
-# ! pip install "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# ! pip install --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
+# ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
 ```{code-cell} ipython3
@@ -93,7 +93,7 @@ register_wax_accessors()
 ```{code-cell} ipython3
 :tags: [parameters]
 
-T = 1.0e6
+T = 1.0e5
 N = 1000
 ```
 
@@ -142,6 +142,16 @@ Let's disable the final formatting step (the output is now in raw JAX format):
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
 ```
 
+```{code-cell} ipython3
+type(df_ewma_wax_no_format)
+```
+
+Let's check the device on which the calculation was performed (if you have GPU available, this should be `GpuDevice` otherwise it will be `CpuDevice`):
+
+```{code-cell} ipython3
+df_ewma_wax_no_format.device()
+```
+
 That's better! In fact (see below)
 there is a performance problem in the final formatting step.
 See WEP3 for a proposal to improve the formatting step.
@@ -150,7 +160,8 @@ See WEP3 for a proposal to improve the formatting step.
 
 ### Generate data (in dataset format)
 
-WAX-ML `Sream` object works on datasets to we'll move form dataframe to datasets.
+WAX-ML `Sream` object works on datasets.
+So let's transform the `DataFrame` into a xarray `Dataset`:
 
 ```{code-cell} ipython3
 dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
@@ -171,6 +182,19 @@ In this step,  WAX-ML do:
 stream = dataframe.wax.stream()
 np_data, np_index, xs = stream.trace_dataset(dataset)
 jnp_data, jnp_index, jxs = convert_to_tensors((np_data, np_index, xs), "jax")
+```
+
+```{code-cell} ipython3
+from jax.tree_util import tree_leaves, tree_map
+```
+
+```{code-cell} ipython3
+# We explicitly set data on CPUs (the is not needed if you only have CPUs)
+cpus = jax.devices("cpu")
+jnp_data, jnp_index, jxs = tree_map(
+    lambda x: jax.device_put(x, cpus[0]), (jnp_data, jnp_index, jxs)
+)
+print("data copied to CPU device.")
 ```
 
 We have now "JAX-ready" data for later fast access.
@@ -205,6 +229,10 @@ rng = next(hk.PRNGSequence(42))
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 ```
 
+```{code-cell} ipython3
+outputs.device()
+```
+
 Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 
 ```{code-cell} ipython3
@@ -224,10 +252,7 @@ This is 3x faster than pandas implementation!
 (The 3x factor is obtained by measuring the execution with %timeit.
 We don't know why, but when executing a code cell once at a time, then the execution time can vary a lot and we can observe some executions with a speed-up of 100x).
 
-```{code-cell} ipython3
-53.3 * 1000 / 367
-53.3 / 15.9
-```
++++
 
 ## Step(3) (format)
 Let's come back to pandas/xarray:
@@ -252,14 +277,6 @@ It's quite slow (see WEP3 enhancement proposal).
 +++
 
 Let's look with execution on GPU
-
-```{code-cell} ipython3
-from jax.tree_util import tree_leaves, tree_map
-```
-
-```{code-cell} ipython3
-cpus = jax.devices("cpu")
-```
 
 ```{code-cell} ipython3
 try:
@@ -312,6 +329,10 @@ if GPU_AVAILABLE:
 
     rng = next(hk.PRNGSequence(42))
     outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+```
+
+```{code-cell} ipython3
+outputs.device()
 ```
 
 ```{code-cell} ipython3

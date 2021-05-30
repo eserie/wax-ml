@@ -15,7 +15,18 @@ kernelspec:
 
 ```{code-cell} ipython3
 # Uncomment to run the notebook in Colab
-# ! pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+# ! pip install "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
+# ! pip install --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+```
+
+```{code-cell} ipython3
+# check available devices
+import jax
+```
+
+```{code-cell} ipython3
+print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+jax.devices()
 ```
 
 # 🎛 The 3-steps workflow 🎛
@@ -29,7 +40,7 @@ and with a single command line thanks to WAX-ML accessors.
 
 The 1-step WAX-ML's stream API works like that:
 ```python
-.stream(...).apply(...)
+<data-container>.stream(...).apply(...)
 ```
 
 But this is not optimal because, under the hood, there are mainly three costly steps:
@@ -191,7 +202,7 @@ def transform_dataset(step):
 
 
 rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
+outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 ```
 
 Once it has been compiled and "traced" by JAX, the function is much faster to execute:
@@ -200,12 +211,23 @@ Once it has been compiled and "traced" by JAX, the function is much faster to ex
 :tags: []
 
 %%timeit
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, xs)
+outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 ```
 
-This is between 10x and 40x faster (time may vary) and 130 x faster than pandas implementation!
+```{code-cell} ipython3
+%%time
+outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+```
 
-+++
+This is 3x faster than pandas implementation!
+
+(The 3x factor is obtained by measuring the execution with %timeit.
+We don't know why, but when executing a code cell once at a time, then the execution time can vary a lot and we can observe some executions with a speed-up of 100x).
+
+```{code-cell} ipython3
+53.3 * 1000 / 367
+53.3 / 15.9
+```
 
 ## Step(3) (format)
 Let's come back to pandas/xarray:
@@ -218,3 +240,82 @@ y = format_dataframe(
 ```
 
 It's quite slow (see WEP3 enhancement proposal).
+
++++
+
+## GPU execution
+
++++
+
+## GPU execution
+
++++
+
+Let's look with execution on GPU
+
+```{code-cell} ipython3
+from jax.tree_util import tree_leaves, tree_map
+```
+
+```{code-cell} ipython3
+cpus = jax.devices("cpu")
+```
+
+```{code-cell} ipython3
+try:
+    gpus = jax.devices("gpu")
+    jnp_data, jnp_index, jxs = tree_map(
+        lambda x: jax.device_put(x, gpus[0]), (jnp_data, jnp_index, jxs)
+    )
+    print("data copied to GPU device.")
+    GPU_AVAILABLE = True
+except RuntimeError as err:
+    print(err)
+    GPU_AVAILABLE = False
+```
+
+Let's check that our data is on the GPUs:
+
+```{code-cell} ipython3
+tree_leaves(jnp_data)[0].device()
+```
+
+```{code-cell} ipython3
+tree_leaves(jnp_index)[0].device()
+```
+
+```{code-cell} ipython3
+jxs.device()
+```
+
+```{code-cell} ipython3
+%%time
+if GPU_AVAILABLE:
+    rng = next(hk.PRNGSequence(42))
+    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+```
+
+Let's redefine our function `transform_dataset` by explicitly specify to `jax.jit` the `device` option.
+
+```{code-cell} ipython3
+%%time
+if GPU_AVAILABLE:
+
+    @hk.transform_with_state
+    def transform_dataset(step):
+        dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
+        return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
+
+    transform_dataset = type(transform_dataset)(
+        transform_dataset.init, jax.jit(transform_dataset.apply, device=gpus[0])
+    )
+
+    rng = next(hk.PRNGSequence(42))
+    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+```
+
+```{code-cell} ipython3
+%%timeit
+if GPU_AVAILABLE:
+    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+```

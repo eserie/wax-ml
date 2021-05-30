@@ -353,7 +353,8 @@ see how you can use our "3-step workflow" to speed things up!
 # 🔥 Speed 🔥
 
 With WAX-ML, you can already compute an exponential moving average on a 1 millions rows
-dataframe with a 2x to 130x speedup (depending of the datacontainer you use) compared to
+dataframe with a 3x to 100x speedup
+(depending of the data container you use and speed measurement methodology) compared to
 pandas implementation.  (See our notebook in the
 [Quick Start Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html)
 or in
@@ -596,14 +597,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-WAX-ML bundles portions of astropy, dask, deluca, jax, xarray.
+WAX-ML bundles portions of astropy, dask, deluca, haiku, jax, xarray.
 
 dask, astropy are available under a "3-clause BSD" license:
 - dask: `wax/gym/callbacks/callbacks.py`
 - astropy: `CONTRIBUTING.md`
 
-deluca, jax and xarray are  available under a "Apache" license:
+deluca, haiku, jax and xarray are  available under a "Apache" license:
 - deluca: `wax/gym/entity.py`
+- haiku: `docs/notebooks/05_reconstructing_the_light_curve_of_stars.*`
 - jax: `docs/conf.py`, `docs/developer.md`
 - xarray: `wax/datasets/generate_temperature_data.py`
 

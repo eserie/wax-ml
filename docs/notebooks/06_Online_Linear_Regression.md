@@ -1,5 +1,6 @@
 ---
 jupytext:
+  encoding: '# -*- coding: utf-8 -*-'
   formats: ipynb,py,md:myst
   text_representation:
     extension: .md
@@ -28,7 +29,7 @@ print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
 jax.devices()
 ```
 
-# Online Linear Regression
+# 🦎 Online linear regression with a non-stationary environment 🦎
 
 +++
 
@@ -243,7 +244,7 @@ We have sub-linear regret!
 
 +++
 
-#  Online learning with Gym
+##  Online learning with Gym
 
 Now we will recast the online linear regression learning task as a reinforcement learning task
 implemented with the `GymFeedback` module of WAX-ML.
@@ -477,4 +478,4 @@ It clearly adapt!
 
 The regret first converges, then jumps at the step 2000 and finally readjusts to the new regime.
 
-We see that the weights take the correct values in both regimes.
+We see that the weights converge to the correct values in both regimes.

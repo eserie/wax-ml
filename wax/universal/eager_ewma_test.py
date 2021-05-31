@@ -21,10 +21,10 @@ from eagerpy import convert_to_tensors
 
 from wax.universal.eager_ewma import (
     EagerEWMA,
-    dynamic_unroll,
-    dynamic_unroll_fori_loop,
+    dynamic_unroll_fori_loop_universal,
     dynamic_unroll_tf,
-    static_unroll,
+    dynamic_unroll_universal,
+    static_unroll_universal,
 )
 
 
@@ -77,7 +77,7 @@ def test_run_ema_vs_pandas_not_adjust():
     def model(x):
         return EagerEWMA(jnp.array(0.1), adjust=False)(x)
 
-    ema, state = static_unroll(model, x, rng=key)
+    ema, state = static_unroll_universal(model, None, None, key, False, x)
 
     pandas_ema = pd.DataFrame(x).ewm(alpha=jnp.array(0.1), adjust=False).mean()
 
@@ -97,9 +97,9 @@ def test_dynamic_unroll_fori_loop():
     def model(x):
         return EagerEWMA(jnp.array(0.1), adjust=True)(x)
 
-    ema, state = static_unroll(model, x, rng=key)
+    ema, state = static_unroll_universal(model, None, None, key, False, x)
 
-    ema2, state2 = dynamic_unroll_fori_loop(model, x, key)
+    ema2, state2 = dynamic_unroll_fori_loop_universal(model, None, None, key, False, x)
 
     assert jnp.allclose(ema, ema2)
 
@@ -117,9 +117,9 @@ def test_dynamic_unroll():
     def model(x):
         return EagerEWMA(jnp.array(0.1), adjust=True)(x)
 
-    ema, state = static_unroll(model, x, rng=key)
+    ema, state = static_unroll_universal(model, None, None, key, False, x)
 
-    ema2, state2 = dynamic_unroll(model, x, key)
+    ema2, state2 = dynamic_unroll_universal(model, None, None, key, False, x)
 
     assert jnp.allclose(ema, ema2)
 
@@ -137,7 +137,7 @@ def test_run_ema_vs_pandas_adjust():
     def model(x):
         return EagerEWMA(jnp.array(0.1), adjust=True)(x)
 
-    ema, state = dynamic_unroll(model, x, key)
+    ema, state = dynamic_unroll_universal(model, None, None, key, False, x)
 
     pandas_ema = pd.DataFrame(x).ewm(alpha=jnp.array(0.1), adjust=True).mean()
     assert jnp.allclose(ema, pandas_ema.values)
@@ -156,7 +156,7 @@ def test_run_ema_vs_pandas_adjust_finite():
     def model(x):
         return EagerEWMA(jnp.array(0.1), adjust="linear")(x)
 
-    ema, state = dynamic_unroll(model, x, key)
+    ema, state = dynamic_unroll_universal(model, None, None, key, False, x)
 
     pandas_ema_adjust = pd.DataFrame(x).ewm(alpha=jnp.array(0.1), adjust=True).mean()
     pandas_ema_not_adjust = (
@@ -183,7 +183,7 @@ def test_backends(tensor_type):
     def model(x):
         return EagerEWMA(alpha, adjust=False)(x)
 
-    ema, state = static_unroll(model, x, rng=key)
+    ema, state = static_unroll_universal(model, None, None, key, False, x)
 
     pandas_ema = pd.DataFrame(ox).ewm(oalpha, adjust=False).mean()
     df = pd.concat(
@@ -208,7 +208,7 @@ def test_tf_optimized():
     def model(x):
         return EagerEWMA(jnp.array(alpha), adjust=False)(x)
 
-    ema, state = dynamic_unroll_tf(model, x, rng=key)
+    ema, state = dynamic_unroll_tf(model, None, None, key, False, x)
 
     pandas_ema = pd.DataFrame(ox).ewm(oalpha, adjust=False).mean()
     df = pd.concat(

@@ -61,7 +61,7 @@ def test_gym_module_gym_static_unroll():
 
     raw_generator = iter(raw_observations())
     seq = hk.PRNGSequence(42)
-    gym_output, state = gym_static_unroll(gym_fun, seq, raw_generator, skip_first=True)
+    gym_output, state = gym_static_unroll(gym_fun, None, None, seq, True, raw_generator)
 
     ref_gym_output = GymOutput(return_obs=True, return_action=True).format(
         reward=DeviceArray([2, 15, 54, 140, 300, 567, 980, 1584, 2430], dtype=int32),

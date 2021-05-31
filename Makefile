@@ -92,7 +92,7 @@ docs-fast:
 	sphinx-build -b html -D jupyter_execute_notebooks=off docs docs/_build/html
 
 .PHONY: env
-release:
+env:
 	virualenv venv
 
 .PHONY: release

@@ -13,7 +13,7 @@
 # limitations under the License.
 b"""## Callbacks
 
-We now develop a callbacks API in order to simplify as much as possible the main
+We now develop a callbacks API in order to simplify as much as possible the local
 training/simulation loop.
 
 It permits to implement all complex stuffs in separated code that we call callbacks.

@@ -19,6 +19,16 @@ kernelspec:
 # ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
+```{code-cell} ipython3
+# check available devices
+import jax
+```
+
+```{code-cell} ipython3
+print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+jax.devices()
+```
+
 # 〰 Compute exponential moving averages with xarray and pandas accessors 〰
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/01_demo_EWMA.ipynb)

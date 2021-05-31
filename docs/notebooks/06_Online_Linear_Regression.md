@@ -41,15 +41,16 @@ into an online learning problem thanks to the `OnlineSupervisedLearner` module.
 Then, in order to tackle a non-stationary linear regression problem (i.e. with a weight that can vary in time)
 we reformulate the problem into a reinforcement learning problem that we implement with the `GymFeedBack` module of WAX-ML.
 
-We then need to define an "agent" and an "environment" using simple functions or modules:
+We then need to define an "agent" and an "environment" using simple functions implemented with modules:
 - The agent is responsible for learning the weights of its internal linear model.
 - The environment is responsible for generating labels and evaluating the agent's reward metric.
 
 We experiment with a non-stationary environment that returns the sign of the linear regression parameters at a given time step,
 known only to the environment.
 
-We will see that doing this is very simple with the WAX-ML tools and that the functional workflow it adopts
-allows, each time we increase in complexity, to reuse the previously implemented transformations.
+This example shows that it is actually quite simple to implement this online-learning task with WAX-ML tools.
+In particular, the functional workflow adopted here allows to reuse the functions implemented for a
+task for each new task of increasing complexity,
 
 
 In this journey, we will use:
@@ -473,7 +474,7 @@ axs[1].set_title("Weight[0,0]")
 # plt.savefig("../_static/online_linear_regression_regret.png")
 ```
 
-It clearly adapt!
+It clearly adapts!
 
 
 The regret first converges, then jumps at the step 2000 and finally readjusts to the new regime.

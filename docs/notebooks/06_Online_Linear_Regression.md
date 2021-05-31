@@ -8,9 +8,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.11.1
 kernelspec:
-  display_name: wax-dev
+  display_name: Python 3
   language: python
-  name: wax-dev
+  name: python3
 ---
 
 ```{code-cell} ipython3

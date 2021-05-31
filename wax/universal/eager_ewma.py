@@ -11,18 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Universal Exponential moving average module.
+"""Universal Exponential moving average module and unroll implementations.
 """
 from collections import namedtuple
-from functools import partial
+from typing import Any, Tuple, cast
 
 import eagerpy as ep
 import haiku as hk
 import jax
+import jax.numpy as jnp
 import tensorflow as tf
 from eagerpy import eager_function
-from jax import tree_map
 from jax.lax import fori_loop
+from jax.tree_util import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from tqdm.auto import tqdm
 
 
@@ -82,42 +83,117 @@ class EagerEWMA(hk.Module):
 
 
 @eager_function
-def static_unroll(fun, x, rng=None, initial_state=None, pbar=True, compile=None):
-    rng = rng if rng is not None else next(hk.PRNGSequence(42))
+def static_unroll_universal(
+    fun: hk.TransformedWithState,
+    params: Any,
+    state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    pbar=True,
+    compile=None,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using static_scan implemented
+    in an universal way.
 
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if True, first value of the sequence is not used in apply.
+        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
+        pbar : if true, activate progress bar.
+        compile : if true, compile the the appropriate backend.
+    """
     fun = type(fun)(eager_function(fun.init), eager_function(fun.apply))
+
+    # init
+    xs = (args, kwargs)
+    x0 = tree_map(lambda x: x[0], xs)
+    fun_init_params, fun_init_state = fun.init(rng, *x0[0], **x0[1])
+    params = fun_init_params if params is None else params
+    state = fun_init_state if state is None else state
+    # apply
+    if skip_first:
+        xs = tree_map(lambda x: x[1:], xs)
+
     if compile == "jax":
         fun = type(fun)(fun.init, jax.jit(fun.apply))
     if compile == "tensorflow":
         fun = type(fun)(fun.init, tf.function(fun.apply))
 
-    params, fun_init_state = fun.init(rng, x[0])
-    initial_state = fun_init_state if initial_state is None else initial_state
+    xs, treedef = tree_flatten(xs)
+    T = len(xs[0])
 
-    T = len(x)
-    state = initial_state
-    output_sequence = []
+    output_template, _ = fun.apply(params, state, rng, *x0[0], **x0[1])
+    output_template, output_treedef = tree_flatten(output_template)
+    output_sequence: Tuple = tuple(map(lambda x: [], output_template))
 
-    seq = range(T)
+    steps = range(T)
     if pbar:
-        seq = tqdm(list(seq))
-    for i in seq:
-        outputs, state = fun.apply(params, state, rng, x[i])
-        output_sequence.append(outputs)
-    output_sequence = ep.stack(output_sequence)
+        steps = tqdm(list(steps))
+    for i in steps:
+        args_i, kwargs_i = tree_unflatten(
+            treedef, tuple(map(lambda x: cast(Tuple, x)[i], xs))
+        )
+        outputs, state = fun.apply(params, state, rng, *args_i, **kwargs_i)
+        outputs = tree_leaves(outputs)
+        for os, o in zip(output_sequence, outputs):
+            os.append(o)
+
+    @eager_function
+    def _stack(x):
+        return ep.stack(x)
+
+    output_sequence = tuple(map(lambda x: _stack(x), output_sequence))
+    output_sequence = tree_unflatten(output_treedef, output_sequence)
     return output_sequence, state
 
 
-@partial(jax.jit, static_argnums=(0,))
 @eager_function
-def dynamic_unroll_fori_loop(fun, x, rng=None, initial_state=None):
+def dynamic_unroll_fori_loop_universal(
+    fun: hk.TransformedWithState,
+    params: Any,
+    state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using fori_loop in an universal way.
+
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if true, first value of the sequence is not used in apply.
+        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
+    """
+
     LoopState = namedtuple("LoopState", "params, state, rng, x, output_sequence")
+    fun = type(fun)(eager_function(fun.init), eager_function(fun.apply))
+
+    # init
+    xs = (args, kwargs)
+    x0 = tree_map(lambda x: x[0], xs)
+    fun_init_params, fun_init_state = fun.init(rng, *x0[0], **x0[1])
+    params = fun_init_params if params is None else params
+    state = fun_init_state if state is None else state
+    # apply
+    if skip_first:
+        xs = tree_map(lambda x: x[1:], xs)
 
     @jax.jit
     def body_fun(i, loop_state):
         params, prev_state, rng, inputs, output_sequence = loop_state
+        args_i, kwargs_i = tree_map(lambda x: x[i], inputs)
         outputs, next_state = eager_function(fun.apply)(
-            params, prev_state, rng, inputs[i]
+            params, prev_state, rng, *args_i, **kwargs_i
         )
         output_sequence = ep.index_update(output_sequence, i, outputs)
         return LoopState(
@@ -128,15 +204,18 @@ def dynamic_unroll_fori_loop(fun, x, rng=None, initial_state=None):
             output_sequence,
         )
 
-    # Initialize loop
-    rng = rng if rng is not None else next(hk.PRNGSequence(42))
-    params, fun_init_state = eager_function(fun.init)(rng, x[0])
-    initial_state = fun_init_state if initial_state is None else initial_state
-    output_sequence = ep.full_like(x, ep.nan)
-    loop_state = LoopState(params, initial_state, rng, x, output_sequence)
+    output_template, _ = fun.apply(params, state, rng, *x0[0], **x0[1])
+    T = len(tree_flatten(xs)[0][0])
+
+    @eager_function
+    def _full_like_T_nan(x):
+        x = ep.stack([x] * T)
+        return ep.full_like(x, ep.nan)
+
+    output_sequence = tree_map(lambda x: _full_like_T_nan(x), output_template)
+    loop_state = LoopState(params, state, rng, xs, output_sequence)
 
     # run loop
-    T = len(x)
     loop_state = fori_loop(0, T, body_fun, loop_state)
 
     # format results
@@ -145,35 +224,65 @@ def dynamic_unroll_fori_loop(fun, x, rng=None, initial_state=None):
     return output_sequence, final_state
 
 
-@partial(jax.jit, static_argnums=(0,))
 @eager_function
-def dynamic_unroll(fun, x, rng=None, initial_state=None):
-    """Implementation with jax.lax.scan.
+def dynamic_unroll_universal(
+    fun: hk.TransformedWithState,
+    params: Any,
+    state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using jax.lax.scan.
+
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if true, first value of the sequence is not used in apply.
+        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
 
     We can use scan because the output mean is in the state!
 
     See : https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html
     """
-    rng = rng if rng is not None else next(hk.PRNGSequence(42))
+    fun = type(fun)(eager_function(fun.init), eager_function(fun.apply))
+
+    xs = (args, kwargs)
+    x0 = tree_map(lambda x: x[0], xs)
+    fun_init_params, fun_init_state = fun.init(rng, *x0[0], **x0[1])
+    params = fun_init_params if params is None else params
+    state = fun_init_state if state is None else state
+    if skip_first:
+        xs = tree_map(lambda x: x[1:], xs)
 
     def scan_f(prev_state, inputs):
-        outputs, next_state = eager_function(fun.apply)(params, prev_state, rng, inputs)
+        outputs, next_state = fun.apply(
+            params, prev_state, rng, *inputs[0], **inputs[1]
+        )
         return next_state, outputs
 
-    params, fun_init_state = eager_function(fun.init)(rng, x[0])
-    initial_state = fun_init_state if initial_state is None else initial_state
-    final_state, output_sequence = jax.lax.scan(scan_f, init=initial_state, xs=x)
+    final_state, output_sequence = jax.lax.scan(scan_f, init=state, xs=xs)
     return output_sequence, final_state
 
 
 @tf.function
 @tf.autograph.experimental.do_not_convert
-def dynamic_unroll_tf(fun, x, rng=None, initial_state=None):
-    """Implementation with jax.lax.scan.
+def dynamic_unroll_tf(fun, params, state, rng, skip_first, x):
+    """Unroll a TransformedWithState function using tensorflow
+    scan function.
 
-    We can use scan because the output mean is in the state!
-
-    See : https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if true, first value of the sequence is not used in apply.
+        x : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
     """
     rng = rng if rng is not None else next(hk.PRNGSequence(42))
 
@@ -182,10 +291,10 @@ def dynamic_unroll_tf(fun, x, rng=None, initial_state=None):
         return next_state
 
     params, fun_init_state = eager_function(fun.init)(rng, x[0])
-    initial_state = fun_init_state if initial_state is None else initial_state
+    state = fun_init_state if state is None else state
 
     assert not isinstance(x, tuple)
-    state_sequence = tf.scan(scan_f, x, initializer=initial_state)
+    state_sequence = tf.scan(scan_f, x, initializer=state)
 
     # TODO: find a more generic implementation
     output_sequence = state_sequence["eager_ewma"]["mean"]

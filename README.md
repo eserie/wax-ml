@@ -17,12 +17,13 @@ surfing.  Similarly, WAX-ML strives to be an essential tool for doing machine le
 streaming data!  🌊
 
 WAX-ML is a research oriented [python](https://www.python.org/) library which provides
-tools to design powerful machine learning algorithms working on streaming data.
+tools to design powerful machine learning algorithms and feedback loops working on streaming data.
 
 It strives to complement [JAX](https://jax.readthedocs.io/en/latest/) with tools
 dedicated to time-series.
 
-WAX-ML aims to make JAX-based programs easier to use for end users working with [Pandas](https://pandas.pydata.org/) and [Xarray](http://xarray.pydata.org/en/stable/).
+WAX-ML aims to make JAX-based programs easier to use for end users working with
+[pandas](https://pandas.pydata.org/) and [xarray](http://xarray.pydata.org/en/stable/).
 
 ## Goal
 
@@ -414,16 +415,33 @@ Currently, WAX-ML uses an unpublished
 in eagerpy that should allow us to go to the official eagerpy library as soon as they
 are accepted.
 
-## Gym Feedback
+## Feedbacks
 
-WAX-ML implements **feedback loops** which are very natural when working with time series.
+Feeback is a fundamental notion in time-series analysis and has a wide history (see
+[Feedback Wikipedia page](https://en.wikipedia.org/wiki/Feedback) for instance).
 
-For now, we only implement Gym feedback between an *agent* and an *environment* exposed in
-the JAX / Haiku functional API.
+Thus, we believe it is important to be able to implement them well when the design of
+time series analysis tools.
 
-WAX-ML implements a `GymFeedback` module which is built from an agent and an environment:
-- An *agent* is a module with an `observation` input and an `action` output.
-- An *environment* is a module with a pair `(action, raw observation)` as input
+A fundamental piece in the implementation of feedbacks is the "delay" operator that we
+implement in WAX-ML with the module `Lag`.  In fact this module is itself implemented
+with a kind of more fundamental module in WAX-ML which implements the buffering
+mechanism.  It is implemented in the `Buffer` module which we implement with an API very
+similar to the `deque` module of the standard python library `collections`.
+
+The linear state space models used to model linear time-invariant systems in signal
+theory are a well-known place where feedbacks are used to implement for instance
+infinite impulse response filters.  This should be easily implemented with the WAX-ML
+tools and should be implemented in it at a later time.
+
+Another example is control theory or reinforcement learning.
+In these fields, feedback is used to make an agent and
+an environment interact, resulting in a non-trivial global dynamic.
+In WAX-ML, we propose a simple module called `GymFeedBack` that allows the implementation
+of reinforcement learning experiences.
+This is built from an agent and an environment:
+- An *agent* is a function with an `observation` input and an `action` output.
+- An *environment* is a function with a pair `(action, raw observation)` as input
   and a pair `(reward, observation)` as output.
 
 A feedback instance `GymFeedback(agent, env)` is a module with a `raw observation` input

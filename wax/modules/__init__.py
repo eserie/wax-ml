@@ -27,6 +27,7 @@ from wax.modules.mask_mean import MaskMean
 from wax.modules.mask_normalize import MaskNormalize
 from wax.modules.mask_std import MaskStd
 from wax.modules.ohlc import OHLC
+from wax.modules.online_supervised_learner import OnlineSupervisedLearner
 from wax.modules.pct_change import PctChange
 from wax.modules.rolling_mean import RollingMean
 from wax.modules.update_on_event import UpdateOnEvent
@@ -49,4 +50,5 @@ __all__ = [
     "MaskMean",
     "MaskStd",
     "MaskNormalize",
+    "OnlineSupervisedLearner",
 ]

@@ -15,6 +15,7 @@ For an introduction to WAX-ML, start at the
    notebooks/03_ohlc_temperature
    notebooks/04_The_three_steps_workflow
    notebooks/05_reconstructing_the_light_curve_of_stars
+   notebooks/06_Online_Linear_Regression
 
 .. toctree::
    :maxdepth: 1

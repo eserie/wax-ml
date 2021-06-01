@@ -13,24 +13,23 @@
 | [**Change logs**](https://wax-ml.readthedocs.io/en/latest/changelog.html)
 | [**Reference docs**](https://wax-ml.readthedocs.io/en/latest/)
 
-🌊 Wax is what you put on a surfboard to avoid slipping.  It is an essential tool to go
-surfing.  Similarly, WAX-ML strives to be an essential tool for doing machine learning on
-streaming data!  🌊
+🌊 Wax is what you put on a surfboard to avoid slipping. It is an essential tool to go
+surfing ... 🌊
 
-WAX-ML is a research oriented [python](https://www.python.org/)  library 
-providing tools to design powerful machine learning algorithms and feedback loops 
+WAX-ML is a research oriented [python](https://www.python.org/)  library
+providing tools to design powerful machine learning algorithms and feedback loops
 working on streaming data.
 
 It strives to complement [JAX](https://jax.readthedocs.io/en/latest/) with tools
-dedicated to time-series and make JAX-based programs easy to use for end users working 
+dedicated to time-series and make JAX-based programs easy to use for end users working
 with
 [pandas](https://pandas.pydata.org/) and [xarray](http://xarray.pydata.org/en/stable/)
 for data manipulation.
 
-WAX-ML also provides a simple mechanism for implementing feedback loops with 
-functions implemented with Haiku modules. 
-It also provides a way to make these functions compatible with the 
-reinforcement framework of the [Gym](https://gym.openai.com/) library.
+WAX-ML also provides a simple mechanism for implementing feedback loops with
+functions implemented with [Haiku](https://github.com/deepmind/dm-haiku) modules.
+It also provides a way to make these functions compatible with the [Gym](https://gym.openai.com/)
+reinforcement learning framework.
 
 ## Goal
 
@@ -207,7 +206,7 @@ to further develop the time manipulation tools in WAX-ML (see "WEP1" in `WEP.md`
 
 ### pandas and xarray accessors
 
-WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning 
+WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning
 algorithms implemented with functions implemented with Haiku modules on high-level data APIs :
 - pandas's `DataFrame` and `Series`
 - xarray's `Dataset` and `DataArray`.
@@ -423,7 +422,7 @@ Here is an illustrative plot of the final result of the study:
 
 ![](docs/_static/online_linear_regression_regret.png)
 
-We see that the regret first converges, then jumps at the step 2000 and 
+We see that the regret first converges, then jumps at the step 2000 and
 finally readjusts to a new regime for the linear regression problem.
 We see that the weights converge to the correct values in both regimes.
 

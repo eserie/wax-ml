@@ -35,14 +35,14 @@ def convert_to_tensor(data: Any, tensor_type: str) -> Any:
         return torch.tensor(data)
 
     elif tensor_type == "jax":
-        import jax.numpy as np
+        import jax.numpy as jnp
 
-        return np.asarray(data, dtype=data.dtype)
+        return jnp.asarray(data, dtype=data.dtype)
 
     elif tensor_type == "numpy":
-        import numpy as np
+        import numpy as onp
 
-        return np.asarray(data)
+        return onp.asarray(data)
 
     raise ValueError(
         f"tensor_type {tensor_type} must be in ['numpy', 'tensorflow', 'jax', 'torch']"

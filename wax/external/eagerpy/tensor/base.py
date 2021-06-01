@@ -39,7 +39,7 @@ class BaseTensor(Tensor):
                     return x
                 return cls(x)
 
-            jax.tree_util.register_pytree_node(cls, flatten, unflatten)
+            jax.tree_util.register_pytree_node(cls, flatten, unflatten)  # type: ignore
             cls._registered = True
         return cast("BaseTensor", super().__new__(cls))
 

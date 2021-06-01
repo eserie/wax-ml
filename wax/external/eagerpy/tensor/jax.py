@@ -185,7 +185,7 @@ class JAXTensor(BaseTensor):
             shape = (shape,)
 
         subkey = self._get_subkey()
-        return type(self)(jax.random.normal(subkey, shape) * stddev + mean)
+        return type(self)(jax.random.normal(subkey, shape) * stddev + mean)  # type: ignore
 
     def ones(self: TensorType, shape: ShapeOrScalar) -> TensorType:
         return type(self)(np.ones(shape, dtype=self.raw.dtype))
@@ -462,10 +462,10 @@ class JAXTensor(BaseTensor):
         return type(self)(self.raw.__le__(unwrap1(other)))
 
     def __eq__(self: TensorType, other: TensorOrScalar) -> TensorType:  # type: ignore
-        return type(self)(self.raw.__eq__(unwrap1(other)))
+        return type(self)(self.raw.__eq__(unwrap1(other)))  # type: ignore
 
     def __ne__(self: TensorType, other: TensorOrScalar) -> TensorType:  # type: ignore
-        return type(self)(self.raw.__ne__(unwrap1(other)))
+        return type(self)(self.raw.__ne__(unwrap1(other)))  # type: ignore
 
     def __gt__(self: TensorType, other: TensorOrScalar) -> TensorType:
         return type(self)(self.raw.__gt__(unwrap1(other)))

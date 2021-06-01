@@ -30,7 +30,7 @@ class ExtensionMeta(type):
 
 if hasattr(typing, "GenericMeta"):  # Python 3.6
     # workaround for https://github.com/python/typing/issues/449
-    class GenericExtensionMeta(typing.GenericMeta, ExtensionMeta):
+    class GenericExtensionMeta(typing.GenericMeta, ExtensionMeta):  # type: ignore
         pass
 
 

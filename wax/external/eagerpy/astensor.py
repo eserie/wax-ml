@@ -58,7 +58,7 @@ def astensor(x: Union[NativeTensor, Tensor, Any]) -> Union[Tensor, Any]:  # type
     if name == "tensorflow":
         return TensorFlowTensor(x)
     if name == "jax" or name == "jaxlib":
-        return JAXTensor(x)
+        return JAXTensor(x)  # type: ignore
     if name == "numpy":
         return NumPyTensor(x)
     if isinstance(x, (str, Number)):

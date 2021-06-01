@@ -1,18 +1,19 @@
 from abc import ABCMeta, abstractmethod
 from typing import (
-    TypeVar,
-    Callable,
-    Tuple,
+    TYPE_CHECKING,
     Any,
-    overload,
+    Callable,
     Iterable,
     Iterator,
-    Union,
     Optional,
+    Tuple,
     Type,
-    TYPE_CHECKING,
+    TypeVar,
+    Union,
     cast,
+    overload,
 )
+
 from typing_extensions import Literal, final
 
 from ..types import Axes, AxisAxes, Shape, ShapeOrScalar

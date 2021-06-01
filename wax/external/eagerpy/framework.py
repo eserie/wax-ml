@@ -1,11 +1,9 @@
-from typing import overload, Sequence, Callable, Tuple, Any, Optional, cast, Union
+from typing import Any, Callable, Optional, Sequence, Tuple, Union, cast, overload
+
 from typing_extensions import Literal
 
+from .tensor import Tensor, TensorOrScalar, TensorType
 from .types import Axes, AxisAxes, Shape, ShapeOrScalar
-
-from .tensor import Tensor
-from .tensor import TensorType
-from .tensor import TensorOrScalar
 
 newaxis = None
 inf = float("inf")

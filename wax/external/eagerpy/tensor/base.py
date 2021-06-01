@@ -1,9 +1,8 @@
-from typing_extensions import final
-from typing import Any, Type, Union, cast, Tuple
+from typing import Any, Tuple, Type, Union, cast
 
-from .tensor import Tensor
-from .tensor import TensorType
-from .tensor import TensorOrScalar
+from typing_extensions import final
+
+from .tensor import Tensor, TensorOrScalar, TensorType
 
 
 def unwrap_(*args: Any) -> Any:

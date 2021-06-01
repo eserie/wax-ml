@@ -1,11 +1,11 @@
-from typing import Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple, Union
 
 if TYPE_CHECKING:
     # for static analyzers
-    import torch  # noqa: F401
-    import tensorflow  # noqa: F401
     import jax  # noqa: F401
     import numpy  # noqa: F401
+    import tensorflow  # noqa: F401
+    import torch  # noqa: F401
 
 Axes = Tuple[int, ...]
 AxisAxes = Union[int, Axes]

@@ -15,11 +15,11 @@
 
 from typing import Any, Dict, List
 
-import wax.external.eagerpy as ep
 import pandas as pd
 import xarray as xr
 from jax.tree_util import tree_flatten, tree_unflatten
 
+import wax.external.eagerpy as ep
 from wax.gym.callbacks import Callback
 from wax.modules.gym_feedback import GymOutput
 from wax.stream import DatasetSchema

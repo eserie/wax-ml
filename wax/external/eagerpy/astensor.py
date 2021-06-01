@@ -1,28 +1,26 @@
-from numbers import Number
 import functools
+from numbers import Number
 from typing import (
     TYPE_CHECKING,
-    Union,
-    overload,
-    Tuple,
-    TypeVar,
-    Generic,
     Any,
     Callable,
-    cast,
+    Generic,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
 )
-import sys
 
 from jax import tree_flatten, tree_unflatten
 
-from .tensor import Tensor
-from .tensor import TensorType
-
-from .tensor import PyTorchTensor
-from .tensor import TensorFlowTensor
-from .tensor import JAXTensor
-from .tensor import NumPyTensor
-
+from .tensor import (
+    JAXTensor,
+    NumPyTensor,
+    PyTorchTensor,
+    Tensor,
+    TensorFlowTensor,
+    TensorType,
+)
 from .types import NativeTensor
 
 if TYPE_CHECKING:
@@ -54,7 +52,6 @@ def astensor(x: Union[NativeTensor, Tensor, Any]) -> Union[Tensor, Any]:  # type
     # we use the module name instead of isinstance
     # to avoid importing all the frameworks
     name = _get_module_name(x)
-    m = sys.modules
 
     if name == "torch":
         return PyTorchTensor(x)  # type: ignore
@@ -162,7 +159,6 @@ def as_tensors_any(data: Any) -> Tuple[Any, bool]:
 
 def _is_tensor(x: T) -> bool:
     name = _get_module_name(x)
-    m = sys.modules
 
     if name == "torch":
         return True

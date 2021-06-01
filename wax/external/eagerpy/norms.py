@@ -1,8 +1,8 @@
-from typing import Union, Optional
+from typing import Optional, Union
 
+from .framework import inf
 from .tensor import TensorType
 from .types import AxisAxes
-from .framework import inf
 
 
 def l0(

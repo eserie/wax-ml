@@ -1,30 +1,27 @@
+from importlib import import_module
 from typing import (
-    Tuple,
-    cast,
-    Union,
-    Any,
-    TypeVar,
     TYPE_CHECKING,
+    Any,
+    Callable,
     Iterable,
     Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
     overload,
-    Callable,
 )
-from typing_extensions import Literal
+
 import numpy as np
-from importlib import import_module
+from typing_extensions import Literal
 
 from ..types import Axes, AxisAxes, Shape, ShapeOrScalar
-
-from .tensor import Tensor
-from .tensor import TensorOrScalar
-
-from .base import BaseTensor
-from .base import unwrap_
-from .base import unwrap1
+from .base import BaseTensor, unwrap1, unwrap_
+from .tensor import Tensor, TensorOrScalar
 
 if TYPE_CHECKING:
     import torch  # for static analyzers
+
     from .extensions import NormsMethods  # noqa: F401
 else:
     # lazy import in PyTorchTensor

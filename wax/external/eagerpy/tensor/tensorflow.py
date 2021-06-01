@@ -1,34 +1,29 @@
+import functools
+from importlib import import_module
 from typing import (
-    Tuple,
-    cast,
-    Union,
-    Any,
-    TypeVar,
     TYPE_CHECKING,
+    Any,
+    Callable,
     Iterable,
     Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
     overload,
-    Callable,
 )
-from typing_extensions import Literal
-import numpy as np
-from importlib import import_module
-import functools
 
-from ..types import Axes, AxisAxes, Shape, ShapeOrScalar
+import numpy as np
+from typing_extensions import Literal
 
 from .. import index
-
-from .tensor import Tensor
-from .tensor import TensorOrScalar
-from .tensor import TensorType
-
-from .base import BaseTensor
-from .base import unwrap_
-from .base import unwrap1
+from ..types import Axes, AxisAxes, Shape, ShapeOrScalar
+from .base import BaseTensor, unwrap1, unwrap_
+from .tensor import Tensor, TensorOrScalar, TensorType
 
 if TYPE_CHECKING:
     import tensorflow as tf  # for static analyzers
+
     from .extensions import NormsMethods  # noqa: F401
 else:
     # lazy import in TensorFlowTensor

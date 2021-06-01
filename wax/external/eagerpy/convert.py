@@ -1,9 +1,8 @@
-import sys
-import numbers
 from functools import partial
 from typing import Any
 
 from jax.tree_util import tree_flatten, tree_unflatten
+
 from .astensor import _get_module_name
 
 

@@ -1,34 +1,29 @@
+from importlib import import_module
 from typing import (
-    Tuple,
-    cast,
-    Union,
-    Any,
-    TypeVar,
     TYPE_CHECKING,
+    Any,
+    Callable,
     Iterable,
     Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
     overload,
-    Callable,
 )
 
-from typing_extensions import Literal
-from importlib import import_module
 import numpy as onp
+from typing_extensions import Literal
 
 from ..types import Axes, AxisAxes, Shape, ShapeOrScalar
-
-from .tensor import Tensor
-from .tensor import TensorOrScalar
-
-from .base import BaseTensor
-from .base import unwrap_
-from .base import unwrap1
-
+from .base import BaseTensor, unwrap1, unwrap_
+from .tensor import Tensor, TensorOrScalar
 
 if TYPE_CHECKING:
     # for static analyzers
     import jax
     import jax.numpy as np
+
     from .extensions import NormsMethods  # noqa: F401
 else:
     # lazy import in JAXTensor
@@ -420,7 +415,7 @@ class JAXTensor(BaseTensor):
     def _value_and_grad_fn(  # noqa: F811 (waiting for pyflakes > 2.1.1)
         self: TensorType, f: Callable, has_aux: bool = False
     ) -> Callable[..., Tuple]:
-        from ..astensor import astensors, as_raw_tensors
+        from ..astensor import as_raw_tensors, astensors
 
         def value_and_grad(
             x: JAXTensor, *args: Any, **kwargs: Any

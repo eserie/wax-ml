@@ -1,13 +1,9 @@
 from typing import overload
+
 from typing_extensions import Literal
 
-from .tensor import Tensor
-from .tensor import PyTorchTensor
-from .tensor import TensorFlowTensor
-from .tensor import JAXTensor
-from .tensor import NumPyTensor
-
 from . import modules
+from .tensor import JAXTensor, NumPyTensor, PyTorchTensor, Tensor, TensorFlowTensor
 
 
 @overload

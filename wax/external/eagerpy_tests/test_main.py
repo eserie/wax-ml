@@ -1,11 +1,13 @@
-from typing import Callable, Dict, Any, Tuple, Union, Optional, cast
-import pytest
 import functools
 import itertools
+from typing import Any, Callable, Dict, Optional, Tuple, Union, cast
+
 import numpy as np
+import pytest
+
 import wax.external.eagerpy as ep
 from wax.external.eagerpy import Tensor, eager_function
-from wax.external.eagerpy.types import Shape, AxisAxes
+from wax.external.eagerpy.types import AxisAxes, Shape
 
 # make sure there are no undecorated tests in the "special tests" section below
 # -> /\n\ndef test_

@@ -1,26 +1,21 @@
 from typing import (
-    Tuple,
-    cast,
-    Union,
+    TYPE_CHECKING,
     Any,
+    Callable,
     Iterable,
     Optional,
+    Tuple,
+    Union,
+    cast,
     overload,
-    Callable,
-    TYPE_CHECKING,
 )
-from typing_extensions import Literal
+
 import numpy as np
+from typing_extensions import Literal
 
 from ..types import Axes, AxisAxes, Shape, ShapeOrScalar
-
-from .tensor import TensorType
-from .tensor import Tensor
-from .tensor import TensorOrScalar
-
-from .base import BaseTensor
-from .base import unwrap_
-from .base import unwrap1
+from .base import BaseTensor, unwrap1, unwrap_
+from .tensor import Tensor, TensorOrScalar, TensorType
 
 if TYPE_CHECKING:
     from .extensions import NormsMethods  # noqa: F401

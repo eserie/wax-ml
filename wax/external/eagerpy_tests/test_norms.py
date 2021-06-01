@@ -1,8 +1,10 @@
 from typing import Optional
-import pytest
-from numpy.testing import assert_allclose
-from numpy.linalg import norm
+
 import numpy as np
+import pytest
+from numpy.linalg import norm
+from numpy.testing import assert_allclose
+
 import wax.external.eagerpy as ep
 from wax.external.eagerpy import Tensor
 from wax.external.eagerpy.norms import l0, l1, l2, linf, lp

@@ -1,9 +1,8 @@
-from typing import TypeVar, Callable, Any, Generic
-import typing
 import functools
+import typing
+from typing import Any, Callable, Generic, TypeVar
 
 from .. import norms
-
 from .tensor import Tensor
 
 T = TypeVar("T")

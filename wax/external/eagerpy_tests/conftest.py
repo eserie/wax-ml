@@ -1,5 +1,7 @@
 from typing import Any, Optional
+
 import pytest
+
 import wax.external.eagerpy as ep
 
 

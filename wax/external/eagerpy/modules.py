@@ -1,8 +1,8 @@
-from importlib import import_module
+import functools
 import inspect
+from importlib import import_module
 from types import ModuleType
 from typing import Any, Callable, Iterable
-import functools
 
 from .astensor import astensor
 

@@ -13,11 +13,11 @@
 # limitations under the License.
 from os.path import dirname as _dirname
 from os.path import join as _join
-from typing import TypeVar
 
 from . import norms  # noqa: F401,E402
 from . import types  # noqa: F401,E402
 from . import utils  # noqa: F401,E402
+from ._index import index  # noqa: F401,E402
 from .astensor import as_raw_tensor  # noqa: F401,E402
 from .astensor import as_raw_tensors  # noqa: F401,E402
 from .astensor import astensor  # noqa: F401,E402
@@ -43,15 +43,3 @@ from .tensor import istensor  # noqa: F401,E402
 
 with open(_join(_dirname(__file__), "VERSION")) as _f:
     __version__ = _f.read().strip()
-
-_T = TypeVar("_T")
-
-
-class _Indexable:
-    __slots__ = ()
-
-    def __getitem__(self, index: _T) -> _T:
-        return index
-
-
-index = _Indexable()

@@ -29,7 +29,7 @@ from typing import (
 import numpy as np
 from typing_extensions import Literal
 
-from .. import index
+from .._index import index
 from ..types import Axes, AxisAxes, Shape, ShapeOrScalar
 from .base import BaseTensor, unwrap1, unwrap_
 from .tensor import Tensor, TensorOrScalar, TensorType

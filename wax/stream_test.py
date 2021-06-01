@@ -13,7 +13,7 @@
 # limitations under the License.
 from functools import partial, reduce
 
-import eagerpy as ep
+import wax.external.eagerpy as ep
 import haiku as hk
 import jax.numpy as jnp
 import numpy as onp

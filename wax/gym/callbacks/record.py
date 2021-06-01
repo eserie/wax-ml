@@ -15,7 +15,7 @@
 
 from typing import Any, Dict, List
 
-import eagerpy as ep
+import wax.external.eagerpy as ep
 import pandas as pd
 import xarray as xr
 from jax.tree_util import tree_flatten, tree_unflatten

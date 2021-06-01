@@ -17,7 +17,7 @@ import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
 import pytest
-from eagerpy import convert_to_tensors
+from wax.external.eagerpy import convert_to_tensors
 
 from wax.universal.eager_ewma import (
     EagerEWMA,

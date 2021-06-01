@@ -137,7 +137,7 @@ def test_gym_module_transform_batch_with_state(static):
 
     rng = next(hk.PRNGSequence(42))
     if static:
-        from eagerpy import convert_to_tensors
+        from wax.external.eagerpy import convert_to_tensors
 
         xs, rng = convert_to_tensors((xs, rng), tensor_type="jax")
         batch_fun = transform_batch_with_state_static(gym_fun, skip_first=True)

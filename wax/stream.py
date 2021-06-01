@@ -30,7 +30,7 @@ from typing import (
     cast,
 )
 
-import eagerpy as ep
+import wax.external.eagerpy as ep
 import jax
 import numpy as onp
 import pandas as pd

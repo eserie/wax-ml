@@ -27,6 +27,8 @@ print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
 jax.devices()
 
 # # 🦎 Online linear regression with a non-stationary environment 🦎
+#
+# [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb)
 
 # We implement an online learning non-stationary linear regression problem.
 #

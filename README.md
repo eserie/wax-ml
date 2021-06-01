@@ -488,23 +488,23 @@ are accepted.
 
 ## Future plans
 
-### Feedback loops and Control Toolbox
+### Feedback loops and control theory
 
 We would like to implement other types of feedback loops in WAX-ML.
-For instance, see:
-[python-control](https://github.com/python-control/python-control),
-[Slycot](https://github.com/python-control/Slycot).
+
+For instance, those of the standard control theory toolboxes,
+such as those implemented in the [SLICOT](http://slicot.org/) library.
 
 Many algorithms in this space are absent from the python ecosystem.  If they are not
 implemented in other libraries, WAX-ML aims to implement them via JAX and expose them with
 a simple API.
 
-
-An idiomatic example is the [Kalman
-filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman), a now-standard algorithm that
-dates back to the 1950s.  After 30 years of existence, the Python ecosystem has still
-not integrated this algorithm into a standard library!
-
+#### Kalman filtering
+An idiomatic example is the
+[Kalman filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman)
+, a now-standard algorithm that dates back to the 1950s.
+After 30 years of existence, the Python ecosystem has still not integrated this algorithm into
+widely adopted libraries!
 Some implementations can be found in
 [python-control](https://github.com/python-control/python-control),
 [stats-models](https://www.statsmodels.org/stable/index.html), [SciPy
@@ -524,24 +524,22 @@ integration plan)
 In fact, it turns out that python code written with JAX is not very far from from
 [Fortran](https://fr.wikipedia.org/wiki/Fortran), a (mathematical FORmula TRANslating
 system).  It should therefore be quite easy and natural to reimplement standard
-algorithms implemented in Fortran, such as those in the
-[Slycot](https://github.com/python-control/Slycot) and [SLICOT](http://slicot.org/)
-libraries.
+algorithms implemented in Fortran, such as those in the [SLICOT](http://slicot.org/)
+library with JAX.
 
-In fact, as noted in [this issue of
-JAX](https://github.com/google/jax/discussions/3950), it might even be possible to
-simply wrap Fortran code in JAX.  This would avoid a painful rewriting process!
-
+It seems that some questions about the integration of Fortran into JAX have already been raised.
+See for instance [this discussion](https://github.com/google/jax/discussions/3950).
 
 ### Optimization
 
 JAX ecosystem has already a library dedicated to optimization:
-[Optax](https://github.com/deepmind/optax).  It may be interested to complement it with
+[Optax](https://github.com/deepmind/optax) that we already use in WAX-ML.
+It could be interesting to complete it with
 other first order algorithms such as [ADMM](https://stanford.edu/~boyd/admm.html).
 
 One can find "functional" implementations of proximal algorithms in python (see
 [proxmin](https://github.com/pmelchior/proxmin)) and Julia (see
-[ProximalOperators](https://github.com/kul-forbes/ProximalOperators.jl),
+[ProximalOperators](https://kul-forbes.github.io/ProximalOperators.jl/latest/),
 [COSMO](https://github.com/oxfordcontrol/COSMO.jl) ). Collaborating with these teams
 should be very interesting.
 
@@ -560,11 +558,7 @@ The machine learning libraries [scikit-learn](https://scikit-learn.org/stable/),
 [river](https://github.com/online-ml/river),
 [ml-numpy](https://github.com/ddbourgin/numpy-ml) implement many "traditional" machine
 learning algorithms that should provide an excellent basis for linking or reimplementing
-in JAX.
-
-WAX-ML could be the place where we reimplement some of these algorithms to work with the
-JAX ecosystem.
-
+in JAX.  WAX-ML could help to build a repository for JAX versions of these algorithms.
 
 ### Other APIS
 

@@ -82,6 +82,12 @@ coverage:
 	--doctest-modules \
 	-n auto \
 	$(PACKAGE_NAME)
+	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose wax/external/eagerpy_tests
+	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend numpy wax/external/eagerpy_tests
+	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend pytorch wax/external/eagerpy_tests
+	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend jax wax/external/eagerpy_tests
+	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend tensorflow wax/external/eagerpy_tests
+	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend pytorch-gpu wax/external/eagerpy_tests
 
 .PHONY: docs
 docs:

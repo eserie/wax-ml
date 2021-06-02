@@ -55,11 +55,14 @@ and filtering...
 By adopting a "no-framework" approach WAX-ML aims to be an efficient tool to combine modern
 machine-learning approaches with more traditional ones.
 
-Some work has been done in this direction, for example, see [2] where transformer encoder architectures are massively accelerated, with limited accuracy costs, by replacing the self-attention sublayers with a standard, non-parameterized Fast Fourier Transform (FFT).
+Some work has been done in this direction, for example, 
+see [[2] in References](#references) where transformer encoder 
+architectures are massively accelerated, with limited accuracy costs,
+by replacing the self-attention sublayers with a standard, non-parameterized Fast Fourier Transform (FFT).
 Their implementation, not yet published, is based on Flax, a tool from the JAX ecosystem.
 
 WAX-ML may also be useful for developing research ideas in areas such as online machine
-learning (see [1]) and development of control, reinforcement learning, and online-optimization methods.
+learning (see [[1] in References](#references)) and development of control, reinforcement learning, and online-optimization methods.
 
 ## What WAX-ML does?
 
@@ -562,7 +565,7 @@ in JAX.  WAX-ML could help to build a repository for JAX versions of these algor
 
 ### Other APIS
 
-As it did for the Gym API, WAX-ML could add support for other high-level OO APIs like
+As it did for the Gym API, WAX-ML could add support for other high-level object-oriented APIs like
 Keras, scikit-learn, river ...
 
 

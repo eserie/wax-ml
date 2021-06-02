@@ -266,9 +266,6 @@ y = format_dataframe(
 
 # ## GPU execution
 
-
-# ## GPU execution
-
 # Let's look with execution on GPU
 
 try:

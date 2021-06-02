@@ -340,10 +340,6 @@ It's quite slow (see WEP3 enhancement proposal).
 
 +++
 
-## GPU execution
-
-+++
-
 Let's look with execution on GPU
 
 ```{code-cell} ipython3

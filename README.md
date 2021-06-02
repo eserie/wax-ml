@@ -5,8 +5,8 @@
 # WAX-ML: A Python library for machine-learning and feedbacks on streaming data
 
 ![Continuous integration](https://github.com/eserie/wax-ml/actions/workflows/main.yml/badge.svg)
-![PyPI version](https://img.shields.io/pypi/v/wax-ml)
 [![Documentation Status](https://readthedocs.org/projects/wax-ml/badge/?version=latest)](https://wax-ml.readthedocs.io/en/latest/)
+![PyPI version](https://img.shields.io/pypi/v/wax-ml)
 
 [**Quickstart**](#quickstart-colab-in-the-cloud)
 | [**Install guide**](#installation)

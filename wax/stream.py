@@ -30,7 +30,6 @@ from typing import (
     cast,
 )
 
-import eagerpy as ep
 import jax
 import numpy as onp
 import pandas as pd
@@ -41,6 +40,7 @@ from jax import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from jax.tree_util import tree_multimap
 from tqdm.auto import tqdm
 
+import wax.external.eagerpy as ep
 from wax.compile import jit_init_apply
 from wax.encode import (
     Encoder,

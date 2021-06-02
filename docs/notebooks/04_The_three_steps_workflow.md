@@ -66,7 +66,6 @@ Let's illustrate how to reimplement WAX-ML EWMA yourself with the WAX-ML 3-step 
 ```{code-cell} ipython3
 :tags: []
 
-from functools import partial
 
 import haiku as hk
 import numpy as onp
@@ -221,7 +220,7 @@ In this step we:
 @jit_init_apply
 @hk.transform_with_state
 def transform_dataset(step):
-    dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
+    dataset = tree_access_data(jnp_data, jnp_index, step)
     return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
 
@@ -320,7 +319,7 @@ if GPU_AVAILABLE:
 
     @hk.transform_with_state
     def transform_dataset(step):
-        dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
+        dataset = tree_access_data(jnp_data, jnp_index, step)
         return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
     transform_dataset = type(transform_dataset)(

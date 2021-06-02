@@ -57,7 +57,6 @@ jax.devices()
 # ## Imports
 
 # + tags=[]
-from functools import partial
 
 import haiku as hk
 import numpy as onp
@@ -178,7 +177,7 @@ print("data copied to CPU device.")
 @jit_init_apply
 @hk.transform_with_state
 def transform_dataset(step):
-    dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
+    dataset = tree_access_data(jnp_data, jnp_index, step)
     return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
 
@@ -252,7 +251,7 @@ if GPU_AVAILABLE:
 
     @hk.transform_with_state
     def transform_dataset(step):
-        dataset = partial(tree_access_data, jnp_data, jnp_index)(step)
+        dataset = tree_access_data(jnp_data, jnp_index, step)
         return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
     transform_dataset = type(transform_dataset)(

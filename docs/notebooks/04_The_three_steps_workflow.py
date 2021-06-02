@@ -188,7 +188,7 @@ assert state["ewma"]["mean"].shape == (N,)
 #     - Unroll the transformation on "steps" `xs` (a `np.arange` vector).
 
 rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 
 outputs.device()
 
@@ -196,11 +196,11 @@ outputs.device()
 
 # + tags=[]
 # %%timeit
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 # -
 
 # %%time
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 
 # This is 3x faster than pandas implementation!
 #

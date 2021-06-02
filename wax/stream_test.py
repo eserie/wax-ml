@@ -34,7 +34,6 @@ from wax.encode import encode_dataset
 from wax.stream import (
     Stream,
     dataset_to_numpy,
-    get_dataset_schema,
     get_time_dataset,
     split_dataset_from_time_dims,
     tree_access_data,
@@ -172,7 +171,7 @@ def check_outputs(outputs, schema):
 def test_stream_dataset_dynamic_unroll2():
     dataset = prepare_test_data()
     assert dataset["NEWS"].shape == (14, 2)
-    schema = get_dataset_schema(dataset, check=True)
+    schema = Stream.get_dataset_schema(dataset, check=True)
     ffills = {"day": True}
     freqs = {"day": "d"}
     local_time = "time"
@@ -246,7 +245,7 @@ def test_stream_dataset_dynamic_unroll2():
 def test_stream_dataset_dynamic_unroll3():
     dataset = prepare_test_data()
     assert dataset["NEWS"].shape == (14, 2)
-    schema = get_dataset_schema(dataset, check=True)
+    schema = Stream.get_dataset_schema(dataset, check=True)
     ffills = {"day": True}
     freqs = {"day": "d"}
     local_time = "time"

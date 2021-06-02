@@ -26,6 +26,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
     Union,
     cast,
 )
@@ -114,41 +115,6 @@ class StreamObservation(NamedTuple):
 class DatasetSchema(NamedTuple):
     coords: xr.core.coordinates.DatasetCoordinates
     encoders: Dict[str, Encoder]
-
-
-def get_dataset_schema(
-    xdata: xr.Dataset,
-    types_encoders: EncoderMapping = None,
-    check: bool = False,
-) -> DatasetSchema:
-    """Determine data schema of a Dataset.
-
-    Args:
-        xdata : xarray Dataset
-        types_encoders : Mapping of used for different types.
-        check : if true, check encoders by testing a round-trip
-            conversion on detected types.
-
-    Returns:
-        Dataset schema
-    """
-    if types_encoders is None:
-        types_encoders = DEFAULT_TYPES_ENCODERS
-    encoders = {}
-    np_data = {}
-    np_data.update({dim: var.values for dim, var in xdata.items()})
-    np_data.update({dim: var.values for dim, var in xdata.coords.items()})
-    for dim, np_var in np_data.items():
-        if np_var.dtype.type in types_encoders.keys():
-            encoder = types_encoders[np_var.dtype.type]
-            if callable(encoder):
-                encoder = encoder(np_var)
-            encoders[dim] = encoder
-            if check:
-                codes = encoder.encode(np_var)
-                assert (encoder.decode(codes) == np_var).ravel().all()
-    schema = DatasetSchema(coords=xdata.coords, encoders=encoders)
-    return schema
 
 
 def _is_verbose(verbose, time_dim):
@@ -497,31 +463,66 @@ class Stream:
     format_outputs: bool = True
     return_state: bool = True
 
-    def unroll_dataset(
-        self,
-        module: Callable,
-        params: Any,
-        state: Any,
-        rng: Any,
-        skip_first: bool,
-        encoders: EncoderMapping,
-        dataset: xr.Dataset,
-    ) -> Any:
-        """Unroll a module onto a dataset.
+    @staticmethod
+    def get_dataset_schema(
+        xdata: xr.Dataset,
+        types_encoders: EncoderMapping = None,
+        check: bool = False,
+    ) -> DatasetSchema:
+        """Determine data schema of a Dataset.
 
         Args:
-            module : callable being able to be transformed with Haiku transform_with_state.
-            params: parameters for the module
-            state : state for the module
-            rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
-            encoders : encoders used to encode numpy dtypes which are not supported by Jax.
-            dataset : dataset on which the transformation is applied
+            xdata : xarray Dataset
+            types_encoders : Mapping of used for different types.
+            check : if true, check encoders by testing a round-trip
+                conversion on detected types.
 
-        Return:
-            Unroll results of the module formated as a nested data structure with dataarray leaves.
+        Returns:
+            Dataset schema
         """
+        if types_encoders is None:
+            types_encoders = DEFAULT_TYPES_ENCODERS
+        encoders = {}
+        np_data = {}
+        np_data.update({dim: var.values for dim, var in xdata.items()})
+        np_data.update({dim: var.values for dim, var in xdata.coords.items()})
+        for dim, np_var in np_data.items():
+            if np_var.dtype.type in types_encoders.keys():
+                encoder = types_encoders[np_var.dtype.type]
+                if callable(encoder):
+                    encoder = encoder(np_var)
+                encoders[dim] = encoder
+                if check:
+                    codes = encoder.encode(np_var)
+                    assert (encoder.decode(codes) == np_var).ravel().all()
+        schema = DatasetSchema(coords=xdata.coords, encoders=encoders)
+        return schema
 
+    def get_encoders(self, dataset):
+        schema = self.get_dataset_schema(dataset)
+        return schema.encoders
+
+    def prepare(
+        self,
+        dataset: xr.Dataset,
+        module: Callable,
+        encoders: EncoderMapping = None,
+    ) -> Tuple[Callable, jnp.ndarray]:
+        """Prepare a function that wraps the input function with the actual data and indices
+         in a pair of pure functions (TransformedWithState tuple).
+
+        Args:
+            dataset : dataset on which the transformation is applied
+            module : callable being able to be transformed with Haiku transform_with_state.
+            encoders : encoders used to encode numpy dtypes which are not supported by Jax.
+
+        Returns:
+            transform_dataset: transformed function ready to process in-memory data in local time.
+            xs : range of steps in local time.
+        """
+        encoders = encoders if encoders is not None else self.get_encoders(dataset)
+
+        # Prepare np_data and np_index
         np_data, np_index, xs = self.trace_dataset(dataset)
         # encode values
         np_data = encode_dataset(encoders, np_data)
@@ -548,7 +549,34 @@ class Stream:
             dataset = partial(tree_access_data, np_data, np_index)(step)
             return module(dataset)
 
-        # outputs, state = static_unroll(access_dataset, xs, next(seq))
+        return transform_dataset, xs
+
+    def unroll_dataset(
+        self,
+        fun: Callable,
+        params: Any,
+        state: Any,
+        rng: Any,
+        skip_first: bool,
+        encoders: EncoderMapping,
+        dataset: xr.Dataset,
+    ) -> Any:
+        """Unroll a function onto a dataset.
+
+        Args:
+            fun : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module
+            state : state for the module
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
+            encoders : encoders used to encode numpy dtypes which are not supported by Jax.
+            dataset : dataset on which the transformation is applied
+
+        Return:
+            Unroll results of the module formatted as a nested data structure with dataarray leaves.
+        """
+        transform_dataset, xs = self.prepare(dataset, fun, encoders)
+
         outputs, state = dynamic_unroll(
             transform_dataset, params, state, rng, skip_first, xs
         )
@@ -579,15 +607,19 @@ class Stream:
             local_time = self.local_time
         return local_time
 
-    def trace_dataset(self, dataset: xr.Dataset) -> Any:
+    def trace_dataset(
+        self, dataset: xr.Dataset
+    ) -> Tuple[Dict[str, jnp.ndarray], Dict[str, jnp.ndarray], jnp.ndarray]:
         """Trace dataset time indices in order to syncrhonize them an prepare data access
         through unroll operations.
+
             Args:
                 dataset : dataset on which the transformation is applied
 
-            Return:
-                Unroll results of the module formated as a nested data
-                structure with dataarray leaves.
+            Returns:
+                np_data: input data converted in dict of JAX arrays.
+                np_index: dict of indices mapping the local time step to the actual indices to access the data.
+                xs : range of steps in local time.
         """
         time_dataset = get_time_dataset(dataset)
         time_datasets = split_dataset_from_time_dims(time_dataset)
@@ -610,6 +642,7 @@ class Stream:
 
         # prepare steps
         xs = onp.arange(len(time_dataset_index[local_time]))
+
         return np_data, np_index, xs
 
     def merge(

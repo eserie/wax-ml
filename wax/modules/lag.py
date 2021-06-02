@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Lag module."""
+"""Delay operator."""
 import jax.numpy as jnp
 
 from wax.modules.buffer import Buffer
 
 
 class Lag(Buffer):
-    """Lag module."""
+    """Delay operator."""
 
     def __init__(self, lag, fill_value=jnp.nan, return_state=False, name=None):
         super().__init__(

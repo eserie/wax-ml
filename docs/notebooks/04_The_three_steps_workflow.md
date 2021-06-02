@@ -238,7 +238,7 @@ In this step we:
 
 ```{code-cell} ipython3
 rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 ```
 
 ```{code-cell} ipython3
@@ -251,12 +251,12 @@ Once it has been compiled and "traced" by JAX, the function is much faster to ex
 :tags: []
 
 %%timeit
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 ```
 
 ```{code-cell} ipython3
 %%time
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 ```
 
 This is 3x faster than pandas implementation!

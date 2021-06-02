@@ -21,7 +21,7 @@ import pandas as pd
 import xarray as xr
 
 from wax.format import format_dataarray, format_dataframe, format_dataset, format_series
-from wax.stream import Stream, get_dataset_schema
+from wax.stream import Stream
 
 # DTypeLike = TypeVar("DTypeLike")
 DTypeLike = str
@@ -59,7 +59,7 @@ class StreamDataset(Stream):
             Unroll results of the module formated as a nested data structure with dataarray leaves.
         """
         dataset = self.accessor._obj
-        schema = get_dataset_schema(dataset)
+        schema = self.get_dataset_schema(dataset)
         outputs = self.unroll_dataset(
             module, params, state, rng, skip_first, schema.encoders, dataset
         )
@@ -113,7 +113,7 @@ class StreamDataArray(Stream):
         """
         dataarray = self.accessor._obj
         dataset = xr.Dataset({"dataarray": dataarray})
-        schema = get_dataset_schema(dataset)
+        schema = self.get_dataset_schema(dataset)
 
         def module_dataset(dataset):
             array = dataset["dataarray"]
@@ -190,7 +190,7 @@ class StreamDataFrame(Stream):
                 list(range(dataframe.columns.nlevels))
             ).to_xarray()
         dataset = dataarray.to_dataset(name="dataarray")
-        schema = get_dataset_schema(dataset)
+        schema = self.get_dataset_schema(dataset)
 
         def module_dataset(dataset):
             array = dataset["dataarray"]
@@ -263,7 +263,7 @@ class StreamSeries(Stream):
         series = self.accessor._obj
         dataarray = series.to_xarray()
         dataset = xr.Dataset({"dataarray": dataarray})
-        schema = get_dataset_schema(dataset)
+        schema = self.get_dataset_schema(dataset)
 
         def module_dataset(dataset):
             array = dataset["dataarray"]

@@ -514,8 +514,8 @@ class Stream:
         Return:
             transform_dataset: transformed function ready to process in-memory data in local time.
             np_data: input data converted in dict of JAX arrays.
-            np_index:
-            xs
+            np_index: dict of indices mapping the local time step to the actual indices to access the data.
+            xs : range of steps in local time.
         """
 
         np_data, np_index, xs = self.trace_dataset(dataset)

@@ -258,7 +258,6 @@ For that, we define:
 
 +++
 
-
 ### Linear regression agent
 
 +++

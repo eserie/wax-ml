@@ -44,8 +44,8 @@ mechanism between different data streams. Using the terminology of Henri Poincar
 link above), we introduce the notion of "local time" to unravel the stream in which
 the user wants to apply transformations. We call the other streams "secondary streams".
 They can work at different frequencies, lower or higher.  The data from these secondary
-streams will be represented in the "local time" either with the use of a 
-forward filling mechanism for lower frequencies or a buffering mechanism 
+streams will be represented in the "local time" either with the use of a
+forward filling mechanism for lower frequencies or a buffering mechanism
 for higher frequencies.
 
 We implement a "data tracing" mechanism to optimize access to out-of-sync streams.

@@ -483,64 +483,67 @@ sub-package.
 ### Feedback loops and control theory
 
 We would like to implement other types of feedback loops in WAX-ML.
-
 For instance, those of the standard control theory toolboxes,
-such as those implemented in the [SLICOT](http://slicot.org/) library.
+such as those implemented in the SLICOT [SLICOT](http://slicot.org/) library.
 
-Many algorithms in this space are absent from the python ecosystem.  If they are not
-implemented in other libraries, WAX-ML aims to implement them via JAX and expose them with
-a simple API.
+Many algorithms in this space are absent from the python ecosystem.  
+If they are not implemented in other libraries, WAX-ML aims to propose some 
+JAX-based implementations and expose them with a simple API.
 
-#### Kalman filtering
-An idiomatic example is the
-[Kalman filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman)
-, a now-standard algorithm that dates back to the 1950s.
-After 30 years of existence, the Python ecosystem has still not integrated this algorithm into
-widely adopted libraries!
-Some implementations can be found in
+An idiomatic example in this field is the 
+[Kalman filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman), 
+a now-standard algorithm that dates back to the 1950s.  
+After 30 years of existence, the Python ecosystem has still not integrated 
+this algorithm into widely adopted libraries!
+Some implementations can be found in python libraries such as 
 [python-control](https://github.com/python-control/python-control),
-[stats-models](https://www.statsmodels.org/stable/index.html), [SciPy
-Cookbook](https://scipy-cookbook.readthedocs.io/items/KalmanFiltering.html#).  Some
-machine learning libraries have closed non-solved issues like [scikit-learn
-#862](https://github.com/scikit-learn/scikit-learn/pull/862) or [river
-#355](https://github.com/online-ml/river/pull/355).
-
-Why didn't the Kalman filter find its place in these libraries?  Because they have an
-object-oriented API (which is very good!)  offering them specific APIs very well adapted
-to specific problems of modern machine learning.
-
-The functional approach of WAX-ML, inherited from JAX, could well help to integrate a
-Kalman filter implementation in a machine learning ecosystem.  (See WEP5 for the
-integration plan)
+[stats-models](https://www.statsmodels.org/stable/index.html), 
+[SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/KalmanFiltering.html#).
+Also, some machine learning libraries have some closed and non-solved issues on this subject
+, see [scikit-learn#862 issue](https://github.com/scikit-learn/scikit-learn/pull/862) 
+or [river#355 issue](https://github.com/online-ml/river/pull/355).
+Why has the Kalman filter not found its place in these libraries? 
+We think it may be because they have an object-oriented API, which makes 
+them very well suited to the specific problems of modern machine learning but, on the other hand, prevents them from accommodating additional features such as Kalman filtering.
+We think the functional approach of WAX-ML, inherited from JAX, could well
+help to integrate a Kalman filter implementation in a machine learning ecosystem. 
 
 It turns out that python code written with JAX is not very far from
-[Fortran](https://fr.wikipedia.org/wiki/Fortran), a (mathematical FORmula TRANslating
-system).  It should therefore be quite easy and natural to reimplement standard
-algorithms implemented in Fortran, such as those in the [SLICOT](http://slicot.org/)
-library with JAX.
-
-It seems that some questions about the integration of Fortran into JAX have already been raised.
-See for instance [this discussion](https://github.com/google/jax/discussions/3950).
+[Fortran](https://fr.wikipedia.org/wiki/Fortran), a mathematical FORmula TRANslating
+system.  It should therefore be quite easy and natural to reimplement standard
+algorithms implemented in Fortran, such as those in the
+[SLICOT](http://slicot.org/) library with JAX.
+It seems that some questions about the integration of Fortran into 
+JAX have already been raised. 
+As noted in
+[this discussion on JAX's github page](https://github.com/google/jax/discussions/3950), 
+it might even be possible to simply wrap Fortran code in JAX. 
+This would avoid a painful rewriting process!
 
 ### Optimization
 
-JAX ecosystem has already a library dedicated to optimization:
-[Optax](https://github.com/deepmind/optax) that we already use in WAX-ML.
-It could be interesting to complete it with
-other first-order algorithms such as [ADMM](https://stanford.edu/~boyd/admm.html).
 
-One can find "functional" implementations of proximal algorithms in python (see
-[proxmin](https://github.com/pmelchior/proxmin)) and Julia (see
+The JAX ecosystem already has a library dedicated to optimization:
+[Optax](https://github.com/deepmind/optax), which we already use in WAX-ML.
+We could complete it by offering
+other first-order algorithms such as the Alternating Direction Multiplier Method
+[(ADMM)](https://stanford.edu/~boyd/admm.html).
+One can find "functional" implementations of proximal algorithms in libraries such
+as 
+[proxmin](https://github.com/pmelchior/proxmin)), 
 [ProximalOperators](https://kul-forbes.github.io/ProximalOperators.jl/latest/),
-[COSMO](https://github.com/oxfordcontrol/COSMO.jl) ). Collaborating with these teams
-should be very interesting.
+or [COSMO](https://github.com/oxfordcontrol/COSMO.jl), 
+which could give good reference implementations to start the work.
 
-Another kind of works took place around automatic differentiation and
-optimization such as those conducted in [cvxpylayers](https://github.com/cvxgrp/cvxpylayers)
-which proposes a mechanism to use convex optimizers in
-differentiable layers.
-They have already implemented a JAX API but they can't use the `jit` compilation of JAX at the moment
-(see [this issue](https://github.com/cvxgrp/cvxpylayers/issues/103)). 
+
+Another type of work took place around automatic differentiation and 
+optimization in \cite{agrawal2019differentiable} 
+where the authors implement differentiable layers based
+on convex optimization. In the [cvxpylayers](https://github.com/cvxgrp/cvxpylayers)
+library,
+the authors have implemented a JAX API but, at the moment
+(see [this issue](https://github.com/cvxgrp/cvxpylayers/issues/103)), 
+they cannot use the `jit` compilation of JAX yet. 
 We would be interested to help with WAX-ML!
 
 

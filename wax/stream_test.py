@@ -13,7 +13,6 @@
 # limitations under the License.
 from functools import partial, reduce
 
-import eagerpy as ep
 import haiku as hk
 import jax.numpy as jnp
 import numpy as onp
@@ -27,6 +26,7 @@ from jax.tree_util import tree_map
 from numpy import array
 from pandas import NaT
 
+import wax.external.eagerpy as ep
 from wax.datasets.generate_temperature_data import (
     generate_temperature_data_multi_time_scale,
 )

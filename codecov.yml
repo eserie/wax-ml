@@ -8,8 +8,8 @@ coverage:
       source:
         paths:
           - "wax/"
-        target: 98.99%
+        target: 79.94%
         threshold: 0.002
     patch:
       default:
-        target: 98%  # new contributions should have a coverage at least equal to target
+        target: 51.76%  # new contributions should have a coverage at least equal to target

@@ -16,15 +16,16 @@
 from collections import namedtuple
 from typing import Any, Tuple, cast
 
-import eagerpy as ep
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import tensorflow as tf
-from eagerpy import eager_function
 from jax.lax import fori_loop
 from jax.tree_util import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from tqdm.auto import tqdm
+
+import wax.external.eagerpy as ep
+from wax.external.eagerpy import eager_function
 
 
 class EagerEWMA(hk.Module):

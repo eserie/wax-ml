@@ -9,9 +9,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.11.1
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: wax-dev
 #     language: python
-#     name: python3
+#     name: wax-dev
 # ---
 
 # +
@@ -209,6 +209,11 @@ axs[1].set_title("Weight[0,0]")
 
 # ### Linear regression agent
 
+# In WAX-ML, an agent is a simple function with the following API:
+# <div align="center">
+# <img src="../tikz/agent.png" alt="logo" width="20%"></img>
+# </div>
+
 # Let's define a simple linear regression agent with the elements we have defined so far.
 
 
@@ -233,6 +238,11 @@ def linear_regression_agent(obs):
 
 
 # ### Linear regression environment
+
+# In WAX-ML, an environment is a simple function with the following API:
+# <div align="center">
+# <img src="../tikz/env.png" alt="logo" width="20%"></img>
+# </div>
 
 # Let's now define a linear regression environment that, for the moment,
 # have static weights.
@@ -286,6 +296,16 @@ def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
 # ### Implement Feedback
 
 # We are now ready to set things up with the `GymFeedback` module implemented in WAX-ML.
+#
+# It implements the following feedback loop:
+# <div align="center">
+# <img src="../tikz/gymfeedback.png" alt="logo" width="50%"></img>
+# </div>
+
+# Equivalently, it can be described with the pair of `init` and `apply` functions:
+# <div align="center">
+# <img src="../tikz/gymfeedback_init_apply.png" alt="logo" width="100%"></img>
+# </div>
 
 from wax.modules import GymFeedback
 

@@ -290,9 +290,9 @@ EWMA or Binning on the air temperature dataset.
 
 ## ⏱ Synchronize streams ⏱
 
-Physicists, and not the least 😅, have brought a solution to the synchronization
-problem.  See [Poincaré-Einstein synchronization Wikipedia
-page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details.
+Physicists have brought a solution to the synchronization
+problem (See [Poincaré-Einstein synchronization Wikipedia
+page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details).
 
 In WAX-ML we strive to follow their recommendations and implement a synchronization
 mechanism between different data streams. Using the terminology of Henri Poincaré (see
@@ -382,41 +382,46 @@ strength.
 
 ## ♻ Feedbacks ♻
 
-Feedback is a fundamental notion in time-series analysis and has a wide history (see
-[Feedback Wikipedia page](https://en.wikipedia.org/wiki/Feedback) for instance).
+Feedback is a fundamental notion in time-series analysis and has a wide history 
+(see [Feedback Wikipedia page](https://en.wikipedia.org/wiki/Feedback)  for instance).
+So, we believe it is important to be able to implement them well in WAX-ML.
 
-Thus, we believe it is important to be able to implement them well when the design of
-time-series analysis tools.
+A fundamental piece in the implementation of feedbacks is the delay operator that we implement with
+the module `Lag`. This module is itself implemented with a kind of more fundamental module in WAX-ML
+which implements the buffering mechanism: the `Buffer` module.
 
-A fundamental piece in the implementation of feedbacks is the "delay" operator that we
-implement in WAX-ML with the module `Lag`.  
-This module is itself implemented
-with a kind of more fundamental module in WAX-ML which implements the buffering
-mechanism.  It is implemented in the `Buffer` module which we implement with an API very
-similar to the `deque` module of the standard python library `collections`.
 
-The linear state-space models used to model linear time-invariant systems in signal
-theory are a well-known place where feedbacks are used to implement for instance
-infinite impulse response filters.  This should be easily implemented with the WAX-ML
-tools and should be implemented in it at a later time.
+The linear state-space models used to model linear time-invariant systems in signal theory 
+are a well-known place where feedbacks are used to implement for instance infinite impulse response filters.
+This should be easily implemented with the WAX-ML tools and should be implemented in it at a later time.
 
-Another example is control theory or reinforcement learning.
-In these fields, feedback is used to make an agent and
-an environment interact, resulting in a non-trivial global dynamic.
-In WAX-ML, we propose a simple module called `GymFeedBack` that allows the implementation
-of reinforcement learning experiences.
-This is built from an agent and an environment:
-- An *agent* is a function with an `observation` input and an `action` output.
-- An *environment* is a function with a pair `(action, raw observation)` as input and a pair `(reward, observation)` as output.
+Another example is control theory or reinforcement learning. In these fields, feedback is used to make an agent and an environment interacting.
+This generally results in a non-trivial global dynamic.
+In WAX-ML, we propose a simple module called `GymFeedBack` that allows the implementation of reinforcement learning experiences. 
 
-A feedback instance `GymFeedback(agent, env)` is a module with a `raw observation` input
-and a `reward` output.
+This is built from an agent and an environment with an agent being a function with:
+- an "observation" input and an "action" output and
+- an *environment* being a function with a pair  "(action, raw observation)" as input and a pair "(reward, observation)" as output.
+We can represent them with block diagrams:
+<div align="center">
+<img src="docs/tikz/agent_env.png" alt="logo" width="40%"></img>
+</div>
 
-`GymFeedback` is implemented as a regular Haiku module in `wax.modules`.
+A feedback instance `GymFeedback(agent, env)` is a module with a "raw observation" input
+and a "reward" output. We can describe furthermore an instance of the module `GymFeedback(agent, env)` 
+by representing it with a pair of pure functions
+ `init` and `apply`  as is the custom in Haiku library (see their documentation for more details).
 
-Here we illustrate how these feedback building blocks work:
+ We can describe how the agent and environment are assembled to build the module with the following 
+ block diagram describing these two pure functions:
 
-![](docs/_static/gym_feeback.png)
+<div align="center">
+<img src="docs/tikz/gymfeedback_init_apply.png" alt="logo" width="40%"></img>
+</div>
+
+We also make a concrete usage of this architecture in our 
+🦎: [online learning example ![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb),
+  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/06_Online_Linear_Regression.html) 🦎 
 
 Here is an illustrative plot of the final result of the study:
 

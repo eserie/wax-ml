@@ -18,11 +18,10 @@ help:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: img
-img :
-	cd img && $(MAKE) 
+.PHONY: tikz
+tikz :
+	cd tikz && $(MAKE) 
 
-.PHONY: img_html
-img_html: img
+.PHONY: tikz_html
+tikz_html: tikz
 	$(MAKE) html
-	

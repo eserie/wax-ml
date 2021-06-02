@@ -1,0 +1,96 @@
+% tikzpic.tex
+\documentclass[crop,tikz]{standalone}% 'crop' is the default for v1.0, before it was 'preview'
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amssymb,amsthm}
+\usepackage[normalem]{ulem}
+\usepackage{bm}
+\usepackage{pgfplots}
+
+\usepackage{pgf}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usetikzlibrary{arrows,automata}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,fit} %use shapes library if you need ellipse
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc}
+
+\usetikzlibrary{intersections}
+\tikzset{
+    state/.style={
+           rectangle,
+           rounded corners,
+           draw=black, very thick,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+    state2/.style={
+           rectangle,
+           rounded corners,
+           draw=black,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+}
+
+
+\begin{document}
+
+\begin{tikzpicture}
+[
+->,>=stealth'
+]
+
+ % First node
+ % Use previously defined 'state' as layout (see above)
+ % use tabular for content to get columns/rows
+ % parbox to limit width of the listing
+
+
+
+
+ % STATE ACK
+ \node[state,
+ node distance=6cm,
+ text width=3cm] (AGENT) 
+  {%                     % posistion relative to the center of the 'box'
+ \begin{tabular}{l}     % content
+  \textbf{Agent}\\
+ \end{tabular}
+ };
+
+
+ % STATE EPC
+ \node[state2,
+ below of=AGENT,
+ node distance=2cm] (RAWOBS) 
+ {%
+raw observation
+ };
+
+ \node[state2,
+ right of=AGENT,
+ node distance=4cm] (ACTOUT) 
+ {%
+action
+ };
+ 
+\node[state,draw=red, fit=(AGENT),inner sep=6mm](GYMFEEDBACK) {};
+ 
+ % draw the paths and and print some Text below/above the graph
+ \path 
+ (GYMFEEDBACK)
+  node[anchor=north,text width=6cm,yshift=4.5em, xshift=5em]{\color{red}GymFeedback : init} 
+  (GYMFEEDBACK)
+  (RAWOBS) edge (AGENT)
+  (AGENT) edge (ACTOUT)
+ ;
+\end{tikzpicture}
+
+\end{document}

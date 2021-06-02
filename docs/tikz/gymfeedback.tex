@@ -1,0 +1,135 @@
+% tikzpic.tex
+\documentclass[crop,tikz]{standalone}% 'crop' is the default for v1.0, before it was 'preview'
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amssymb,amsthm}
+\usepackage[normalem]{ulem}
+\usepackage{bm}
+\usepackage{pgfplots}
+
+\usepackage{pgf}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usetikzlibrary{arrows,automata}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,fit} %use shapes library if you need ellipse
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc}
+
+\usetikzlibrary{intersections}
+\tikzset{
+    state/.style={
+           rectangle,
+           rounded corners,
+           draw=black, very thick,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+    state2/.style={
+           rectangle,
+           rounded corners,
+           draw=black,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+             phantom/.style={
+    rectangle,
+           rounded corners,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+    },
+}
+
+
+\begin{document}
+
+\begin{tikzpicture}
+[
+->,>=stealth'
+]
+
+ % First node
+ % Use previously defined 'state' as layout (see above)
+ % use tabular for content to get columns/rows
+ % parbox to limit width of the listing
+
+
+
+
+ % STATE ACK
+ \node[state,
+ node distance=6cm,
+ text width=3cm] (AGENT) 
+  {%                     % posistion relative to the center of the 'box'
+ \begin{tabular}{l}     % content
+  \textbf{Agent}\\
+ \end{tabular}
+ };
+
+
+ % Next node: RAKE
+ \node[state,       % layout (defined above)
+ node distance=3.5cm,     % distance to QUERY
+ right of=AGENT,
+ text width=3cm,        % max text width
+ %yshift=+3cm
+ ] (ENV)    % move 3cm in y
+  {%                     % posistion relative to the center of the 'box'
+ \begin{tabular}{l}     % content
+  \textbf{Environment}
+ \end{tabular}
+ };
+
+  \node[phantom,xshift=-2em,
+   node distance=3.5cm,     % distance to QUERY
+ right of=AGENT,
+ text width=3cm,        % max text width
+](ENVLEFT){};
+
+  \node[phantom,xshift=2em,
+   node distance=3.5cm,     % distance to QUERY
+ right of=AGENT,
+ text width=3cm,        % max text width
+](ENVRIGHT){};
+ 
+  \node[state2,
+ above of=ENVRIGHT,
+ node distance=1.5cm] (RAWOBS) 
+ {%
+raw observation
+ };
+
+ \node[state2,
+ below of=ENVRIGHT,
+ node distance=1.5cm] (REWARD) 
+ {%
+reward
+ };
+
+ 
+ 
+ % draw the paths and and print some Text below/above the graph
+ \path 
+ (AGENT.north)
+edge[bend left=50] 
+  node[anchor=north,text width=4cm,yshift=2em, xshift=4em]{action} 
+  (ENVLEFT.north)
+ (ENVLEFT.south)
+ edge[bend right=-50] 
+  node[anchor=south,text width=4cm,yshift=-2em, xshift=3em]{observation} 
+ (AGENT.south)
+ (RAWOBS) edge (ENVRIGHT)
+ (ENVRIGHT) edge (REWARD)
+ ;
+
+ 
+ 
+\end{tikzpicture}
+
+\end{document}

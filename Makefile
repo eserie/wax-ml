@@ -87,7 +87,7 @@ coverage:
 	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend pytorch ./external/eagerpy_tests
 	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend jax ./external/eagerpy_tests
 	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend tensorflow ./external/eagerpy_tests
-	pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend pytorch-gpu ./external/eagerpy_tests
+	# pytest --pdb --cov-report term-missing --cov=$(PACKAGE_NAME) --cov-append --verbose --backend pytorch-gpu ./external/eagerpy_tests
 
 .PHONY: docs
 docs:

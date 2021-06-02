@@ -504,30 +504,25 @@ class Stream:
 
     def prepare(
         self,
-        module: Callable,
         dataset: xr.Dataset,
+        module: Callable,
         encoders: EncoderMapping = None,
-        return_data: bool = False,
-    ) -> Tuple[Callable, Dict[str, jnp.ndarray], Dict[str, jnp.ndarray], jnp.ndarray]:
+    ) -> Tuple[Callable, jnp.ndarray]:
         """Prepare a function that wraps the input function with the actual data and indices
          in a pair of pure functions (TransformedWithState tuple).
 
         Args:
-            module : callable being able to be transformed with Haiku transform_with_state.
             dataset : dataset on which the transformation is applied
+            module : callable being able to be transformed with Haiku transform_with_state.
             encoders : encoders used to encode numpy dtypes which are not supported by Jax.
-            return_data : if true return data and indices (see Optional below)
 
-        Return:
+        Returns:
             transform_dataset: transformed function ready to process in-memory data in local time.
             xs : range of steps in local time.
-
-        Optional:
-            np_data: input data converted in dict of JAX arrays.
-            np_index: dict of indices mapping the local time step to the actual indices to access the data.
-
         """
         encoders = encoders if encoders is not None else self.get_encoders(dataset)
+
+        # Prepare np_data and np_index
         np_data, np_index, xs = self.trace_dataset(dataset)
         # encode values
         np_data = encode_dataset(encoders, np_data)
@@ -554,10 +549,7 @@ class Stream:
             dataset = partial(tree_access_data, np_data, np_index)(step)
             return module(dataset)
 
-        if return_data:
-            return transform_dataset, np_data, np_index, xs
-        else:
-            return transform_dataset, xs
+        return transform_dataset, xs
 
     def unroll_dataset(
         self,
@@ -583,7 +575,7 @@ class Stream:
         Return:
             Unroll results of the module formatted as a nested data structure with dataarray leaves.
         """
-        transform_dataset, xs = self.prepare(fun, dataset, encoders)
+        transform_dataset, xs = self.prepare(dataset, fun, encoders)
 
         outputs, state = dynamic_unroll(
             transform_dataset, params, state, rng, skip_first, xs
@@ -615,15 +607,19 @@ class Stream:
             local_time = self.local_time
         return local_time
 
-    def trace_dataset(self, dataset: xr.Dataset) -> Any:
+    def trace_dataset(
+        self, dataset: xr.Dataset
+    ) -> Tuple[Dict[str, jnp.ndarray], Dict[str, jnp.ndarray], jnp.ndarray]:
         """Trace dataset time indices in order to syncrhonize them an prepare data access
         through unroll operations.
+
             Args:
                 dataset : dataset on which the transformation is applied
 
-            Return:
-                Unroll results of the module formated as a nested data
-                structure with dataarray leaves.
+            Returns:
+                np_data: input data converted in dict of JAX arrays.
+                np_index: dict of indices mapping the local time step to the actual indices to access the data.
+                xs : range of steps in local time.
         """
         time_dataset = get_time_dataset(dataset)
         time_datasets = split_dataset_from_time_dims(time_dataset)
@@ -646,6 +642,7 @@ class Stream:
 
         # prepare steps
         xs = onp.arange(len(time_dataset_index[local_time]))
+
         return np_data, np_index, xs
 
     def merge(

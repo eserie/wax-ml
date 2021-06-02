@@ -156,7 +156,7 @@ def my_ewma_on_dataset(dataset):
     return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
 
-transform_dataset, jxs = stream.prepare(my_ewma_on_dataset, dataset)
+transform_dataset, jxs = stream.prepare(dataset, my_ewma_on_dataset)
 
 # Let's definite the init parameters and state of the transformation we
 # will apply.

@@ -27,6 +27,26 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 
+def init_params_state(
+    fun: hk.TransformedWithState,
+    rng: jnp.ndarray,
+    *args,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using jax.lax.scan.
+
+    Args:
+        fun : pair of pure functions (init, apply).
+        rng: random number generator key.
+        args, kwargs : Nested data structures with sequences as leaves passed to
+            first element (init) of the TransformedWithState pair.
+    """
+    xs = (args, kwargs)
+    args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
+    fun_init_params, fun_init_state = fun.init(rng, *args_0, **kwargs_0)
+    return fun_init_params, fun_init_state
+
+
 def dynamic_unroll(
     fun: hk.TransformedWithState,
     params: Any,
@@ -44,14 +64,13 @@ def dynamic_unroll(
         state : state for the function.
         rng: random number generator key.
         skip_first : if true, first value of the sequence is not used in apply.
-        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+        args, kwargs : Nested data structures with sequences as leaves passed to init and apply
             of the TransformedWithState pair.
     """
-    xs = (args, kwargs)
-    args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-    fun_init_params, fun_init_state = fun.init(rng, *args_0, **kwargs_0)
+    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
+    xs = (args, kwargs)
 
     if skip_first:
         xs = tree_map(lambda x: x[1:], xs)
@@ -134,13 +153,11 @@ def static_unroll(
         pbar : if true, activate progress bar.
     """
     # init
-    xs = (args, kwargs)
-    args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-    fun_init_params, fun_init_state = fun.init(rng, *args_0, **kwargs_0)
+    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
+    xs = (args, kwargs)
 
-    # apply
     if skip_first:
         xs = tree_map(lambda x: x[1:], xs)
 
@@ -213,18 +230,18 @@ def dynamic_unroll_fori_loop(
     """
     LoopState = namedtuple("LoopState", "params, state, rng, x, output_sequence")
 
-    xs = (args, kwargs)
-
-    # Initialize loop
-    args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-    fun_init_params, fun_init_state = fun.init(rng, *args_0, **kwargs_0)
+    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
+    xs = (args, kwargs)
 
     if skip_first:
         xs = tree_map(lambda x: x[1:], xs)
 
+    # get template output
+    args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
     output_template, _ = fun.apply(params, state, rng, *args_0, **kwargs_0)
+
     T = len(tree_flatten(xs)[0][0])
     output_sequence = tree_map(
         lambda x: jnp.full((T,) + x.shape, jnp.nan, x.dtype), output_template

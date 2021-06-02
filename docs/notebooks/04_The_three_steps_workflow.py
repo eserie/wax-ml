@@ -57,7 +57,6 @@ jax.devices()
 # ## Imports
 
 # + tags=[]
-
 import haiku as hk
 import numpy as onp
 import pandas as pd
@@ -141,23 +140,39 @@ dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
 # - encode and convert data from numpy to JAX: use encoders for `datetimes64` and `string_`
 #   dtypes. Be aware that by default JAX works in float32
 #   (see [JAX's Common Gotchas](https://jax.readthedocs.io/en/latest/notebooks/Common_Gotchas_in_JAX.html#double-64bit-precision) to work in float64).
+#
+# We have a function `Stream.prepare` that implement this Step (1).
+# It prepares a function that wraps the input function with the actual data and indices
+# in a pair of pure functions (`TransformedWithState` Haiku tuple).
 
 # %%time
 stream = dataframe.wax.stream()
-np_data, np_index, xs = stream.trace_dataset(dataset)
-jnp_data, jnp_index, jxs = convert_to_tensors((np_data, np_index, xs), "jax")
 
-from jax.tree_util import tree_leaves, tree_map
-
-# We explicitly set data on CPUs (the is not needed if you only have CPUs)
-cpus = jax.devices("cpu")
-jnp_data, jnp_index, jxs = tree_map(
-    lambda x: jax.device_put(x, cpus[0]), (jnp_data, jnp_index, jxs)
-)
-print("data copied to CPU device.")
+# Define our custom function to be applied on a dict of arrays
+# having the same structure than the original dataset:
 
 
-# We have now "JAX-ready" data for later fast access.
+def my_ewma_on_dataset(dataset):
+    return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
+
+
+transform_dataset, jxs = stream.prepare(my_ewma_on_dataset, dataset)
+
+# Let's definite the init parameters and state of the transformation we
+# will apply.
+
+# ### Init params and state
+
+from wax.unroll import init_params_state
+
+rng = jax.random.PRNGKey(42)
+params, state = init_params_state(transform_dataset, rng, jxs)
+
+params
+
+assert state["ewma"]["count"].shape == (1000,)
+assert state["ewma"]["mean"].shape == (1000,)
+
 
 # ## Step (2) (compile | code tracing | execution)
 
@@ -172,18 +187,8 @@ print("data copied to CPU device.")
 # - perform code tracing and execution (the last line):
 #     - Unroll the transformation on "steps" `xs` (a `np.arange` vector).
 
-# +
-# %%time
-@jit_init_apply
-@hk.transform_with_state
-def transform_dataset(step):
-    dataset = tree_access_data(jnp_data, jnp_index, step)
-    return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
-
-
 rng = next(hk.PRNGSequence(42))
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
-# -
 
 outputs.device()
 
@@ -201,6 +206,53 @@ outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 #
 # (The 3x factor is obtained by measuring the execution with %timeit.
 # We don't know why, but when executing a code cell once at a time, then the execution time can vary a lot and we can observe some executions with a speed-up of 100x).
+
+# ### Manually prepare the data and manage the device
+
+# In order to manage the device on which the computations take place,
+# we need to have even more control over the execution flow.
+# Instead of calling `stream.prepare` to build the `transform_dataset` function,
+# we can do it ourselves by :
+# - using the `stream.trace_dataset` function
+# - converting the numpy data in jax ourself
+# - puting the data on the device we want.
+
+np_data, np_index, xs = stream.trace_dataset(dataset)
+jnp_data, jnp_index, jxs = convert_to_tensors((np_data, np_index, xs), "jax")
+
+# We explicitly set data on CPUs (the is not needed if you only have CPUs):
+
+# +
+from jax.tree_util import tree_leaves, tree_map
+
+cpus = jax.devices("cpu")
+jnp_data, jnp_index, jxs = tree_map(
+    lambda x: jax.device_put(x, cpus[0]), (jnp_data, jnp_index, jxs)
+)
+print("data copied to CPU device.")
+
+
+# -
+
+# We have now "JAX-ready" data for later fast access.
+
+# Let's define the transformation that wrap the actual data and indices in a pair of
+# pure functions:
+
+# %%time
+@jit_init_apply
+@hk.transform_with_state
+def transform_dataset(step):
+    dataset = tree_access_data(jnp_data, jnp_index, step)
+    return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
+
+
+# And we can call it as before:
+
+# %%time
+outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+
+outputs.device()
 
 # ## Step(3) (format)
 # Let's come back to pandas/xarray:

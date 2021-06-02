@@ -170,8 +170,8 @@ params, state = init_params_state(transform_dataset, rng, jxs)
 
 params
 
-assert state["ewma"]["count"].shape == (1000,)
-assert state["ewma"]["mean"].shape == (1000,)
+assert state["ewma"]["count"].shape == (N,)
+assert state["ewma"]["mean"].shape == (N,)
 
 
 # ## Step (2) (compile | code tracing | execution)

@@ -26,6 +26,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
     Union,
     cast,
 )
@@ -497,29 +498,24 @@ class Stream:
     format_outputs: bool = True
     return_state: bool = True
 
-    def unroll_dataset(
+    def prepare(
         self,
         module: Callable,
-        params: Any,
-        state: Any,
-        rng: Any,
-        skip_first: bool,
         encoders: EncoderMapping,
         dataset: xr.Dataset,
-    ) -> Any:
-        """Unroll a module onto a dataset.
+    ) -> Tuple[Callable, Dict[str, jnp.ndarray], Dict[str, jnp.ndarray], jnp.ndarray]:
+        """Prepare a function and input data to be ready to apply a transformation in local time stream.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
-            params: parameters for the module
-            state : state for the module
-            rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
             encoders : encoders used to encode numpy dtypes which are not supported by Jax.
             dataset : dataset on which the transformation is applied
 
         Return:
-            Unroll results of the module formated as a nested data structure with dataarray leaves.
+            transform_dataset: transformed function ready to process in-memory data in local time.
+            np_data: input data converted in dict of JAX arrays.
+            np_index:
+            xs
         """
 
         np_data, np_index, xs = self.trace_dataset(dataset)
@@ -547,6 +543,34 @@ class Stream:
         def transform_dataset(step):
             dataset = partial(tree_access_data, np_data, np_index)(step)
             return module(dataset)
+
+        return transform_dataset, np_data, np_index, xs
+
+    def unroll_dataset(
+        self,
+        fun: Callable,
+        params: Any,
+        state: Any,
+        rng: Any,
+        skip_first: bool,
+        encoders: EncoderMapping,
+        dataset: xr.Dataset,
+    ) -> Any:
+        """Unroll a function onto a dataset.
+
+        Args:
+            fun : callable being able to be transformed with Haiku transform_with_state.
+            params: parameters for the module
+            state : state for the module
+            rng: random number generator key.
+            skip_first : if true, first value of the sequence is not used in apply.
+            encoders : encoders used to encode numpy dtypes which are not supported by Jax.
+            dataset : dataset on which the transformation is applied
+
+        Return:
+            Unroll results of the module formatted as a nested data structure with dataarray leaves.
+        """
+        transform_dataset, np_data, np_index, xs = self.prepare(fun, encoders, dataset)
 
         # outputs, state = static_unroll(access_dataset, xs, next(seq))
         outputs, state = dynamic_unroll(

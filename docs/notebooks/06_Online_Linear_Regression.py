@@ -35,7 +35,7 @@ jax.devices()
 # We go there progressively by showing how a linear regression problem can be cast
 # into an online learning problem thanks to the `OnlineSupervisedLearner` module.
 #
-# Then, in order to tackle a non-stationary linear regression problem (i.e. with a weight that can vary in time)
+# Then, to tackle a non-stationary linear regression problem (i.e. with a weight that can vary in time)
 # we reformulate the problem into a reinforcement learning problem that we implement with the `GymFeedBack` module of WAX-ML.
 #
 # We then need to define an "agent" and an "environment" using simple functions implemented with modules:
@@ -45,8 +45,8 @@ jax.devices()
 # We experiment with a non-stationary environment that returns the sign of the linear regression parameters at a given time step,
 # known only to the environment.
 #
-# This example shows that it is actually quite simple to implement this online-learning task with WAX-ML tools.
-# In particular, the functional workflow adopted here allows to reuse the functions implemented for a
+# This example shows that it is quite simple to implement this online-learning task with WAX-ML tools.
+# In particular, the functional workflow adopted here allows reusing the functions implemented for a
 # task for each new task of increasing complexity,
 #
 #
@@ -69,7 +69,7 @@ from wax.modules import OnlineSupervisedLearner
 
 # ## Static Linear Regression
 
-# First let's implement a simple linear regression
+# First, let's implement a simple linear regression
 
 # ### Generate data
 
@@ -82,7 +82,7 @@ w_true = jnp.ones(3)
 # ### Define the model
 
 # We use the basic module `hk.Linear` which is a linear layer.
-# By default, it initalizes the weights with random values from the truncated normal,
+# By default, it initializes the weights with random values from the truncated normal,
 # with a standard deviation of $1 / \sqrt{N}$ (See https://arxiv.org/abs/1502.03167v3)
 # where $N$ is the size of the inputs.
 
@@ -129,7 +129,7 @@ plt.title("Regret")
 
 
 # We will now start training the model online.
-# For a review on online learning methods see [1]
+# For a review on online-learning methods see [1]
 #
 #
 # [1] [Elad Hazan, Introduction to Online Convex Optimization](https://arxiv.org/abs/1909.05207)
@@ -203,11 +203,16 @@ axs[1].set_title("Weight[0,0]")
 # Now we will recast the online linear regression learning task as a reinforcement learning task
 # implemented with the `GymFeedback` module of WAX-ML.
 #
-# Fot that we define:
+# For that, we define:
 # - obserbations (`obs`) : pairs  `(x, y)` of features and labels
 # - raw observations (`raw_obs`): pairs `(x, noise)`  of features and noise.
 
 # ### Linear regression agent
+
+# In WAX-ML, an agent is a simple function with the following API:
+# <div align="center">
+# <img src="../tikz/agent.png" alt="logo" width="20%"></img>
+# </div>
 
 # Let's define a simple linear regression agent with the elements we have defined so far.
 
@@ -234,13 +239,18 @@ def linear_regression_agent(obs):
 
 # ### Linear regression environment
 
+# In WAX-ML, an environment is a simple function with the following API:
+# <div align="center">
+# <img src="../tikz/env.png" alt="logo" width="20%"></img>
+# </div>
+
 # Let's now define a linear regression environment that, for the moment,
 # have static weights.
 #
 # It is responsible for generating the real labels and evaluating the agent's reward.
 #
 #
-# For the evaluation of the reward, we need the `Lag` module in order to evaluate the action of
+# For the evaluation of the reward, we need the `Lag` module to evaluate the action of
 # the agent with the labels generated in the previous time step.
 
 from wax.modules import Lag
@@ -273,7 +283,7 @@ def stationary_linear_regression_env(action, raw_obs):
 
 # ### Generate raw observation
 #
-# Let's define a function which generate the raw observation:
+# Let's define a function that generate the raw observation:
 
 
 def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
@@ -286,6 +296,16 @@ def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
 # ### Implement Feedback
 
 # We are now ready to set things up with the `GymFeedback` module implemented in WAX-ML.
+#
+# It implements the following feedback loop:
+# <div align="center">
+# <img src="../tikz/gymfeedback.png" alt="logo" width="50%"></img>
+# </div>
+
+# Equivalently, it can be described with the pair of `init` and `apply` functions:
+# <div align="center">
+# <img src="../tikz/gymfeedback_init_apply.png" alt="logo" width="100%"></img>
+# </div>
 
 from wax.modules import GymFeedback
 
@@ -327,7 +347,6 @@ axs[1].set_title("Weight[0,0]")
 # ## Non-stationary environment
 
 # Now, let's implement a non-stationary environment.
-#
 #
 # We implement it so that the sign of the weight is reversed after 2000$ steps.
 
@@ -401,9 +420,8 @@ axs[1].plot(output_sequence.action["params"]["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 # plt.savefig("../_static/online_linear_regression_regret.png")
 
-# It clearly adapts!
+# It adapts!
 #
-#
-# The regret first converges, then jumps at the step 2000 and finally readjusts to the new regime.
+# The regret first converges, then jumps on step 2000 and finally readjusts to the new regime.
 #
 # We see that the weights converge to the correct values in both regimes.

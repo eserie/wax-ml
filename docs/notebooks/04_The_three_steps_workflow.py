@@ -196,11 +196,11 @@ outputs.device()
 
 # + tags=[]
 # %%timeit
-outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 # -
 
 # %%time
-outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 
 # This is 3x faster than pandas implementation!
 #

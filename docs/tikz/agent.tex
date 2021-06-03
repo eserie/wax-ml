@@ -1,0 +1,95 @@
+% tikzpic.tex
+\documentclass[crop,tikz]{standalone}% 'crop' is the default for v1.0, before it was 'preview'
+%\usetikzlibrary{...}% tikz package already loaded by 'tikz' option
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amssymb,amsthm}
+\usepackage[normalem]{ulem}
+\usepackage{bm}
+\usepackage{pgfplots}
+
+\usepackage{pgf}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usetikzlibrary{arrows,automata}
+\usetikzlibrary{positioning}
+\usetikzlibrary{shapes,fit} %use shapes library if you need ellipse
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc}
+
+\usetikzlibrary{intersections}
+\tikzset{
+    state/.style={
+           rectangle,
+           rounded corners,
+           draw=black, very thick,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+    state2/.style={
+           rectangle,
+           rounded corners,
+           draw=black,
+           minimum height=2em,
+           inner sep=2pt,
+           text centered,
+           },
+}
+
+
+\begin{document}
+
+\begin{tikzpicture}
+[
+->,>=stealth'
+]
+
+ % First node
+ % Use previously defined 'state' as layout (see above)
+ % use tabular for content to get columns/rows
+ % parbox to limit width of the listing
+
+
+
+ % Next node: RAKE
+ \node[state,       % layout (defined above)
+ text width=3cm,        % max text width
+ %yshift=+3cm
+ ] (AGENT)    % move 3cm in y
+  {%                     % posistion relative to the center of the 'box'
+ \begin{tabular}{l}     % content
+  \textbf{Agent}
+ \end{tabular}
+ };
+ 
+ 
+ \node[state2,
+ below of=AGENT,
+ node distance=2cm] (OBS) 
+ {%
+observation
+ };
+ 
+ 
+  
+ \node[state2,
+ above of=AGENT,
+ node distance=2cm] (ACTION) 
+ {%
+action
+ };
+
+ 
+ 
+ 
+ % draw the paths and and print some Text below/above the graph
+ \path 
+ (OBS) edge (AGENT)
+  (AGENT) edge (ACTION)
+ ;
+\end{tikzpicture}
+
+\end{document}

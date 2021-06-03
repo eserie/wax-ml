@@ -70,4 +70,3 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-            CODECOV_TOKEN: "0957e9f3-3158-491c-a416-845cec6bb60b"

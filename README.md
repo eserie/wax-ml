@@ -2,7 +2,7 @@
 <img src="https://github.com/eserie/wax-ml/blob/main/docs/_static/wax_logo.png" alt="logo" width="40%"></img>
 </div>
 
-# WAX-ML: A Python library for machine-learning and feedbacks on streaming data
+# WAX-ML: A Python library for machine-learning and feedback loops on streaming data
 
 ![Continuous integration](https://github.com/eserie/wax-ml/actions/workflows/main.yml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/wax-ml/badge/?version=latest)](https://wax-ml.readthedocs.io/en/latest/)
@@ -16,20 +16,29 @@
 🌊 Wax is what you put on a surfboard to avoid slipping. It is an essential tool to go
 surfing ... 🌊
 
-WAX-ML is a research-oriented [python](https://www.python.org/)  library
+WAX-ML is a research-oriented [Python](https://www.python.org/)  library
 providing tools to design powerful machine learning algorithms and feedback loops
 working on streaming data.
 
-It strives to complement [JAX](https://jax.readthedocs.io/en/latest/) with tools
-dedicated to time-series and make JAX-based programs easy to use for end-users working
+
+It strives to complement [JAX](https://jax.readthedocs.io/en/latest/)
+with tools dedicated to time series.
+
+WAX-ML makes JAX-based programs easy to use for end-users working
 with
 [pandas](https://pandas.pydata.org/) and [xarray](http://xarray.pydata.org/en/stable/)
 for data manipulation.
 
-WAX-ML also provides a simple mechanism for implementing feedback loops with
-functions implemented with [Haiku](https://github.com/deepmind/dm-haiku) modules.
-It also provides a way to make these functions compatible with the [Gym](https://gym.openai.com/)
-reinforcement learning framework.
+WAX-ML provides a simple mechanism for implementing feedback loops, allows the implementation of
+ reinforcement learning algorithms with functions, and makes them easy to integrate by
+end-users working with an object-oriented reinforcement learning framework from
+[Gym](https://gym.openai.com/).
+
+It is released with an Apache open-source license and available at
+\footnote{https://github.com/eserie/wax-ml}.
+
+To learn more, you can read our article [here]()
+or simply access the code in this repository.
 
 ## Goal
 
@@ -55,8 +64,8 @@ and filtering...
 By adopting a "no-framework" approach WAX-ML aims to be an efficient tool to combine modern
 machine-learning approaches with more traditional ones.
 
-Some work has been done in this direction, for example, 
-see [[2] in References](#references) where transformer encoder 
+Some work has been done in this direction, for example,
+see [[2] in References](#references) where transformer encoder
 architectures are massively accelerated, with limited accuracy costs,
 by replacing the self-attention sublayers with a standard, non-parameterized Fast Fourier Transform (FFT).
 Their implementation, not yet published, is based on Flax, a tool from the JAX ecosystem.
@@ -107,7 +116,7 @@ For now, WAX-ML contains:
 
 JAX is a research-oriented computational system implemented in python that leverages the
 XLA optimization framework for machine learning computations.  It makes XLA usable with
-the numpy API and some functional primitives for just-in-time compilation,
+the NumPy API and some functional primitives for just-in-time compilation,
 differentiation, vectorization, and parallelization.  It allows builing higher level
 transformations or "programs" in a functional programming approach.
 
@@ -133,6 +142,27 @@ in [Julia](https://julialang.org/) programming language.
 
 WAX-ML is not a framework but either a set of tools that aim to complement [JAX
 Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
+
+## Functional API
+In WAX-ML, we pursue a functional programming approach inherited from JAX.
+
+In this sense, WAX-ML is not a framework, as most object-oriented libraries offer.
+Instead, we implement "functions" that must be pure to exploit the JAX ecosystem.
+
+We use the "module" mechanism proposed by the Haiku library to easily generate pure function pairs,
+called `init` and `apply` in Haiku, to implement programs that require the
+management of
+parameters and/or state variables.
+In this way, we can recover all the advantages of object-oriented
+programming but exposed
+in the functional programming approach.
+
+This approach gives a lot of freedom in the type of ideas that can be implemented.
+
+In the current version of WAX-ML, we have implemented some of these ideas,
+ranging from exponential moving average
+to online learning and reinforcement learning architectures,
+and they are all exposed in our subpackage `wax.modules`.
 
 # Contents
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)
@@ -196,10 +226,10 @@ stored in memory. (See our WEP4 enhancement proposal)
 
 At the moment `datetime64`and `string_` dtypes are not supported in JAX.
 
-WAX-ML add support for `datetime64` and `string_` numpy dtypes in JAX.
+WAX-ML add support for `datetime64` and `string_` NumPy dtypes in JAX.
 To do so, WAX-ML implements:
 - an encoding scheme for `datetime64` relying on pairs of 32-bit integers similar to `PRNGKey` in JAX.
-- an encoding scheme for `string_` relying on `LabelEncoder` of [scikit-learn](https://scikit-learn.org/stable/).
+- an encoding scheme for `string_` relying on `LabelEncoder` of [Scikit-learn](https://scikit-learn.org/stable/).
 
 By providing these two encoding schemes, WAX-ML makes it easy to use JAX algorithms on data of these types.
 
@@ -302,7 +332,7 @@ mechanism between different data streams. Using the terminology of Henri Poincar
 link above), we introduce the notion of "local time" to unravel the stream in which
 the user wants to apply transformations. We call the other streams "secondary streams".
 They can work at different frequencies, lower or higher.  The data from these secondary
-streams will be represented in the "local time" either with the use of a 
+streams will be represented in the "local time" either with the use of a
 forward filling mechanism for lower frequencies or a buffering mechanism for higher frequencies.
 
 We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
@@ -385,7 +415,7 @@ strength.
 
 ## ♻ Feedbacks ♻
 
-Feedback is a fundamental notion in time-series analysis and has a wide history 
+Feedback is a fundamental notion in time-series analysis and has a wide history
 (see [Feedback Wikipedia page](https://en.wikipedia.org/wiki/Feedback)  for instance).
 So, we believe it is important to be able to implement them well in WAX-ML.
 
@@ -394,13 +424,13 @@ the module `Lag`. This module is itself implemented with a kind of more fundamen
 which implements the buffering mechanism: the `Buffer` module.
 
 
-The linear state-space models used to model linear time-invariant systems in signal theory 
+The linear state-space models used to model linear time-invariant systems in signal theory
 are a well-known place where feedbacks are used to implement for instance infinite impulse response filters.
 This should be easily implemented with the WAX-ML tools and should be implemented in it at a later time.
 
 Another example is control theory or reinforcement learning. In these fields, feedback is used to make an agent and an environment interacting.
 This generally results in a non-trivial global dynamic.
-In WAX-ML, we propose a simple module called `GymFeedBack` that allows the implementation of reinforcement learning experiences. 
+In WAX-ML, we propose a simple module called `GymFeedBack` that allows the implementation of reinforcement learning experiences.
 
 This is built from an agent and an environment with an agent being a function with:
 - an "observation" input and an "action" output and
@@ -411,20 +441,20 @@ We can represent them with block diagrams:
 </div>
 
 A feedback instance `GymFeedback(agent, env)` is a module with a "raw observation" input
-and a "reward" output. We can describe furthermore an instance of the module `GymFeedback(agent, env)` 
+and a "reward" output. We can describe furthermore an instance of the module `GymFeedback(agent, env)`
 by representing it with a pair of pure functions
  `init` and `apply`  as is the custom in Haiku library (see their documentation for more details).
 
- We can describe how the agent and environment are assembled to build the module with the following 
+ We can describe how the agent and environment are assembled to build the module with the following
  block diagram describing these two pure functions:
 
 <div align="center">
 <img src="docs/tikz/gymfeedback_init_apply.png" alt="logo" width="40%"></img>
 </div>
 
-We also make a concrete usage of this architecture in our 
+We also make a concrete usage of this architecture in our
 🦎: [online learning example ![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/06_Online_Linear_Regression.html) 🦎 
+  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/06_Online_Linear_Regression.html) 🦎
 
 Here is an illustrative plot of the final result of the study:
 
@@ -444,7 +474,7 @@ following the Gym API for *agents* and *environments* implemented in
 WAX-ML implements *callbacks* in the `wax.gym` package.  The callback API was inspired by
 the one in the one in [dask](https://github.com/dask/dask).
 
-WAX-ML should provide tools for reinforcement learning that should complement well those 
+WAX-ML should provide tools for reinforcement learning that should complement well those
 already existing such as [RLax](https://github.com/deepmind/rlax) or deluca.
 
 ## ⚒ Implementation ⚒
@@ -465,11 +495,11 @@ also has a module API. We should consider using it in WAX-ML too!
 
 WAX-ML uses [EagerPy](https://github.com/jonasrauber/eagerpy) to efficiently mix different
 types of tensors and develop high level APIs to work with
-e.g. [numpy](https://numpy.org/), [pandas](https://pandas.pydata.org/),
+e.g. [NumPy](https://numpy.org/), [pandas](https://pandas.pydata.org/),
 [xarray](http://xarray.pydata.org/en/stable/).
 
 The use of EagerPy should allow, if necessary, to propose implementations of algorithms
-compatible with other tensor libraries such as numpy, tensorflow, and pytorch, with
+compatible with other tensor libraries such as NumPy, tensorflow, and pytorch, with
 native performance.
 
 We currently have a working example for the EWMA module which is implemented in
@@ -479,7 +509,7 @@ wax.universal.modules.ewma.py
 wax.universal.modules.ewma_test.py
 ```
 
-For now, the core algorithms in WAX-ML are only implemented in JAX to "stay focused".  
+For now, the core algorithms in WAX-ML are only implemented in JAX to "stay focused".
 But if there is interest in implementing universal algorithms, more work
 could be done from this simple example.
 
@@ -494,71 +524,78 @@ We would like to implement other types of feedback loops in WAX-ML.
 For instance, those of the standard control theory toolboxes,
 such as those implemented in the SLICOT [SLICOT](http://slicot.org/) library.
 
-Many algorithms in this space are absent from the python ecosystem.  
-If they are not implemented in other libraries, WAX-ML aims to propose some 
-JAX-based implementations and expose them with a simple API.
+Many algorithms in this space are absent from the python ecosystem and
+we aim to provide JAX-based implementations and expose them with a simple API.
 
-An idiomatic example in this field is the 
-[Kalman filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman), 
-a now-standard algorithm that dates back to the 1950s.  
-After 30 years of existence, the Python ecosystem has still not integrated 
+An idiomatic example in this field is the
+[Kalman filter](https://fr.wikipedia.org/wiki/Filtre_de_Kalman),
+a now-standard algorithm that dates back to the 1950s.
+After 30 years of existence, the Python ecosystem has still not integrated
 this algorithm into widely adopted libraries!
-Some implementations can be found in python libraries such as 
+Some implementations can be found in python libraries such as
 [python-control](https://github.com/python-control/python-control),
-[stats-models](https://www.statsmodels.org/stable/index.html), 
+[stats-models](https://www.statsmodels.org/stable/index.html),
 [SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/KalmanFiltering.html#).
 Also, some machine learning libraries have some closed and non-solved issues on this subject
-, see [scikit-learn#862 issue](https://github.com/scikit-learn/scikit-learn/pull/862) 
-or [river#355 issue](https://github.com/online-ml/river/pull/355).
-Why has the Kalman filter not found its place in these libraries? 
-We think it may be because they have an object-oriented API, which makes 
+, see [Scikit-learn#862 issue](https://github.com/scikit-learn/scikit-learn/pull/862)
+or [River#355 issue](https://github.com/online-ml/river/pull/355).
+Why has the Kalman filter not found its place in these libraries?
+We think it may be because they have an object-oriented API, which makes
 them very well suited to the specific problems of modern machine learning but, on the other hand, prevents them from accommodating additional features such as Kalman filtering.
 We think the functional approach of WAX-ML, inherited from JAX, could well
-help to integrate a Kalman filter implementation in a machine learning ecosystem. 
+help to integrate a Kalman filter implementation in a machine learning ecosystem.
 
 It turns out that python code written with JAX is not very far from
 [Fortran](https://fr.wikipedia.org/wiki/Fortran), a mathematical FORmula TRANslating
 system.  It should therefore be quite easy and natural to reimplement standard
 algorithms implemented in Fortran, such as those in the
 [SLICOT](http://slicot.org/) library with JAX.
-It seems that some questions about the integration of Fortran into 
-JAX have already been raised. 
+It seems that some questions about the integration of Fortran into
+JAX have already been raised.
 As noted in
-[this discussion on JAX's github page](https://github.com/google/jax/discussions/3950), 
-it might even be possible to simply wrap Fortran code in JAX. 
+[this discussion on JAX's github page](https://github.com/google/jax/discussions/3950),
+it might even be possible to simply wrap Fortran code in JAX.
 This would avoid a painful rewriting process!
+
+
+Along with the implementation of good old algorithms,
+we would like to implement more recent ones from the online learning
+literature which somehow revisit the filtering and control problems.
+In particular, we would like to implement the online-learning version of the
+ARMA model developed in [[3]](#references)
+and some online-learning versions of control theory algorithms,
+an approach called "the non-stochastic control problem",
+such as the linear quadratic regulator (see [[4]](#references)).
 
 ### Optimization
 
 
 The JAX ecosystem already has a library dedicated to optimization:
-[Optax](https://github.com/deepmind/optax), which we already use in WAX-ML.
+[Optax](https://github.com/deepmind/optax), which we actually use in WAX-ML.
 We could complete it by offering
 other first-order algorithms such as the Alternating Direction Multiplier Method
 [(ADMM)](https://stanford.edu/~boyd/admm.html).
 One can find "functional" implementations of proximal algorithms in libraries such
-as 
-[proxmin](https://github.com/pmelchior/proxmin)), 
+as
+[proxmin](https://github.com/pmelchior/proxmin)),
 [ProximalOperators](https://kul-forbes.github.io/ProximalOperators.jl/latest/),
-or [COSMO](https://github.com/oxfordcontrol/COSMO.jl), 
+or [COSMO](https://github.com/oxfordcontrol/COSMO.jl),
 which could give good reference implementations to start the work.
 
 
-Another type of work took place around automatic differentiation and 
-optimization in \cite{agrawal2019differentiable} 
-where the authors implement differentiable layers based
-on convex optimization. In the [cvxpylayers](https://github.com/cvxgrp/cvxpylayers)
-library,
-the authors have implemented a JAX API but, at the moment
-(see [this issue](https://github.com/cvxgrp/cvxpylayers/issues/103)), 
-they cannot use the `jit` compilation of JAX yet. 
-We would be interested to help with WAX-ML!
-
+Another type of work took place around automatic differentiation and optimization.
+In [[5]](#references) the authors implement differentiable layers based on
+convex optimization in the library
+[cvxpylayers](https://github.com/cvxgrp/cvxpylayers).
+They have implemented a JAX API but, at the moment, they cannot use the
+`jit` compilation of JAX yet
+(see [this issue](https://github.com/cvxgrp/cvxpylayers/issues/103)).
+We would be interested to help solving this issue.
 
 ### Other algorithms
 
-The machine learning libraries [scikit-learn](https://scikit-learn.org/stable/),
-[river](https://github.com/online-ml/river),
+The machine learning libraries [Scikit-learn](https://scikit-learn.org/stable/),
+[River](https://github.com/online-ml/river),
 [ml-numpy](https://github.com/ddbourgin/numpy-ml) implement many "traditional" machine
 learning algorithms that should provide an excellent basis for linking or reimplementing
 in JAX.  WAX-ML could help to build a repository for JAX versions of these algorithms.
@@ -566,7 +603,7 @@ in JAX.  WAX-ML could help to build a repository for JAX versions of these algor
 ### Other APIS
 
 As it did for the Gym API, WAX-ML could add support for other high-level object-oriented APIs like
-Keras, scikit-learn, river ...
+Keras, Scikit-learn, River ...
 
 
 ### Collaborations
@@ -614,8 +651,13 @@ We maintain a "WAX-ML Enhancement Proposals" in
 
 [1] [Google Princeton AI and Hazan Lab @ Princeton University](https://www.minregret.com/research/)
 
-[2] ["FNet: Mixing Tokens with Fourier Transforms", James Lee-Thorp, Joshua Ainslie, Ilya Eckstein, Santiago Ontanon](https://arxiv.org/abs/2105.03824)
+[2] [FNet: Mixing Tokens with Fourier Transforms, James Lee-Thorp, Joshua Ainslie, Ilya Eckstein, Santiago Ontanon](https://arxiv.org/abs/2105.03824)
 
+[3] [Online Learning for Time Series Prediction, Oren Anava, Elad Hazan, Shie Mannor, Ohad Shamir]((http://proceedings.mlr.press/v30/Anava13.html))
+
+[4] [The Nonstochastic Control Problem, Elad Hazan, Sham M. Kakade, Karan Singh](https://arxiv.org/abs/1911.12178)
+
+[5] [Differentiable Convex Optimization Layers, Akshay Agrawal, Brandon Amos, Shane Barratt, Stephen Boyd, Steven Diamond, Zico Kolter](https://arxiv.org/abs/1910.12430)
 
 ## License
 

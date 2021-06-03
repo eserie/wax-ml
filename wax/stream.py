@@ -401,25 +401,23 @@ class Stream:
     """Stream object used to synchronize in-memory data streams and
     unroll data transformations on it.
 
-    Physicists, and not the least 😅, have brought a solution to the synchronization
-    problem.  See [Poincaré-Einstein synchronization Wikipedia
-    page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details.
+    We implement a synchronization
+    mechanism between different data streams. Using the terminology of Henri Poincaré,
+    we introduce the notion of "local time" to unravel the stream in which
+    the user wants to apply transformations. We call the other streams "secondary streams".
+    They can work at different frequencies, lower or higher.  The data from these secondary
+    streams will be represented in the "local time" either with the use of a
+    forward filling mechanism for lower frequencies or a buffering mechanism
+    for higher frequencies.
 
-    In WAX-ML we strive to follow their recommendations and implement a synchronization
-    mechanism between different data streams.  Using the terminology of Henri Poincaré (see
-    link above) we introduce the notion of "local time" to unravel the main stream in which
-    the user wants to work in. We call the others "secondary streams».  They can work at
-    different frequencies, lower or higher.  The data from these secondary streams will be
-    represented in the "local time" either with the use of a forward filling mechanism for
-    lower frequencies or a buffering mechanism for higher frequencies.
+    We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
+    This mechanism works on in-memory data.  We perform the first pass on the data,
+    without actually accessing it, and determine the indices necessary to
+    later access the data. Doing so we are vigilant to not let any "future"
+    information pass through and thus guaranty a data processing that respects causality.
 
-        We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
-        This mechanism works on in-memory data.  We perform a first pass on the data,
-        without actually accessing to it, and determine the indices necessary to
-        later acces to the data. Doing so we are vigilant to not let any "future"
-        information pass through and thus guaranty a data processing that respects causality.
 
-    The buffering mechanism used in the case of higher frequencies, works with a fixed
+    The buffering mechanism used in the case of higher frequencies works with a fixed
     buffer size (see the WAX-ML module
     [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))  # noqa
     which allows us to use JAX / XLA optimizations and have efficient processing.

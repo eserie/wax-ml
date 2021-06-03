@@ -6,7 +6,6 @@ wax.gym package
 
 .. automodule:: wax.gym
 
-
 Gym objects
 ------------------------
 

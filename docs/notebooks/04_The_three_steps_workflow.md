@@ -251,12 +251,12 @@ Once it has been compiled and "traced" by JAX, the function is much faster to ex
 :tags: []
 
 %%timeit
-outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 ```
 
 ```{code-cell} ipython3
 %%time
-outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 ```
 
 This is 3x faster than pandas implementation!

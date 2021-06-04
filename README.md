@@ -159,10 +159,12 @@ in the functional programming approach.
 
 This approach gives a lot of freedom in the type of ideas that can be implemented.
 
-In the current version of WAX-ML, we have implemented some of these ideas,
+For instance JAX has been used recently to accelerate by two order of magnitude fluid dynamics simulations (see [[6]](#references) ).
+
+In the current version of WAX-ML, we have implemented various ideas,
 ranging from exponential moving average
 to online learning and reinforcement learning architectures,
-and they are all exposed in our subpackage `wax.modules`.
+and they are all exposed in our sub-package `wax.modules`.
 
 # Contents
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)
@@ -405,8 +407,7 @@ or in
 
 WAX-ML algorithms are implemented in JAX, so they are fast!
 
-The use of JAX allows for algorithm implementations that can be run in a highly
-optimized manner on various processing units such as the CPU, GPU, and TPU.
+The use of JAX allows for leveraging hardware accelerators that optimize programs for the CPU, GPU, and TPU.
 
 WAX-ML does not want to reinvent the wheel by reimplementing every algorithm.  We want
 existing machine learning libraries to work well together while trying to leverage their
@@ -658,6 +659,8 @@ We maintain a "WAX-ML Enhancement Proposals" in
 [4] [The Nonstochastic Control Problem, Elad Hazan, Sham M. Kakade, Karan Singh](https://arxiv.org/abs/1911.12178)
 
 [5] [Differentiable Convex Optimization Layers, Akshay Agrawal, Brandon Amos, Shane Barratt, Stephen Boyd, Steven Diamond, Zico Kolter](https://arxiv.org/abs/1910.12430)
+
+[6] [Machine learning accelerated computational fluid dynamics, Dmitrii Kochkov, Jamie A. Smith, Ayya Alieva, Qing Wang, Michael P. Brenner, Stephan Hoyer](https://arxiv.org/abs/2102.01010)
 
 ## License
 

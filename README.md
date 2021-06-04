@@ -161,10 +161,15 @@ This approach gives a lot of freedom in the type of ideas that can be implemente
 
 For instance JAX has been used recently to accelerate by two order of magnitude fluid dynamics simulations (see [[6]](#references) ).
 
-In the current version of WAX-ML, we have implemented various ideas,
-ranging from exponential moving average
-to online learning and reinforcement learning architectures,
-and they are all exposed in our sub-package `wax.modules`.
+WAX-ML does not want to reinvent the wheel by reimplementing every algorithm.  We want
+existing machine learning libraries to work well together while trying to leverage their
+strength, which is easy to do with a functional programming approach.
+
+To demonstrate this, in the current version of WAX-ML, we have constructed various examples,
+such as an exponential moving average, the implementation and calibration of an LSTM architecture with a standard supervised machine learning workflow,
+or the implementation of online learning and reinforcement learning architectures.
+They are treated equally and laid out with flat organization in our sub-package `wax.modules`.
+
 
 # Contents
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)
@@ -239,7 +244,6 @@ Currently, the types of time offsets supported by WAX-ML are quite limited and w
 collaborate with the pandas, xarray, and [Astropy](https://www.astropy.org/) teams
 to further develop the time manipulation tools in WAX-ML (see "WEP1" in `WEP.md`).
 
-
 ### pandas and xarray accessors
 
 WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning
@@ -263,20 +267,17 @@ Then run the "one-liner" syntax:
 We have some Haiku modules ready to be used in `wax.modules` (see our [api
 documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
 
-
 For now, WAX-ML offers direct access to some modules through specific accessors for xarray
 and pandas.
 For instance, we have an implementation of the "exponential moving average" directly
 accessible through the accessor `<data-container>.ewm(...).mean()` which provides a
 drop-in replacement for the exponential moving average of pandas.
 
-
 For now, WAX-ML offers direct access to some modules through specific accessors for xarray
 and pandas.
 
 For instance, you can see our implementation of the "exponential moving average".  This
 is a drop-in replacement for the exponential moving average of pandas.
-
 
 Let's show how it works on the "air temperature" dataset from `xarray.tutorials`:
 
@@ -397,6 +398,10 @@ see how you can use our "3-step workflow" to speed things up!
 
 ### 🔥 Speed 🔥
 
+WAX-ML algorithms are implemented in JAX, so they are fast!
+
+The use of JAX allows for leveraging hardware accelerators that optimize programs for the CPU, GPU, and TPU.
+
 With WAX-ML, you can already compute an exponential moving average on a dataframe with 1 million rows with a 3x to 100x speedup
 (depending on the data container you use and speed measurement methodology) compared to
 pandas implementation.  (See our notebook in the
@@ -404,15 +409,6 @@ pandas implementation.  (See our notebook in the
 or in
 [Colaboratory](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
 ).
-
-WAX-ML algorithms are implemented in JAX, so they are fast!
-
-The use of JAX allows for leveraging hardware accelerators that optimize programs for the CPU, GPU, and TPU.
-
-WAX-ML does not want to reinvent the wheel by reimplementing every algorithm.  We want
-existing machine learning libraries to work well together while trying to leverage their
-strength.
-
 
 ## ♻ Feedbacks ♻
 

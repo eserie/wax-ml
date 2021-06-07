@@ -50,21 +50,7 @@ class GymOutput:
 
 
 class GymFeedback(hk.Module):
-    """Gym feedback between an agent and a Gym environment.
-
-    Args:
-        agent : Gym environment used to unroll the data and feed the agent.
-        env : Gym environment used to unroll the data and feed the agent.
-        return_obs : if true return environment observation
-        return_action : if true return agent action
-        name : name of the module
-
-    Returns:
-        gym_output : reward.
-            Use return_obs=True to also return env observations.
-            Use return_action=True to aslo return agent actions.
-
-    """
+    """Gym feedback between an agent and a Gym environment."""
 
     GymState = namedtuple("GymState", "action")
 
@@ -76,6 +62,16 @@ class GymFeedback(hk.Module):
         return_action=False,
         name=None,
     ):
+        """Initialize module.
+
+        Args:
+            agent : Gym environment used to unroll the data and feed the agent.
+            env : Gym environment used to unroll the data and feed the agent.
+            return_obs : if true return environment observation
+            return_action : if true return agent action
+            name : name of the module
+
+        """
         super().__init__(name=name)
         self.agent = agent
         self.env = env
@@ -85,6 +81,15 @@ class GymFeedback(hk.Module):
         self.GymOutput = GymOutput(self.return_obs, self.return_action)
 
     def __call__(self, raw_obs):
+        """Compute Gym feedback loop.
+
+        Args:
+            raw_obs: raw observations.
+        Returns:
+            gym_output : reward.
+                Use return_obs=True to also return env observations.
+                Use return_action=True to aslo return agent actions.
+        """
 
         action = hk.get_state(
             "action", shape=[], init=lambda *_: self.GymState(self.agent(raw_obs))

@@ -57,6 +57,7 @@ Other Haiku modules
 	ewma
 	ewmcov
 	ewmvar
+    fill_nan_inf
 	has_changed
 	lag
 	ohlc

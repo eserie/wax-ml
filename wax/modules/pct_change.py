@@ -20,7 +20,13 @@ from wax.modules.buffer import Buffer
 class PctChange(hk.Module):
     """Relative change between the current and a prior element."""
 
-    def __init__(self, periods=1, fill_method="pad", limit=None, name=None):
+    def __init__(
+        self,
+        periods: int = 1,
+        fill_method: str = "pad",
+        limit: int = None,
+        name: str = None,
+    ):
         super().__init__(name=name)
         self.periods = periods
         self.fill_method = fill_method

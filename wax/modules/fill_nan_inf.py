@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Optional
+"""Fill nan, posinf and neginf values."""
+from typing import Any
 
 import haiku as hk
 import jax.numpy as jnp
@@ -19,13 +20,15 @@ from jax import tree_map
 
 
 class FillNanInf(hk.Module):
-    """Fill nan, posinf and neginf values.
-    Args:
-        fill_value : value used to replace nan, posinf or neginf encountered values.
-        name : name of the module
-    """
+    """Fill nan, posinf and neginf values."""
 
-    def __init__(self, fill_value: Any = 0.0, name: Optional[str] = None):
+    def __init__(self, fill_value: Any = 0.0, name: str = None):
+        """Initialize module.
+
+        Args:
+            fill_value : value used to replace nan, posinf or neginf encountered values.
+            name : name of the module
+        """
         super().__init__(name=name)
         self.fill_value = fill_value
 

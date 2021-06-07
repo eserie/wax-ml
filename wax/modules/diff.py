@@ -11,26 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Diff module."""
+"""Implement difference of values on sequential data."""
 import haiku as hk
 
 from wax.modules.buffer import Buffer
 
 
 class Diff(hk.Module):
-    """Diff module.
+    """Implement difference of values on sequential data."""
 
-    Args:
-        periods : number of lags to use to compute the diff.
+    def __init__(self, periods: int = 1, name: str = None):
+        """Initialize module.
 
-    """
-
-    def __init__(self, periods=1, name=None):
+        Args:
+            periods : number of lags to use to compute the diff.
+        """
         super().__init__(name=name)
         self.periods = periods
         assert periods == 1, "periods > 1 not implemented."
 
     def __call__(self, x):
+        """Compute diff.
+
+        Args:
+            x: input data
+        """
         buffer = Buffer(self.periods + 1)(x)
         diff = buffer[-1] - buffer[0]
         return diff

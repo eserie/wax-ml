@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Buffer module."""
+"""Implement buffering mechanism."""
 
 from typing import Any, NamedTuple
 
@@ -28,24 +28,37 @@ class BufferState(NamedTuple):
 
 
 class Buffer(hk.Module):
-    """Buffer module.
+    """Implement buffering mechanism."""
 
-    Args:
-        maxlen : lenght of the buffer
-        fill_value : value to use to fill buffer while no data has been append.
-        return_state : if true, the module returns a tuple (buffer, state) where state is
-                        the full buffer state (buffer, len_buffer, i_start). If false, the buffer is
-                        returned.
-        name : name of the module.
-    """
+    def __init__(
+        self,
+        maxlen: int,
+        fill_value=jnp.nan,
+        return_state: bool = False,
+        name: str = None,
+    ):
+        """Initialize the module/
 
-    def __init__(self, maxlen, fill_value=jnp.nan, return_state=False, name=None):
+        Args:
+            maxlen : length of the buffer
+            fill_value : value to use to fill buffer while no data has been append.
+            return_state : if true, the module returns a tuple (buffer, state) where state is
+                           the full buffer state (buffer, len_buffer, i_start). If false, the buffer is
+                           returned.
+            name : name of the module.
+        """
         super().__init__(name=name)
         self.maxlen = maxlen
         self.fill_value = fill_value
         self.return_state = return_state
 
-    def __call__(self, input):
+    def __call__(self, input: jnp.array):
+        """Record input data in the buffer.
+
+        Args:
+            input: data to record.
+        """
+
         def _initial_state(shape, dtype):
             nonlocal input
             if type(self.fill_value) == type(input):

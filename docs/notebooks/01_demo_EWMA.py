@@ -117,4 +117,3 @@ output, state = dataset.wax.stream().apply(
 )
 
 _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
-# -

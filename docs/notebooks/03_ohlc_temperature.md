@@ -85,7 +85,7 @@ output = xr.Dataset(output._asdict())
 :tags: []
 
 df = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().loc["2013-01"]
-_ = df.plot(figsize=(12, 8))
+_ = df.plot(figsize=(12, 8), title="Trailing Open-High-Low-Close temperatures")
 ```
 
 +++ {"tags": []}

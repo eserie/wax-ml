@@ -117,7 +117,7 @@ For now, WAX-ML contains:
 JAX is a research-oriented computational system implemented in python that leverages the
 XLA optimization framework for machine learning computations.  It makes XLA usable with
 the NumPy API and some functional primitives for just-in-time compilation,
-differentiation, vectorization, and parallelization.  It allows builing higher level
+differentiation, vectorization, and parallelization.  It allows building higher-level
 transformations or "programs" in a functional programming approach.
 
 
@@ -132,7 +132,7 @@ toolbox to address time series problems.
 
 ## Design
 
-WAX-ML is research-oriented library.  It relies on
+WAX-ML is a research-oriented library.  It relies on
 [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html) and
 [Haiku](https://github.com/deepmind/dm-haiku) functional programming paradigm to ease the
 development of research ideas.
@@ -159,7 +159,7 @@ in the functional programming approach.
 
 This approach gives a lot of freedom in the type of ideas that can be implemented.
 
-For instance JAX has been used recently to accelerate by two order of magnitude fluid dynamics simulations (see [[6]](#references) ).
+For instance, JAX has been used recently to accelerate by two orders of magnitude fluid dynamics simulations (see [[6]](#references) ).
 
 WAX-ML does not want to reinvent the wheel by reimplementing every algorithm.  We want
 existing machine learning libraries to work well together while trying to leverage their
@@ -294,8 +294,7 @@ For instance, we have an implementation of the "exponential moving average" dire
 accessible through the accessor `<data-container>.ewm(...).mean()` which provides a
 drop-in replacement for the exponential moving average of pandas.
 
-For now, WAX-ML offers direct access to some modules through specific accessors for xarray
-and pandas.
+For now, WAX-ML offers direct access to some modules through specific accessors for pandas and xarray users.
 
 For instance, you can see our implementation of the "exponential moving average".  This
 is a drop-in replacement for the exponential moving average of pandas.
@@ -501,7 +500,7 @@ WAX-ML implements *callbacks* in the `wax.gym` package.  The callback API was in
 the one in the one in [dask](https://github.com/dask/dask).
 
 WAX-ML should provide tools for reinforcement learning that should complement well those
-already existing such as [RLax](https://github.com/deepmind/rlax) or deluca.
+already existing such as [RLax](https://github.com/deepmind/rlax) or [deluca](https://github.com/google/deluca).
 
 ## ⚒ Implementation ⚒
 
@@ -525,8 +524,7 @@ e.g. [NumPy](https://numpy.org/), [pandas](https://pandas.pydata.org/),
 [xarray](http://xarray.pydata.org/en/stable/).
 
 The use of EagerPy should allow, if necessary, to propose implementations of algorithms
-compatible with other tensor libraries such as NumPy, tensorflow, and pytorch, with
-native performance.
+compatible with other tensor libraries such as NumPy, TensorFlow, and PyTorch, with native performance.
 
 We currently have a working example for the EWMA module which is implemented in
 `wax.universal.modules`.  See the code in :
@@ -577,17 +575,17 @@ system.  It should therefore be quite easy and natural to reimplement standard
 algorithms implemented in Fortran, such as those in the
 [SLICOT](http://slicot.org/) library with JAX.
 It seems that some questions about the integration of Fortran into
-JAX have already been raised.
+JAX has already been raised.
 As noted in
-[this discussion on JAX's github page](https://github.com/google/jax/discussions/3950),
+[this discussion on JAX's Github page](https://github.com/google/jax/discussions/3950),
 it might even be possible to simply wrap Fortran code in JAX.
 This would avoid a painful rewriting process!
 
 
 Along with the implementation of good old algorithms,
 we would like to implement more recent ones from the online learning
-literature which somehow revisit the filtering and control problems.
-In particular, we would like to implement the online-learning version of the
+literature that somehow revisits the filtering and control problems.
+In particular, we would like to implement the online learning version of the
 ARMA model developed in [[3]](#references)
 and some online-learning versions of control theory algorithms,
 an approach called "the non-stochastic control problem",
@@ -597,7 +595,7 @@ such as the linear quadratic regulator (see [[4]](#references)).
 
 
 The JAX ecosystem already has a library dedicated to optimization:
-[Optax](https://github.com/deepmind/optax), which we actually use in WAX-ML.
+[Optax](https://github.com/deepmind/optax), which we use in WAX-ML.
 We could complete it by offering
 other first-order algorithms such as the Alternating Direction Multiplier Method
 [(ADMM)](https://stanford.edu/~boyd/admm.html).
@@ -616,7 +614,7 @@ convex optimization in the library
 They have implemented a JAX API but, at the moment, they cannot use the
 `jit` compilation of JAX yet
 (see [this issue](https://github.com/cvxgrp/cvxpylayers/issues/103)).
-We would be interested to help solving this issue.
+We would be interested to help to solve this issue.
 
 ### Other algorithms
 

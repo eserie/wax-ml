@@ -55,7 +55,7 @@ machine learning that lacks the most dedicated tools.  Working with time series 
 notoriously known to be difficult and often requires very specific algorithms
 (statistical modeling, filtering, optimal control).
 
-Even though some of the modern machine learning tools such as RNN, LSTM, or reinforcement
+Even though some of the modern machine learning methods such as RNN, LSTM, or reinforcement
 learning can do an excellent job on some specific time series problems, most of the
 problems require to keep using more traditional algorithms such as linear and non-linear
 filters, FFT, the eigendecomposition of matrices, Riccati solvers for optimal control
@@ -231,7 +231,7 @@ stored in memory. (See our WEP4 enhancement proposal)
 
 ### ⌛ Adding support for time dtypes in JAX ⌛
 
-At the moment `datetime64`and `string_` dtypes are not supported in JAX.
+At the moment `datetime64` and `string_` dtypes are not supported in JAX.
 
 WAX-ML add support for `datetime64` and `string_` NumPy dtypes in JAX.
 To do so, WAX-ML implements:
@@ -264,8 +264,30 @@ Then run the "one-liner" syntax:
 
 ### Already implemented modules
 
-We have some Haiku modules ready to be used in `wax.modules` (see our [api
-documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
+We have some modules (inherited from Haiku modules) ready to be used in `wax.modules`
+(see our [api documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
+
+They can be considered as "building blocks" that can be reused to build more advanced programs to run on streaming data.
+We have some "fundamental" modules that are specific to time series management,
+- the `Buffer` module which implements the buffering mechanism
+- the `UpdateOnEvent` module which allows to "freeze" the computation of a program and
+  to update it on some events in the "local flow".
+  To illustrate the use of this module we show how it can be used to compute the opening,
+  high and closing quantities of temperatures recorded during a day,
+  the binning process being reset at each day change.  We show an illustrative graph of the final result:
+
+![](docs/_static/trailing_ohlc.png)
+
+We have a few more specific modules that aim to reproduce some of the logic that pandas users may be familiar with,
+such as:
+- `Lag` to implement a delay on the input data
+- `Diff` to compute differences between values over time
+- `PctChange` to compute the relative difference between values over time.
+- `RollingMean` to compute the moving average over time.
+- `EWMA`, `EWMVar`, `EWMCov`, to compute the exponential moving average, variance, covariance of the input data.
+
+Finally, we implement domain-specific modules for online learning and reinforcement
+learning such as `OnlineSupervisedLearner` and `GymFeedback` (see dedicated sections).
 
 For now, WAX-ML offers direct access to some modules through specific accessors for xarray
 and pandas.
@@ -306,15 +328,17 @@ Now let's illustrate how WAX-ML accessors work on [xarray datasets](http://xarra
 from wax.modules import EWMA
 
 
-def my_custom_function(da):
+def my_custom_function(dataset):
     return {
-        "air_10": EWMA(1.0 / 10.0)(da["air"]),
-        "air_100": EWMA(1.0 / 100.0)(da["air"]),
+        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
+        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
     }
 
 
-da = xr.tutorial.open_dataset("air_temperature")
-output, state = da.wax.stream().apply(my_custom_function, format_dims=da.air.dims)
+dataset = xr.tutorial.open_dataset("air_temperature")
+output, state = dataset.wax.stream().apply(
+    my_custom_function, format_dims=dataset.air.dims
+)
 
 _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
 ```
@@ -325,29 +349,35 @@ You can see our [Documentation](https://wax-ml.readthedocs.io/en/latest/) for ex
 EWMA or Binning on the air temperature dataset.
 
 ## ⏱ Synchronize streams ⏱
-
-Physicists have brought a solution to the synchronization
-problem (See [Poincaré-Einstein synchronization Wikipedia
+Physicists have brought a solution to the synchronization problem called the Poincaré–Einstein
+synchronization (See [Poincaré-Einstein synchronization Wikipedia
 page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details).
+In WAX-ML we implement a similar mechanism by defining a "local time", borrowing Henri Poincaré terminology,  to denominate the timestamps
+of the stream (the "local stream") in which the user wants to apply transformations and unravel all other streams.
+The other streams, which we call "secondary streams", are
+pushed back in the local stream using embedding maps which specify how to convert timestamps from a secondary
+stream into timestamps in the local stream.
 
-In WAX-ML we strive to follow their recommendations and implement a synchronization
-mechanism between different data streams. Using the terminology of Henri Poincaré (see
-link above), we introduce the notion of "local time" to unravel the stream in which
-the user wants to apply transformations. We call the other streams "secondary streams".
-They can work at different frequencies, lower or higher.  The data from these secondary
-streams will be represented in the "local time" either with the use of a
-forward filling mechanism for lower frequencies or a buffering mechanism for higher frequencies.
+This synchronization mechanism permits to work with secondary streams
+having timestamps at frequencies that can be lower or
+higher than the local stream. The data from these secondary streams will be represented in the "local stream"
+either with the use of a forward filling mechanism for lower frequencies or a buffering mechanism for higher frequencies.
 
-We implement a "data tracing" mechanism to optimize access to out-of-sync streams.
-This mechanism works on in-memory data.  We perform the first pass on the data,
-without actually accessing it, and determine the indices necessary to
-later access the data. Doing so we are vigilant to not let any "future"
-information pass through and thus guaranty a data processing that respects causality.
+We implement a "data tracing" mechanism to optimize access to out-of-sync streams.  This
+mechanism works on in-memory data.  We perform the first pass on the data, without
+actually accessing it, and determine the indices necessary to later access the
+data. Doing so we are vigilant to not let any "future" information pass through and thus
+guaranty a data processing that respects causality.
 
-The buffering mechanism used in the case of higher frequencies works with a fixed
-buffer size (see the WAX-ML module
-[`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))
-which allows us to use JAX / XLA optimizations and have efficient processing.
+The buffering mechanism used in the case of higher frequencies works with a fixed buffer
+size
+(see the WAX-ML module
+[`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
+ which allows us to use JAX / XLA
+optimizations and have efficient processing).
+
+We give simple usage examples in our documentation.
+
 
 Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.
 
@@ -355,37 +385,37 @@ Let's use the dataset "air temperature" with :
 - An air temperature is defined with hourly resolution.
 - A "fake" ground temperature is defined with a daily resolution as the air temperature minus 10 degrees.
 
+
 ```python
-import xarray as xr
+
 from wax.accessors import register_wax_accessors
-from wax.modules import EWMA
 
 register_wax_accessors()
-
-
-def my_custom_function(da):
-  return {
-    "air_10": EWMA(1.0 / 10.0)(da["air"]),
-    "air_100": EWMA(1.0 / 100.0)(da["air"]),
-    "ground_100": EWMA(1.0 / 100.0)(da["ground"]),
-  }
-
-
-da = xr.tutorial.open_dataset("air_temperature")
-da["ground"] = da.air.resample(time="d").last().rename({"time": "day"}) - 10
 ```
 
 ```python
-results, state = (
-   da.wax
-   .stream(local_time="time", pbar=True)
-   .apply(my_custom_function, format_dims=da.air.dims)
-   )
+
+from wax.modules import EWMA
+
+
+def my_custom_function(dataset):
+    return {
+        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
+        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
+        "ground_100": EWMA(1.0 / 100.0)(dataset["ground"]),
+    }
 ```
 
 ```python
-results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
+results, state = dataset.wax.stream(
+    local_time="time", ffills={"day": 1}, pbar=True
+).apply(my_custom_function, format_dims=dataset.air.dims)
 ```
+
+```python
+_ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
+```
+
 
 ![](docs/_static/synchronize_data_streams.png)
 
@@ -608,7 +638,7 @@ Keras, Scikit-learn, River ...
 The WAX-ML team is open to discussion and collaboration with contributors from any field
 who interested in using WAX-ML for their problems on streaming data.  We are looking for
 use cases around data streaming in audio processing, natural language processing,
-astrophysics, biology, engineering ...
+astrophysics, biology, finance, engineering ...
 
 We believe that good software design, especially in the scientific domain, requires
 practical use cases and that the more diversified these use cases are, the more the

@@ -70,14 +70,14 @@ Let's use the dataset "air temperature" with :
 
 import xarray as xr
 
-da = xr.tutorial.open_dataset("air_temperature")
-da["ground"] = da.air.resample(time="d").last().rename({"time": "day"}) - 10
+dataset = xr.tutorial.open_dataset("air_temperature")
+dataset["ground"] = dataset.air.resample(time="d").last().rename({"time": "day"}) - 10
 ```
 
 Let's see what this dataset looks like:
 
 ```{code-cell} ipython3
-da
+dataset
 ```
 
 ```{code-cell} ipython3
@@ -94,18 +94,18 @@ register_wax_accessors()
 from wax.modules import EWMA
 
 
-def my_custom_function(da):
+def my_custom_function(dataset):
     return {
-        "air_10": EWMA(1.0 / 10.0)(da["air"]),
-        "air_100": EWMA(1.0 / 100.0)(da["air"]),
-        "ground_100": EWMA(1.0 / 100.0)(da["ground"]),
+        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
+        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
+        "ground_100": EWMA(1.0 / 100.0)(dataset["ground"]),
     }
 ```
 
 ```{code-cell} ipython3
-results, state = da.wax.stream(local_time="time", pbar=True).apply(
-    my_custom_function, format_dims=da.air.dims
-)
+results, state = dataset.wax.stream(
+    local_time="time", ffills={"day": 1}, pbar=True
+).apply(my_custom_function, format_dims=dataset.air.dims)
 ```
 
 ```{code-cell} ipython3

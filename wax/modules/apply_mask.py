@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Apply mask"""
 from functools import partial
+from typing import Any
 
 import haiku as hk
 import jax.numpy as jnp
@@ -19,12 +21,28 @@ from jax import tree_map
 
 
 class ApplyMask(hk.Module):
+    """Apply mask"""
+
     def __init__(self, axis=None, mask_value=0.0, name=None):
+        """Initialize module.
+
+        Args:
+            axis: if not None, axis along which applying the mask.
+            mask_value: value to return where mask is false.
+            name : name of the module instance.
+        """
         super().__init__(name=name)
         self.axis = axis
         self.mask_value = mask_value
 
-    def __call__(self, mask, input):
+    def __call__(self, mask: jnp.ndarray, input: Any):
+        """Apply mask.
+
+        Args:
+            mask: mask data array.
+            input: nested data structure on which we apply the mask
+        """
+
         def apply_mask(mask, x):
             # mask values
             if self.axis is not None:

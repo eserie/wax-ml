@@ -11,21 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Exponentioal moving average module."""
+"""Compute exponentioal moving average."""
 import haiku as hk
 import jax.numpy as jnp
 
 
 class EWMA(hk.Module):
-    """Exponentioal moving average module."""
+    """Compute exponentioal moving average."""
 
-    def __init__(self, alpha, adjust=True, initial_value=jnp.nan, name=None):
+    def __init__(
+        self, alpha: float, adjust: bool = True, initial_value=jnp.nan, name: str = None
+    ):
+        """Initialize module.
+
+        Args:
+            alpha: alpha parameter of the exponential moving average.
+            adjust: if true, implement a non-stationary filter with exponential initialization
+                scheme. If "linear", implement a non-stationary filter with linear initialization.
+            initial_value: initial value for the state.
+            name : name of the module instance.
+        """
         super().__init__(name=name)
         self.alpha = alpha
         self.adjust = adjust
         self.initial_value = initial_value
 
     def __call__(self, x):
+        """Compute EWMA.
+
+        Args:
+            x: input data.
+        """
         mean = hk.get_state(
             "mean",
             shape=x.shape,

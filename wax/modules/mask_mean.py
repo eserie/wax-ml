@@ -25,6 +25,7 @@ class MaskMean(hk.Module):
 
     def __init__(self, axis=None, name=None):
         """Initialize the module.
+
         Args:
             axis : axis along which to compute the mean
         """

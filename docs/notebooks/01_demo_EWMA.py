@@ -64,13 +64,13 @@ register_wax_accessors()
 # + tags=[]
 import xarray as xr
 
-da = xr.tutorial.open_dataset("air_temperature")
+dataset = xr.tutorial.open_dataset("air_temperature")
 # -
 
 # Let's see what this dataset looks like:
 
 # + tags=[]
-da
+dataset
 # -
 
 # To compute a EWMA on some variables of a dataset, we usually need to convert data
@@ -80,17 +80,15 @@ da
 #
 # So, let's convert the dataset into a dataframe to illustrate `accessors` on a dataframe:
 
-dataframe = da.air.to_series().unstack(["lon", "lat"])
+dataframe = dataset.air.to_series().unstack(["lon", "lat"])
 
 # ### EWMA with pandas
 
-# %%time
 air_temp_ewma = dataframe.ewm(alpha=1.0 / 10.0).mean()
 _ = air_temp_ewma.iloc[:, 0].plot()
 
 # ### EWMA with WAX-ML
 
-# %%time
 air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 _ = air_temp_ewma.iloc[:, 0].plot()
 
@@ -106,14 +104,16 @@ _ = air_temp_ewma.iloc[:, 0].plot()
 from wax.modules import EWMA
 
 
-def my_custom_function(da):
+def my_custom_function(dataset):
     return {
-        "air_10": EWMA(1.0 / 10.0)(da["air"]),
-        "air_100": EWMA(1.0 / 100.0)(da["air"]),
+        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
+        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
     }
 
 
-da = xr.tutorial.open_dataset("air_temperature")
-output, state = da.wax.stream().apply(my_custom_function, format_dims=da.air.dims)
+dataset = xr.tutorial.open_dataset("air_temperature")
+output, state = dataset.wax.stream().apply(
+    my_custom_function, format_dims=dataset.air.dims
+)
 
 _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))

@@ -31,7 +31,7 @@ jax.devices()
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/03_ohlc_temperature.ipynb)
 
 # Let's again considering the air temperatures dataset.
-# It is sampled at a hourly resolution.
+# It is sampled at an hourly resolution.
 # We will make "trailing" air temperature bins during each day and "reset" the bin
 # aggregation process at each day change.
 
@@ -46,8 +46,11 @@ from wax.modules import OHLC, HasChanged
 register_wax_accessors()
 
 # + tags=[]
-da = xr.tutorial.open_dataset("air_temperature")
-da["date"] = da.time.dt.date.astype(onp.datetime64)
+dataset = xr.tutorial.open_dataset("air_temperature")
+dataset["date"] = dataset.time.dt.date.astype(onp.datetime64)
+# -
+
+dataset
 
 
 # + tags=[]
@@ -56,14 +59,14 @@ def bin_temperature(da):
     return OHLC()(da["air"], reset_on=day_change)
 
 
-output, state = da.wax.stream().apply(
-    bin_temperature, format_dims=onp.array(da.air.dims)
+output, state = dataset.wax.stream().apply(
+    bin_temperature, format_dims=onp.array(dataset.air.dims)
 )
 output = xr.Dataset(output._asdict())
 
 # + tags=[]
 df = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().loc["2013-01"]
-_ = df.plot(figsize=(12, 8))
+_ = df.plot(figsize=(12, 8), title="Trailing Open-High-Low-Close temperatures")
 
 # + [markdown] tags=[]
 # ## The `UpdateOnEvent` module

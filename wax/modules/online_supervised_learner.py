@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, NamedTuple
+"""Online supervised learner."""
+from typing import Any, Callable, NamedTuple
 
 import haiku as hk
 import jax
@@ -24,13 +25,29 @@ class ParamsState(NamedTuple):
 
 
 class OnlineSupervisedLearner(hk.Module):
-    def __init__(self, model, opt, loss, name=None):
+    """Online supervised learner."""
+
+    def __init__(self, model: Any, opt: Any, loss: Callable, name: str = None):
+        """Initialize module.
+
+        Args:
+            model : model to optimize.
+            opt : optimizer.
+            loss : loss function.
+            name : name of the module
+        """
         super().__init__(name=name)
         self.model = model
         self.opt = opt
         self.loss = loss
 
     def __call__(self, x, y):
+        """Update learner.
+
+        Args:
+            x : features
+            y: target
+        """
 
         step = hk.get_state("step", [], init=lambda *_: 0)
         params, state = hk.get_state(

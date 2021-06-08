@@ -11,29 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Exponentially weighted variance module."""
+"""Compute exponentially weighted variance."""
 import haiku as hk
 import jax.numpy as jnp
 
 
 class EWMVar(hk.Module):
-    """Exponentially weighted variance module.
+    """Compute exponentially weighted variance.
 
     To calculate the variance we use the fact that Var(X) = Mean(x^2) - Mean(x)^2 and internally
     we use the exponentially weighted mean of x/x^2 to calculate this.
-
-    Arguments:
-        alpha : The closer `alpha` is to 1 the more the statistic will adapt to recent values.
-
-    Attributes:
-        variance : The running exponentially weighted variance.
 
     References
     ----------
     [^1]: [Finch, T., 2009. Incremental calculation of weighted mean and variance. University of Cambridge, 4(11-5), pp.41-42.](https://fanf2.user.srcf.net/hermes/doc/antiforgery/stats.pdf) # noqa
     """
 
-    def __init__(self, alpha=0.5, adjust=True, name=None):
+    def __init__(self, alpha: float = 0.5, adjust: bool = True, name: str = None):
+        """Initialize module.
+
+        Args:
+            alpha: alpha parameter of the exponential moving average.
+            adjust: if true, implement a non-stationary filter with exponential initialization
+                scheme. If "linear", implement a non-stationary filter with linear initialization.
+            name : name of the module instance.
+        """
         super().__init__(name=name)
         self.alpha = alpha
         self.adjust = adjust

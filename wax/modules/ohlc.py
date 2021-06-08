@@ -32,15 +32,15 @@ class OHLC(hk.Module):
     def __init__(self, name=None):
         super().__init__(name=name)
 
-    def __call__(self, input, *, reset_on):
+    def __call__(self, input: jnp.ndarray, *, reset_on: bool):
         def init_array(shape, dtype):
             return jnp.full(shape, fill_value=jnp.nan, dtype=dtype)
 
         # states
-        BIN_OPEN = hk.get_state("DAY_OPEN", input.shape, input.dtype, init_array)
-        BIN_HIGH = hk.get_state("DAY_HIGH", input.shape, input.dtype, init_array)
-        BIN_LOW = hk.get_state("DAY_LOW", input.shape, input.dtype, init_array)
-        BIN_CLOSE = hk.get_state("DAY_CLOSE", input.shape, input.dtype, init_array)
+        BIN_OPEN = hk.get_state("BIN_OPEN", input.shape, input.dtype, init_array)
+        BIN_HIGH = hk.get_state("BIN_HIGH", input.shape, input.dtype, init_array)
+        BIN_LOW = hk.get_state("BIN_LOW", input.shape, input.dtype, init_array)
+        BIN_CLOSE = hk.get_state("BIN_CLOSE", input.shape, input.dtype, init_array)
 
         def daily_call(operand):
             input, BIN_CLOSE = operand
@@ -62,10 +62,10 @@ class OHLC(hk.Module):
         )
         BIN_OPEN, BIN_HIGH, BIN_LOW, BIN_CLOSE = updated_BIN_state
 
-        # update DAY_CLOSE
+        # update BIN_CLOSE
         BIN_CLOSE = jnp.where(jnp.logical_not(jnp.isnan(input)), input, BIN_CLOSE)
 
-        # initialize DAY_{OPEN,HIGH,LOW} with the first non nan DAY_CLOSE
+        # initialize BIN_{OPEN,HIGH,LOW} with the first non nan BIN_CLOSE
         BIN_OPEN = jnp.where(
             jnp.isnan(BIN_OPEN),
             BIN_CLOSE,
@@ -84,7 +84,7 @@ class OHLC(hk.Module):
             BIN_LOW,
         )
 
-        # update DAY_HIGH and DAY_LOW
+        # update BIN_HIGH and BIN_LOW
         BIN_HIGH = jnp.where(
             BIN_CLOSE > BIN_HIGH,
             BIN_CLOSE,
@@ -96,9 +96,9 @@ class OHLC(hk.Module):
             BIN_LOW,
         )
         # update state
-        hk.set_state("DAY_OPEN", BIN_OPEN)
-        hk.set_state("DAY_HIGH", BIN_HIGH)
-        hk.set_state("DAY_LOW", BIN_LOW)
-        hk.set_state("DAY_CLOSE", BIN_CLOSE)
+        hk.set_state("BIN_OPEN", BIN_OPEN)
+        hk.set_state("BIN_HIGH", BIN_HIGH)
+        hk.set_state("BIN_LOW", BIN_LOW)
+        hk.set_state("BIN_CLOSE", BIN_CLOSE)
 
         return OHLCData(BIN_OPEN, BIN_HIGH, BIN_LOW, BIN_CLOSE)

@@ -119,7 +119,6 @@ id: 03af743d
 outputId: ae3f7e8f-7e2c-4ef1-a456-bd4d2f72893d
 tags: []
 ---
-%%time
 T, N = map(int, (T, N))
 dataframe = pd.DataFrame(
     onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T, freq="s")
@@ -357,25 +356,12 @@ tags: []
 ---
 %%timeit
 outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
-```
-
-```{code-cell} ipython3
----
-colab:
-  base_uri: https://localhost:8080/
-id: f19185cd-15c2-4c9c-bbff-8d50deb1fee2
-outputId: b32b7d89-570d-4b09-ac53-d1119144ee65
----
-%%time
-outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+_ = outputs.block_until_ready()
 ```
 
 +++ {"id": "987e8b63"}
 
 This is 3x faster than pandas implementation!
-
-(The 3x factor is obtained by measuring the execution with %timeit.
-We don't know why, but when executing a code cell once at a time, then the execution time can vary a lot and we can observe some executions with a speed-up of 100x).
 
 +++ {"id": "4c8acec1-4414-4340-9cfc-199e90565d4d"}
 
@@ -438,7 +424,6 @@ colab:
 id: e7ebbb08-d790-4977-b49d-c9224e299a42
 outputId: c91ac27c-b671-4bad-8e0d-c9eb0464ae3c
 ---
-%%time
 @jit_init_apply
 @hk.transform_with_state
 def transform_dataset(step):
@@ -459,6 +444,7 @@ outputId: 585097e9-6025-4f45-886e-261cbdba4014
 ---
 %%time
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+_ = outputs.block_until_ready()
 ```
 
 ```{code-cell} ipython3
@@ -614,4 +600,5 @@ outputId: 88a5e604-a722-43bf-d90c-49b11fde96b2
 %%timeit
 if GPU_AVAILABLE:
     outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+    _ = outputs.block_until_ready()
 ```

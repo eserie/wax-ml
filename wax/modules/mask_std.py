@@ -25,6 +25,7 @@ class MaskStd(hk.Module):
 
     def __init__(self, axis=None, assume_centered=False, name=None):
         """Initialize the module.
+
         Args:
             axis : axis along which to compute the mean
             assume_centered : if True assume mean to be zero when computing

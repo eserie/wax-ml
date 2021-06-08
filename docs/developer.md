@@ -223,14 +223,14 @@ fails you may want to [wipe the build environment for test-docs](https://docs.re
 For a local test, you can do it in a fresh directory by replaying the commands
 executed by Readthedocs and written in their logs:
 ```
-mkvirtualenv wax-docs  # A new virtualenv
-mkdir wax-docs  # A new directory
-cd wax-docs
+mkvirtualenv wax-ml-docs  # A new virtualenv
+mkdir wax-ml-docs  # A new directory
+cd wax-ml-docs
 git clone --no-single-branch --depth 50 https://github.com/eserie/wax-ml
-cd wax
+cd wax-ml-docs
 git checkout --force origin/test-docs
-git clean -d -f -f
-workon wax-docs
+git clean -d -f 
+workon wax-ml-docs
 
 python -m pip install --upgrade --no-cache-dir pip
 python -m pip install --upgrade --no-cache-dir -I Pygments==2.3.1 setuptools==41.0.1 docutils==0.14 mock==1.0.1 pillow==5.4.1 alabaster>=0.7,<0.8,!=0.7.5 commonmark==0.8.1 recommonmark==0.5.0 'sphinx<2' 'sphinx-rtd-theme<0.5' 'readthedocs-sphinx-ext<1.1'
@@ -238,5 +238,3 @@ python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt
 cd docs
 python `which sphinx-build` -T -E -b html -d _build/doctrees-readthedocs -D language=en . _build/html
 ```
-
-

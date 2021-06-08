@@ -21,7 +21,14 @@ from wax.modules.buffer import Buffer
 class RollingMean(hk.Module):
     """Rolling mean."""
 
-    def __init__(self, horizon, min_periods=1, name=None):
+    def __init__(self, horizon: int, min_periods: int = 1, name: str = None):
+        """Initialize the module.
+
+        Args:
+            horizon: horizon on which we compute the mean.
+            min_periods: minimum number of data point required in the window to caompute the mean.
+            name: name of the module instance.
+        """
         super().__init__(name=name)
         self.horizon = horizon
         self.min_periods = min_periods

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Apply mask"""
 from functools import partial
+from typing import Any
 
 import haiku as hk
 import jax.numpy as jnp

@@ -6,7 +6,11 @@
 
 ![Continuous integration](https://github.com/eserie/wax-ml/actions/workflows/tests.yml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/wax-ml/badge/?version=latest)](https://wax-ml.readthedocs.io/en/latest/)
-![PyPI version](https://img.shields.io/pypi/v/wax-ml)
+[![PyPI version](https://badge.fury.io/py/wax-ml.svg)](https://badge.fury.io/py/wax-ml)
+[![Codecov](https://codecov.io/gh/eserie/wax-ml/branch/main/graph/badge.svg)](https://codecov.io/gh/eserie/wax-ml)
+[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+
+
 
 [**Quickstart**](#quickstart-colab-in-the-cloud)
 | [**Install guide**](#installation)

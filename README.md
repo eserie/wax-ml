@@ -323,7 +323,7 @@ air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 
 Now let's illustrate how WAX-ML accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
 
-```{code-cell} ipython3
+```python
 from wax.modules import EWMA
 
 

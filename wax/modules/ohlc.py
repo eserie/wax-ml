@@ -32,7 +32,7 @@ class OHLC(hk.Module):
     def __init__(self, name=None):
         super().__init__(name=name)
 
-    def __call__(self, input: jnp.array, *, reset_on: bool):
+    def __call__(self, input: jnp.ndarray, *, reset_on: bool):
         def init_array(shape, dtype):
             return jnp.full(shape, fill_value=jnp.nan, dtype=dtype)
 

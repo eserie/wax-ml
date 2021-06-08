@@ -52,7 +52,7 @@ class Buffer(hk.Module):
         self.fill_value = fill_value
         self.return_state = return_state
 
-    def __call__(self, input: jnp.array):
+    def __call__(self, input: jnp.ndarray):
         """Record input data in the buffer.
 
         Args:

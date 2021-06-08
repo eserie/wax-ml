@@ -289,8 +289,7 @@ such as:
 Finally, we implement domain-specific modules for online learning and reinforcement
 learning such as `OnlineSupervisedLearner` and `GymFeedback` (see dedicated sections).
 
-For now, WAX-ML offers direct access to some modules through specific accessors for xarray
-and pandas.
+For now, WAX-ML offers direct access to some modules through specific accessors for pandas and xarray users.
 For instance, we have an implementation of the "exponential moving average" directly
 accessible through the accessor `<data-container>.ewm(...).mean()` which provides a
 drop-in replacement for the exponential moving average of pandas.

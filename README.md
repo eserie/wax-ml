@@ -681,7 +681,7 @@ We maintain a "WAX-ML Enhancement Proposals" in
 
 [2] [FNet: Mixing Tokens with Fourier Transforms, James Lee-Thorp, Joshua Ainslie, Ilya Eckstein, Santiago Ontanon](https://arxiv.org/abs/2105.03824)
 
-[3] [Online Learning for Time Series Prediction, Oren Anava, Elad Hazan, Shie Mannor, Ohad Shamir]((http://proceedings.mlr.press/v30/Anava13.html))
+[3] [Online Learning for Time Series Prediction, Oren Anava, Elad Hazan, Shie Mannor, Ohad Shamir](http://proceedings.mlr.press/v30/Anava13.html)
 
 [4] [The Nonstochastic Control Problem, Elad Hazan, Sham M. Kakade, Karan Singh](https://arxiv.org/abs/1911.12178)
 

@@ -222,6 +222,7 @@ So let's transform the `DataFrame` into a xarray `Dataset`:
 :id: 9965444b
 
 dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
+del dataframe
 ```
 
 +++ {"id": "123965eb"}
@@ -248,7 +249,7 @@ id: 5f6b72ca
 outputId: 18f8761e-f198-476c-a3e0-06b6773d874a
 ---
 %%time
-stream = dataframe.wax.stream()
+stream = dataset.wax.stream()
 ```
 
 +++ {"id": "4cc34aad-3e15-4220-9dff-30dcad660307"}

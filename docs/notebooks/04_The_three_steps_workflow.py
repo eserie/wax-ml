@@ -141,6 +141,7 @@ df_ewma_wax_no_format.device()
 
 # + id="9965444b"
 dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
+del dataframe
 
 # + [markdown] id="123965eb"
 # ## Step (1) (synchronize | data tracing | encode)
@@ -159,7 +160,7 @@ dataset = xr.DataArray(dataframe).to_dataset(name="dataarray")
 
 # + colab={"base_uri": "https://localhost:8080/"} id="5f6b72ca" outputId="18f8761e-f198-476c-a3e0-06b6773d874a"
 # %%time
-stream = dataframe.wax.stream()
+stream = dataset.wax.stream()
 
 # + [markdown] id="4cc34aad-3e15-4220-9dff-30dcad660307"
 # Define our custom function to be applied on a dict of arrays

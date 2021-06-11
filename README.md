@@ -174,14 +174,13 @@ It permits to ease the development of robust and reusable features and to
 develop "mini-languages" tailored to specific scientific domains.
 
 
-### Work with others
-We want existing machine learning libraries to work well together while trying to leverage their strength, which is
-easy to do with a functional programming approach.
+### WAX-ML works with other libraries
+
+We want existing machine learning libraries to work well together while trying to leverage their strength.
+This is facilitated with a functional programming approach.
 
 WAX-ML is not a framework but either a set of tools that aim to complement 
 [JAX Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
-
-
 
 
 # Contents

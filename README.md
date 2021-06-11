@@ -17,6 +17,8 @@
 | [**Change logs**](https://wax-ml.readthedocs.io/en/latest/changelog.html)
 | [**Reference docs**](https://wax-ml.readthedocs.io/en/latest/)
 
+## Introduction
+
 🌊 Wax is what you put on a surfboard to avoid slipping. It is an essential tool to go
 surfing ... 🌊
 
@@ -179,6 +181,7 @@ with flat organization in our sub-package `wax.modules`.
 
 # Contents
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)
+* [⏱ Synchronize streams ⏱](#-synchronize-streams-)
 * [🌊 Streaming Data 🌊](#-streaming-data-)
 * [♻ Feedback loops ♻](#-feedback-loops-)
 * [⚒ Implementation ⚒](#-Implementation-)
@@ -212,6 +215,78 @@ Here are some starter notebooks:
 - 🦎 Online linear regression with a non-stationary environment 🦎: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb),
   [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/06_Online_Linear_Regression.html)
 
+
+## ⏱ Synchronize streams ⏱
+
+Physicists have brought a solution to the synchronization problem called the Poincaré–Einstein
+synchronization (See [Poincaré-Einstein synchronization Wikipedia
+page](https://en.wikipedia.org/wiki/Einstein_synchronisation)).  In WAX-ML we have implemented a similar
+mechanism by defining a "local time", borrowing Henri Poincaré terminology, to denominate the
+timestamps of the stream (the "local stream") in which the user wants to apply transformations and
+unravel all other streams.  The other streams, which we have called "secondary streams", are pushed
+back in the local stream using embedding maps which specify how to convert timestamps from a
+secondary stream into timestamps in the local stream.
+
+This synchronization mechanism permits to work with secondary streams having timestamps at
+frequencies that can be lower or higher than the local stream. The data from these secondary streams
+are represented in the "local stream" either with the use of a forward filling mechanism for lower
+frequencies or with a buffering mechanism for higher frequencies.
+
+Note that this simple synchronization scheme assumes that the different event streams have fixed
+latencies.
+
+We have implemented a "data tracing" mechanism to optimize access to out-of-sync streams.  This
+mechanism works on in-memory data.  We perform the first pass on the data, without actually
+accessing it, and determine the indices necessary to later access the data. Doing so we are vigilant
+to not let any "future" information pass through and thus guaranty a data processing that respects
+causality.
+
+The buffering mechanism used in the case of higher frequencies works with a fixed buffer size 
+(see the WAX-ML module [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
+to allow the use of JAX / XLA optimizations and efficient processing.
+
+We give simple usage examples in our documentation.
+
+Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.
+
+Let's use the dataset "air temperature" with :
+- An air temperature is defined with hourly resolution.
+- A "fake" ground temperature is defined with a daily resolution as the air temperature minus 10 degrees.
+
+
+```python
+
+from wax.accessors import register_wax_accessors
+
+register_wax_accessors()
+```
+
+```python
+
+from wax.modules import EWMA
+
+
+def my_custom_function(dataset):
+    return {
+        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
+        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
+        "ground_100": EWMA(1.0 / 100.0)(dataset["ground"]),
+    }
+```
+
+```python
+results, state = dataset.wax.stream(
+    local_time="time", ffills={"day": 1}, pbar=True
+).apply(my_custom_function, format_dims=dataset.air.dims)
+```
+
+```python
+_ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
+```
+
+<div align="center">
+<img src="docs/_static/synchronize_data_streams.png" alt="logo" width="60%"></img>
+</div>
 
 ## 🌊 Streaming Data 🌊
 
@@ -356,79 +431,6 @@ _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12,
 
 You can see our [Documentation](https://wax-ml.readthedocs.io/en/latest/) for examples with
 EWMA or Binning on the air temperature dataset.
-
-## ⏱ Synchronize streams ⏱
-
-
-Physicists have brought a solution to the synchronization problem called the Poincaré–Einstein
-synchronization (See [Poincaré-Einstein synchronization Wikipedia
-page](https://en.wikipedia.org/wiki/Einstein_synchronisation)).  In WAX-ML we have implemented a similar
-mechanism by defining a "local time", borrowing Henri Poincaré terminology, to denominate the
-timestamps of the stream (the "local stream") in which the user wants to apply transformations and
-unravel all other streams.  The other streams, which we have called "secondary streams", are pushed
-back in the local stream using embedding maps which specify how to convert timestamps from a
-secondary stream into timestamps in the local stream.
-
-This synchronization mechanism permits to work with secondary streams having timestamps at
-frequencies that can be lower or higher than the local stream. The data from these secondary streams
-are represented in the "local stream" either with the use of a forward filling mechanism for lower
-frequencies or with a buffering mechanism for higher frequencies.
-
-Note that this simple synchronization scheme assumes that the different event streams have fixed
-latencies.
-
-We have implemented a "data tracing" mechanism to optimize access to out-of-sync streams.  This
-mechanism works on in-memory data.  We perform the first pass on the data, without actually
-accessing it, and determine the indices necessary to later access the data. Doing so we are vigilant
-to not let any "future" information pass through and thus guaranty a data processing that respects
-causality.
-
-The buffering mechanism used in the case of higher frequencies works with a fixed buffer size 
-(see the WAX-ML module [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
-to allow the use of JAX / XLA optimizations and efficient processing.
-
-We give simple usage examples in our documentation.
-
-Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.
-
-Let's use the dataset "air temperature" with :
-- An air temperature is defined with hourly resolution.
-- A "fake" ground temperature is defined with a daily resolution as the air temperature minus 10 degrees.
-
-
-```python
-
-from wax.accessors import register_wax_accessors
-
-register_wax_accessors()
-```
-
-```python
-
-from wax.modules import EWMA
-
-
-def my_custom_function(dataset):
-    return {
-        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
-        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
-        "ground_100": EWMA(1.0 / 100.0)(dataset["ground"]),
-    }
-```
-
-```python
-results, state = dataset.wax.stream(
-    local_time="time", ffills={"day": 1}, pbar=True
-).apply(my_custom_function, format_dims=dataset.air.dims)
-```
-
-```python
-_ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
-```
-
-<div align="center">
-<img src="docs/_static/synchronize_data_streams.png" alt="logo" width="60%"></img>
-</div>
 
 
 ### ⚡ Performance on big dataframes ⚡

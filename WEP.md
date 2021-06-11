@@ -1,3 +1,4 @@
+# WAX-ML Enhancement Proposals
 
 ## WEP1
 

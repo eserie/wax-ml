@@ -99,7 +99,7 @@ docs-fast:
 
 .PHONY: env
 env:
-	virualenv venv
+	python -m virtualenv venv
 
 .PHONY: release
 release:

@@ -58,8 +58,8 @@ and often requires very specific algorithms (statistical modeling, filtering, op
 
 Even though some of the modern machine learning methods such as RNN, LSTM, or reinforcement learning
 can do an excellent job on some specific time-series problems, most of the problems require using
-more traditional algorithms such as linear and non-linear filters, FFT, 
-the eigendecomposition of matrices (e.g. [[7]](#references)), 
+more traditional algorithms such as linear and non-linear filters, FFT,
+the eigendecomposition of matrices (e.g. [[7]](#references)),
 principal component analysis (PCA) (e.g. [[8]](#references)), Riccati solvers for
 optimal control and filtering, ...
 
@@ -81,26 +81,26 @@ and online optimization methods.
 
 Well, building WAX-ML, we have some pretty ambitious design and implementation goals.
 
-To do things right, we decided to start small and in an open-source design from the beginning.  
+To do things right, we decided to start small and in an open-source design from the beginning.
 
 
 For now, WAX-ML contains:
 - transformation tools that we call "unroll" transformations allowing us to
   apply any transformation, possibly stateful, on sequential data.  It generalizes the RNN
   architecture to any stateful transformation allowing the implementation of any kind of "filter".
-  
+
 - a "stream" module, described in [🌊 Streaming Data 🌊](#-streaming-data-), permitting us to
   synchronize data streams with different time resolutions.
 
 - some general pandas and xarray "accessors" permitting the application of any
-  JAX-functions on pandas and xarray data containers: 
+  JAX-functions on pandas and xarray data containers:
   `DataFrame`, `Series`, `Dataset`, and `DataArray`.
 
 - ready-to-use exponential moving average filter that we exposed with two APIs:
     - one for JAX users: as Haiku modules (`EWMA`, ... see the complete list in our
     [API documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)
-    ). 
-    - a second one for pandas and xarray users: with drop-in replacement of pandas 
+    ).
+    - a second one for pandas and xarray users: with drop-in replacement of pandas
       `ewm` accessor.
 
 - a simple module `OnlineSupervisedLearner` to implement online learning algorithms
@@ -109,14 +109,14 @@ For now, WAX-ML contains:
 - building blocks for designing feedback loops in reinforcement learning, and have
   provided a module called `GymFeedback` allowing the implementation of feedback loop as the
   introduced in the library [Gym](https://gym.openai.com/), and illustrated this figure:
-  
+
   <div align="center">
   <img src="docs/tikz/gymfeedback.png" alt="logo" width="60%"></img>
   </div>
 
 - some ``universal'' modules powered by  [EagerPy](https://github.com/jonasrauber/eagerpy)
   that can work with [TensorFlow](https://www.tensorflow.org/), [PyTorch](https://pytorch.org/),
-  [JAX](https://github.com/google/jax), and [NumPy](https://numpy.org/) tensors  
+  [JAX](https://github.com/google/jax), and [NumPy](https://numpy.org/) tensors
   At the moment, we have only implemented a demonstration module for the
   exponential moving average that we have called `EagerEWMA`.
 
@@ -161,8 +161,8 @@ implement "functions" that must be pure to exploit the JAX ecosystem.
 ### Haiku modules
 We use the "module" mechanism proposed by the Haiku library to easily generate pure function pairs,
 called `init` and `apply` in Haiku, to implement programs that require the management of
-parameters and/or state variables.  
-You can see 
+parameters and/or state variables.
+You can see
 [the Haiku module API](https://dm-haiku.readthedocs.io/en/latest/api.html#modules-parameters-and-state)
 and
 [Haiku transformation functions](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku-transforms)
@@ -170,7 +170,7 @@ for more details.
 
 In this way, we can recover all the advantages of
 object-oriented programming but exposed in the functional programming approach.
-It permits to ease the development of robust and reusable features and to 
+It permits to ease the development of robust and reusable features and to
 develop "mini-languages" tailored to specific scientific domains.
 
 
@@ -179,7 +179,7 @@ develop "mini-languages" tailored to specific scientific domains.
 We want existing machine learning libraries to work well together while trying to leverage their strength.
 This is facilitated with a functional programming approach.
 
-WAX-ML is not a framework but either a set of tools that aim to complement 
+WAX-ML is not a framework but either a set of tools that aim to complement
 [JAX Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
 
 
@@ -245,7 +245,7 @@ accessing it, and determine the indices necessary to later access the data. Doin
 to not let any "future" information pass through and thus guaranty a data processing that respects
 causality.
 
-The buffering mechanism used in the case of higher frequencies works with a fixed buffer size 
+The buffering mechanism used in the case of higher frequencies works with a fixed buffer size
 (see the WAX-ML module [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
 to allow the use of JAX / XLA optimizations and efficient processing.
 
@@ -483,12 +483,12 @@ filters.  This is easily implemented with the WAX-ML tools and will be implement
 a later time.
 
 
-Another example is control theory or reinforcement learning. 
-In reinforcement learning setup, an agent and an environment interact with a feedback loop. 
-This generally results in a non-trivial global dynamic.  
+Another example is control theory or reinforcement learning.
+In reinforcement learning setup, an agent and an environment interact with a feedback loop.
+This generally results in a non-trivial global dynamic.
 In WAX-ML, we propose a simple module called
-`GymFeedBack` that allows the implementation of reinforcement learning experiments.  
-This is built from an agent and an environment, both possibly having parameters and state: 
+`GymFeedBack` that allows the implementation of reinforcement learning experiments.
+This is built from an agent and an environment, both possibly having parameters and state:
 
 <div align="center">
 <img src="docs/tikz/agent_env.png" alt="logo" width="60%"></img>
@@ -498,16 +498,16 @@ This is built from an agent and an environment, both possibly having parameters 
 - The environment is in charge of calculating a reward associated with the agent's action and preparing
   the next observation from some "raw observations" and the agent's action, which it gives back to the
   agent.
-  
-A feedback instance `GymFeedback(agent, env)` is a function that processes the 
+
+A feedback instance `GymFeedback(agent, env)` is a function that processes the
 "raw observations" and returns a reward as represented here:
 
 <div align="center">
 <img src="docs/tikz/gymfeedback.png" alt="logo" width="60%"></img>
 </div>
 
-Equivalently, we can describe the function `GymFeedback(agent, env)`, 
-after transformation by Haiku transformation, by a pair of pure functions 
+Equivalently, we can describe the function `GymFeedback(agent, env)`,
+after transformation by Haiku transformation, by a pair of pure functions
 `init` and `apply` that we describe here:
 
 <div align="center">
@@ -524,9 +524,10 @@ Here is an illustrative plot of the final result of the study:
 <div align="center">
 <img src="docs/_static/online_linear_regression_regret.png" alt="logo" width="100%"></img>
 </div>
-- Left: The regret (cumulative sum of losses) first becomes concave, which means that the agent "learns something".  
-Then, the regret curve has a bump at step 2000 where it becomes locally linear.  
-It finally ends in a concave regime concave regime, which means that the agent has adapted to the new regime.  
+
+- Left: The regret (cumulative sum of losses) first becomes concave, which means that the agent "learns something".
+  Then, the regret curve has a bump at step 2000 where it becomes locally linear.
+  It finally ends in a concave regime concave regime, which means that the agent has adapted to the new regime.
 - Right: We see that the weights converge to the correct values in both regimes
 
 ### Compatibility with other reinforcement learning frameworks
@@ -592,7 +593,7 @@ Also, some machine learning libraries have some closed and non-solved issues on 
 or [River#355 issue](https://github.com/online-ml/river/pull/355).
 Why has the Kalman filter not found its place in these libraries?
 We think it may be because they have an object-oriented API, which makes
-them very well suited to the specific problems of modern machine learning but, 
+them very well suited to the specific problems of modern machine learning but,
 on the other hand, prevents them from accommodating additional features such as Kalman filtering.
 We think the functional approach of WAX-ML, inherited from JAX, could well
 help to integrate a Kalman filter implementation in a machine learning ecosystem.

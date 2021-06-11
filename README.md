@@ -120,7 +120,7 @@ For now, WAX-ML contains:
 
 ## What is JAX?
 
-JAX is a research-oriented computational system implemented in python that leverages the
+JAX is a research-oriented computational system implemented in Python that leverages the
 XLA optimization framework for machine learning computations.  It makes XLA usable with
 the NumPy API and some functional primitives for just-in-time compilation,
 differentiation, vectorization, and parallelization.  It allows building higher-level
@@ -223,7 +223,7 @@ access to in-memory data and allows the execution of JAX tractable functions suc
 
 This mechanism is somewhat special in that it works with time-series data.
 
-The `wax.stream.Stream` object implements this idea.  It uses python generators to
+The `wax.stream.Stream` object implements this idea.  It uses Python generators to
 **synchronize multiple streaming data streams** with potentially different temporal
 resolutions.
 
@@ -231,7 +231,7 @@ The `wax.stream.Stream` object works on in-memory data stored in
 [`xarray.Dataset`](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
 
 To work with "real" streaming data, it should be possible to implement a buffer
-mechanism running on any python generator and to use the synchronization and data
+mechanism running on any Python generator and to use the synchronization and data
 tracing mechanisms implemented in WAX-ML to apply JAX transformations on batches of data
 stored in memory. (See our WEP4 enhancement proposal)
 
@@ -358,35 +358,36 @@ You can see our [Documentation](https://wax-ml.readthedocs.io/en/latest/) for ex
 EWMA or Binning on the air temperature dataset.
 
 ## ⏱ Synchronize streams ⏱
+
+
 Physicists have brought a solution to the synchronization problem called the Poincaré–Einstein
 synchronization (See [Poincaré-Einstein synchronization Wikipedia
-page](https://en.wikipedia.org/wiki/Einstein_synchronisation) for more details).
-In WAX-ML we implement a similar mechanism by defining a "local time", borrowing Henri Poincaré terminology,  to denominate the timestamps
-of the stream (the "local stream") in which the user wants to apply transformations and unravel all other streams.
-The other streams, which we call "secondary streams", are
-pushed back in the local stream using embedding maps which specify how to convert timestamps from a secondary
-stream into timestamps in the local stream.
+page](https://en.wikipedia.org/wiki/Einstein_synchronisation)).  In WAX-ML we have implemented a similar
+mechanism by defining a "local time", borrowing Henri Poincaré terminology, to denominate the
+timestamps of the stream (the "local stream") in which the user wants to apply transformations and
+unravel all other streams.  The other streams, which we have called "secondary streams", are pushed
+back in the local stream using embedding maps which specify how to convert timestamps from a
+secondary stream into timestamps in the local stream.
 
-This synchronization mechanism permits to work with secondary streams
-having timestamps at frequencies that can be lower or
-higher than the local stream. The data from these secondary streams will be represented in the "local stream"
-either with the use of a forward filling mechanism for lower frequencies or a buffering mechanism for higher frequencies.
+This synchronization mechanism permits to work with secondary streams having timestamps at
+frequencies that can be lower or higher than the local stream. The data from these secondary streams
+are represented in the "local stream" either with the use of a forward filling mechanism for lower
+frequencies or with a buffering mechanism for higher frequencies.
 
-We implement a "data tracing" mechanism to optimize access to out-of-sync streams.  This
-mechanism works on in-memory data.  We perform the first pass on the data, without
-actually accessing it, and determine the indices necessary to later access the
-data. Doing so we are vigilant to not let any "future" information pass through and thus
-guaranty a data processing that respects causality.
+Note that this simple synchronization scheme assumes that the different event streams have fixed
+latencies.
 
-The buffering mechanism used in the case of higher frequencies works with a fixed buffer
-size
-(see the WAX-ML module
-[`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
- which allows us to use JAX / XLA
-optimizations and have efficient processing).
+We have implemented a "data tracing" mechanism to optimize access to out-of-sync streams.  This
+mechanism works on in-memory data.  We perform the first pass on the data, without actually
+accessing it, and determine the indices necessary to later access the data. Doing so we are vigilant
+to not let any "future" information pass through and thus guaranty a data processing that respects
+causality.
+
+The buffering mechanism used in the case of higher frequencies works with a fixed buffer size 
+(see the WAX-ML module [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
+to allow the use of JAX / XLA optimizations and efficient processing.
 
 We give simple usage examples in our documentation.
-
 
 Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.
 
@@ -572,7 +573,7 @@ We would like to implement other types of feedback loops in WAX-ML.
 For instance, those of the standard control theory toolboxes,
 such as those implemented in the SLICOT [SLICOT](http://slicot.org/) library.
 
-Many algorithms in this space are absent from the python ecosystem and
+Many algorithms in this space are absent from the Python ecosystem and
 we aim to provide JAX-based implementations and expose them with a simple API.
 
 An idiomatic example in this field is the
@@ -580,7 +581,7 @@ An idiomatic example in this field is the
 a now-standard algorithm that dates back to the 1950s.
 After 30 years of existence, the Python ecosystem has still not integrated
 this algorithm into widely adopted libraries!
-Some implementations can be found in python libraries such as
+Some implementations can be found in Python libraries such as
 [python-control](https://github.com/python-control/python-control),
 [stats-models](https://www.statsmodels.org/stable/index.html),
 [SciPy Cookbook](https://scipy-cookbook.readthedocs.io/items/KalmanFiltering.html#).

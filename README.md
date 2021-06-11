@@ -120,13 +120,14 @@ For now, WAX-ML contains:
   At the moment, we have only implemented a demonstration module for the
   exponential moving average that we have called `EagerEWMA`.
 
-## What is JAX?
+### What is JAX?
 
 JAX is a research-oriented computational system implemented in Python that leverages the
 XLA optimization framework for machine learning computations.  It makes XLA usable with
 the NumPy API and some functional primitives for just-in-time compilation,
 differentiation, vectorization, and parallelization.  It allows building higher-level
 transformations or "programs" in a functional programming approach.
+See  [JAX's page](https://github.com/google/jax) for more details.
 
 
 ## Why to use WAX-ML?

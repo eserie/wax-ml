@@ -109,7 +109,7 @@ For now, WAX-ML contains:
   introduced in the library [Gym](https://gym.openai.com/), and illustrated this figure:
   
   <div align="center">
-  <img src="docs/tikz/gymfeedback.png" alt="logo" width="80%"></img>
+  <img src="docs/tikz/gymfeedback.png" alt="logo" width="60%"></img>
   </div>
 
 - some ``universal'' modules powered by  [EagerPy](https://github.com/jonasrauber/eagerpy)
@@ -475,7 +475,7 @@ In WAX-ML, we propose a simple module called
 This is built from an agent and an environment, both possibly having parameters and state: 
 
 <div align="center">
-<img src="docs/tikz/agent_env.png" alt="logo" width="40%"></img>
+<img src="docs/tikz/agent_env.png" alt="logo" width="60%"></img>
 </div>
 
 - The agent is in charge of generating an action from observations.
@@ -487,7 +487,7 @@ A feedback instance `GymFeedback(agent, env)` is a function that processes the
 "raw observations" and returns a reward as represented here:
 
 <div align="center">
-<img src="docs/tikz/gymfeedback.png" alt="logo" width="80%"></img>
+<img src="docs/tikz/gymfeedback.png" alt="logo" width="60%"></img>
 </div>
 
 Equivalently, we can describe the function `GymFeedback(agent, env)`, 
@@ -495,7 +495,7 @@ after transformation by Haiku transformation, by a pair of pure functions
 `init` and `apply` that we describe here:
 
 <div align="center">
-<img src="docs/tikz/gym_feedback_init_apply.png" alt="logo" width="80%"></img>
+<img src="docs/tikz/gymfeedback_init_apply.png" alt="logo" width="80%"></img>
 </div>
 
 We have made concrete use of this feedback mechanism in this notebook where

@@ -684,7 +684,7 @@ The WAX-ML team is open to discussion and collaboration with contributors from a
 You can install WAX-ML with the command:
 
 ```bash
-pip install wax-ml"
+pip install wax-ml
 ```
 
 To install the latest version from source, you can use the command :

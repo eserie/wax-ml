@@ -143,6 +143,7 @@ time-series problems.
 
 ## Design
 
+### Research oriented
 WAX-ML is a research-oriented library.  It relies on
 [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html) and
 [Haiku](https://github.com/deepmind/dm-haiku) functional programming paradigm to ease the
@@ -151,34 +152,27 @@ development of research ideas.
 WAX-ML is a bit like [Flux](https://fluxml.ai/Flux.jl/stable/)
 in [Julia](https://julialang.org/) programming language.
 
-WAX-ML is not a framework but either a set of tools that aim to complement [JAX
-Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
-
-## Functional programming
-
+### Functional programming
 In WAX-ML, we pursue a functional programming approach inherited from JAX.
 
 In this sense, WAX-ML is not a framework, as most object-oriented libraries offer.  Instead, we
 implement "functions" that must be pure to exploit the JAX ecosystem.
 
+### Haiku modules
 We use the "module" mechanism proposed by the Haiku library to easily generate pure function pairs,
 called `init` and `apply` in Haiku, to implement programs that require the management of
-parameters and/or state variables.  In this way, we can recover all the advantages of
+parameters and/or state variables.  
+
+In this way, we can recover all the advantages of
 object-oriented programming but exposed in the functional programming approach.
 
-This approach gives a lot of freedom in the type of ideas that can be implemented.  For instance,
-JAX has been used recently to accelerate fluid dynamics simulations (see [[6]](#references) )
-by two orders of magnitude.
-
-WAX-ML does not want to reinvent the wheel by reimplementing every algorithm.  We want existing
-machine learning libraries to work well together while trying to leverage their strength, which is
+### Work with others
+We want existing machine learning libraries to work well together while trying to leverage their strength, which is
 easy to do with a functional programming approach.
 
-To demonstrate this, in the current version of WAX-ML, we have constructed various examples, such as
-an exponential moving average (to serve as a toy example), the implementation and calibration of an
-LSTM architecture with a standard supervised machine learning workflow, and the implementation of
-online learning and reinforcement learning architectures.  They are treated equally and laid out
-with flat organization in our sub-package `wax.modules`.
+WAX-ML is not a framework but either a set of tools that aim to complement 
+[JAX Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
+
 
 # Contents
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)

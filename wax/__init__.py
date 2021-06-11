@@ -11,5 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from os.path import dirname as _dirname
+from os.path import join as _join
 
-__version__ = "0.0.4"
+with open(_join(_dirname(__file__), "VERSION")) as _f:
+    __version__ = _f.read().strip()

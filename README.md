@@ -495,7 +495,7 @@ after transformation by Haiku transformation, by a pair of pure functions
 `init` and `apply` that we describe here:
 
 <div align="center">
-<img src="docs/tikz/gymfeedback_init_apply.png" alt="logo" width="80%"></img>
+<img src="docs/tikz/gymfeedback_init_apply.png" alt="logo" width="100%"></img>
 </div>
 
 We have made concrete use of this feedback mechanism in this notebook where

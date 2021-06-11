@@ -240,7 +240,7 @@ The buffering mechanism used in the case of higher frequencies works with a fixe
 (see the WAX-ML module [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
 to allow the use of JAX / XLA optimizations and efficient processing.
 
-We give simple usage examples in our documentation.
+### Example
 
 Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.
 

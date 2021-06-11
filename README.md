@@ -178,6 +178,7 @@ WAX-ML is not a framework but either a set of tools that aim to complement
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)
 * [⏱ Synchronize streams ⏱](#-synchronize-streams-)
 * [🌊 Streaming Data 🌊](#-streaming-data-)
+* [Implemented modules](#-implemented-modules-)
 * [♻ Feedback loops ♻](#-feedback-loops-)
 * [⚒ Implementation ⚒](#-Implementation-)
 * [Future plans](#future-plans)
@@ -338,12 +339,15 @@ Then run the "one-liner" syntax:
 <data-container>.stream(…).apply(…)
 ```
 
-### Implemented modules
+## Implemented modules
 
 We have some modules (inherited from Haiku modules) ready to be used in `wax.modules`
 (see our [api documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
 
 They can be considered as "building blocks" that can be reused to build more advanced programs to run on streaming data.
+
+### Fundamental modules
+
 We have some "fundamental" modules that are specific to time series management,
 - the `Buffer` module which implements the buffering mechanism
 - the `UpdateOnEvent` module which allows to "freeze" the computation of a program and
@@ -357,7 +361,9 @@ We have some "fundamental" modules that are specific to time series management,
 <img src="docs/_static/trailing_ohlc.png" alt="logo" width="60%"></img>
 </div>
 
-We have a few more specific modules that aim to reproduce some of the logic that pandas users may be familiar with,
+### pandas modules
+
+We have a few more specific modules that aim to reproduce some of the logic that **pandas** users may be familiar with,
 such as:
 - `Lag` to implement a delay on the input data
 - `Diff` to compute differences between values over time
@@ -365,8 +371,12 @@ such as:
 - `RollingMean` to compute the moving average over time.
 - `EWMA`, `EWMVar`, `EWMCov`, to compute the exponential moving average, variance, covariance of the input data.
 
+### Online learning and reinforcement learning modules
+
 Finally, we implement domain-specific modules for online learning and reinforcement
 learning such as `OnlineSupervisedLearner` and `GymFeedback` (see dedicated sections).
+
+### accessors
 
 For now, WAX-ML offers direct access to some modules through specific accessors for pandas and xarray users.
 For instance, we have an implementation of the "exponential moving average" directly

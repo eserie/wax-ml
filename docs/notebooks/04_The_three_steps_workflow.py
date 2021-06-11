@@ -14,7 +14,7 @@
 #     name: python3
 # ---
 
-# + id="2b295407-92c4-4818-bfb9-f445f6967f10"
+# + id="2b295407-92c4-4818-bfb9-f445f6967f10" outputId="dc6c8e1b-2875-4287-d83a-4bdc4c9db80a" colab={"base_uri": "https://localhost:8080/"}
 # Uncomment to run the notebook in Colab
 # # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
 # # ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
@@ -23,7 +23,7 @@
 # check available devices
 import jax
 
-# + colab={"base_uri": "https://localhost:8080/"} id="a3cdb104" outputId="2a8b84e5-1d90-4c06-bed5-1518bdfdc767"
+# + colab={"base_uri": "https://localhost:8080/"} id="a3cdb104" outputId="a6f395c3-6ee3-4fe5-ce39-a02617a129ca"
 print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
 jax.devices()
 
@@ -86,7 +86,7 @@ register_wax_accessors()
 T = 1.0e5
 N = 1000
 
-# + colab={"base_uri": "https://localhost:8080/"} id="03af743d" outputId="ae3f7e8f-7e2c-4ef1-a456-bd4d2f72893d" tags=[]
+# + id="03af743d" tags=[]
 T, N = map(int, (T, N))
 dataframe = pd.DataFrame(
     onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T, freq="s")
@@ -95,14 +95,14 @@ dataframe = pd.DataFrame(
 # + [markdown] id="d1fd46f7"
 # ### pandas EWMA
 
-# + colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="760f16e5-bc4d-4bf1-fa1b-7749e1d2366f" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="27092faf" tags=[] outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424"
 # %%time
 df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 
 # + [markdown] id="678be283"
 # ### WAX-ML EWMA
 
-# + colab={"base_uri": "https://localhost:8080/"} id="11f3705d" outputId="75921f06-a92c-4e1a-a7f9-49866659c232" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="11f3705d" tags=[] outputId="744f0faa-7030-4155-80ae-4a5c745731f8"
 # %%time
 df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 
@@ -115,18 +115,18 @@ df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 # + [markdown] id="7361def9"
 # Let's disable the final formatting step (the output is now in raw JAX format):
 
-# + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="7e3e0052-803a-48ac-ae9a-c2b68af8c575" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" tags=[] outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6"
 # %%time
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
 df_ewma_wax_no_format.block_until_ready()
 
-# + colab={"base_uri": "https://localhost:8080/"} id="88d0cab5-62ad-47f7-9d06-56fc45fa542e" outputId="41fe33ca-4713-4a9d-a595-5c85696ff76f"
+# + colab={"base_uri": "https://localhost:8080/"} id="88d0cab5-62ad-47f7-9d06-56fc45fa542e" outputId="f8b7c4fb-79a7-4652-82eb-2b649aeb074c"
 type(df_ewma_wax_no_format)
 
 # + [markdown] id="9be62475-b2fa-4a95-b293-7e4410ca36ca"
 # Let's check the device on which the calculation was performed (if you have GPU available, this should be `GpuDevice` otherwise it will be `CpuDevice`):
 
-# + colab={"base_uri": "https://localhost:8080/"} id="38d3970c-04a5-4deb-93b3-a4f5f899e8f1" outputId="ae302feb-5e16-4a53-8aad-6dd12de7d4e8"
+# + colab={"base_uri": "https://localhost:8080/"} id="38d3970c-04a5-4deb-93b3-a4f5f899e8f1" outputId="ba287d55-719a-47de-f959-9223effbe7a6"
 df_ewma_wax_no_format.device()
 
 # + [markdown] id="784ee16e"
@@ -160,7 +160,7 @@ del dataframe
 # It prepares a function that wraps the input function with the actual data and indices
 # in a pair of pure functions (`TransformedWithState` Haiku tuple).
 
-# + colab={"base_uri": "https://localhost:8080/"} id="5f6b72ca" outputId="18f8761e-f198-476c-a3e0-06b6773d874a"
+# + colab={"base_uri": "https://localhost:8080/"} id="5f6b72ca" outputId="e6852b1f-65bb-478a-ea6f-1cc6a3ce0898"
 # %%time
 stream = dataset.wax.stream()
 
@@ -191,7 +191,7 @@ from wax.unroll import init_params_state
 rng = jax.random.PRNGKey(42)
 params, state = init_params_state(transform_dataset, rng, jxs)
 
-# + colab={"base_uri": "https://localhost:8080/"} id="dc9a4bce-83d1-494b-b053-c6f9ebfb7d0c" outputId="4c4e08a8-5c03-468f-96bb-c0b10fdb1d79"
+# + colab={"base_uri": "https://localhost:8080/"} id="dc9a4bce-83d1-494b-b053-c6f9ebfb7d0c" outputId="b177e83e-d301-4071-bd37-803d93a64910"
 params
 
 # + id="4dd83bef-ef68-4576-973f-594f18123944"
@@ -218,13 +218,13 @@ assert state["ewma"]["mean"].shape == (N,)
 rng = next(hk.PRNGSequence(42))
 outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 
-# + colab={"base_uri": "https://localhost:8080/"} id="3862a486-a5a2-4aa9-967a-59ebc32a18e1" outputId="bb926b58-cb8e-44df-a38d-56e6fa758466"
+# + colab={"base_uri": "https://localhost:8080/"} id="3862a486-a5a2-4aa9-967a-59ebc32a18e1" outputId="b54b4e2c-a0ab-4a43-d331-d6b3d90707c6"
 outputs.device()
 
 # + [markdown] id="b73f3252"
 # Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="a889d294" outputId="1bbcad84-5bc0-49d3-865f-685e75892793" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="a889d294" tags=[] outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4"
 # %%timeit
 outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
 _ = outputs.block_until_ready()
@@ -244,14 +244,14 @@ _ = outputs.block_until_ready()
 # - converting the numpy data in jax ourself
 # - puting the data on the device we want.
 
-# + colab={"base_uri": "https://localhost:8080/"} id="76479f76-7b6e-4321-97c3-942f2987bc01" outputId="c4c46c35-4e93-4f7b-8197-0520f8f0e1e0"
+# + colab={"base_uri": "https://localhost:8080/"} id="76479f76-7b6e-4321-97c3-942f2987bc01" outputId="7f22f580-be0b-4d23-9d4d-7d89c9dd117b"
 np_data, np_index, xs = stream.trace_dataset(dataset)
 jnp_data, jnp_index, jxs = convert_to_tensors((np_data, np_index, xs), "jax")
 
 # + [markdown] id="a4fa1934-3633-4661-b808-c60e4b8c4600"
 # We explicitly set data on CPUs (the is not needed if you only have CPUs):
 
-# + colab={"base_uri": "https://localhost:8080/"} id="bae591f7-e7ec-4b8b-9b80-6f129184e1ae" outputId="f073bab3-7f7b-4ed6-a5df-5266418d4072"
+# + colab={"base_uri": "https://localhost:8080/"} id="bae591f7-e7ec-4b8b-9b80-6f129184e1ae" outputId="36f15d54-170f-4771-f571-ecacbc942026"
 from jax.tree_util import tree_leaves, tree_map
 
 cpus = jax.devices("cpu")
@@ -268,7 +268,7 @@ print("data copied to CPU device.")
 # Let's define the transformation that wrap the actual data and indices in a pair of
 # pure functions:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="e7ebbb08-d790-4977-b49d-c9224e299a42" outputId="c91ac27c-b671-4bad-8e0d-c9eb0464ae3c"
+# + id="e7ebbb08-d790-4977-b49d-c9224e299a42"
 @jit_init_apply
 @hk.transform_with_state
 def transform_dataset(step):
@@ -279,19 +279,19 @@ def transform_dataset(step):
 # + [markdown] id="31fa1d05-c3d7-4543-ac82-d398044cdc2e"
 # And we can call it as before:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="f851407a-597f-4711-8370-c3e83cb50da7" outputId="585097e9-6025-4f45-886e-261cbdba4014"
+# + colab={"base_uri": "https://localhost:8080/"} id="f851407a-597f-4711-8370-c3e83cb50da7" outputId="3892357f-2d91-40b6-85bc-542e471ed28f"
 # %%time
 outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 _ = outputs.block_until_ready()
 
-# + colab={"base_uri": "https://localhost:8080/"} id="e5b786b7-ecaf-4280-894b-aa8f65a0b78f" outputId="c8bc9f41-7587-4482-c496-f40523f6840f"
+# + colab={"base_uri": "https://localhost:8080/"} id="e5b786b7-ecaf-4280-894b-aa8f65a0b78f" outputId="2e3c126e-9c9d-49b4-caa5-67f215944188"
 outputs.device()
 
 # + [markdown] id="6fa51498"
 # ## Step(3) (format)
 # Let's come back to pandas/xarray:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="d1b0732c" outputId="7427109b-7cfa-455c-af20-080b73b86182"
+# + colab={"base_uri": "https://localhost:8080/"} id="d1b0732c" outputId="38e747c5-5b1c-40dc-c289-5aeebe503a8b"
 # %%time
 y = format_dataframe(
     dataset.coords, onp.array(outputs), format_dims=dataset.dataarray.dims
@@ -306,7 +306,7 @@ y = format_dataframe(
 # + [markdown] id="f0d4651d-9087-4f04-9f07-a4d92cd3ba1f"
 # Let's look with execution on GPU
 
-# + colab={"base_uri": "https://localhost:8080/"} id="a30f6024-5e9c-4174-92ea-7207860d829d" outputId="ee0cc84f-e332-485b-fddd-ee5ce42b6ce8"
+# + colab={"base_uri": "https://localhost:8080/"} id="a30f6024-5e9c-4174-92ea-7207860d829d" outputId="95058ee2-9461-4e7e-f9b1-b1e55087dc9e"
 try:
     gpus = jax.devices("gpu")
     jnp_data, jnp_index, jxs = tree_map(
@@ -321,16 +321,16 @@ except RuntimeError as err:
 # + [markdown] id="27d7cf26-f35b-489e-83b9-c120565d9b17"
 # Let's check that our data is on the GPUs:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="d6f00e5d-1b85-483d-9856-35de3a954b13" outputId="db9396c3-b35d-4cdc-aaa3-eadddc9da31c"
+# + colab={"base_uri": "https://localhost:8080/"} id="d6f00e5d-1b85-483d-9856-35de3a954b13" outputId="9d5d0ec1-4899-4d8e-d9f6-2232321ec42a"
 tree_leaves(jnp_data)[0].device()
 
-# + colab={"base_uri": "https://localhost:8080/"} id="6f89fc7c-4824-4858-aee8-6fff7834c70c" outputId="40c8a645-5771-40f0-ffab-0e5322d59c77"
+# + colab={"base_uri": "https://localhost:8080/"} id="6f89fc7c-4824-4858-aee8-6fff7834c70c" outputId="5b5304de-0694-4944-92f1-63eee852ebf6"
 tree_leaves(jnp_index)[0].device()
 
-# + colab={"base_uri": "https://localhost:8080/"} id="ba2471ef-51e4-49f2-863c-aabafd401cbf" outputId="25800a2f-4152-4714-9ceb-ba396fcf1790"
+# + colab={"base_uri": "https://localhost:8080/"} id="ba2471ef-51e4-49f2-863c-aabafd401cbf" outputId="e6afa394-3e1b-4b9b-aea6-9dfe0d60ab86"
 jxs.device()
 
-# + colab={"base_uri": "https://localhost:8080/"} id="6c35bd5d-0113-455d-bd56-f7c31bf6c736" outputId="86e2ff5d-3b7b-4b65-8202-0feebc27063d"
+# + colab={"base_uri": "https://localhost:8080/"} id="6c35bd5d-0113-455d-bd56-f7c31bf6c736" outputId="fda693e8-723e-436d-84f6-68a49a510be9"
 # %%time
 if GPU_AVAILABLE:
     rng = next(hk.PRNGSequence(42))
@@ -340,7 +340,7 @@ if GPU_AVAILABLE:
 # + [markdown] id="274b5615-8785-43e7-a2db-5f867566c913"
 # Let's redefine our function `transform_dataset` by explicitly specify to `jax.jit` the `device` option.
 
-# + colab={"base_uri": "https://localhost:8080/"} id="6bb7431e-90f2-4761-a906-69f25fea4a63" outputId="405cc724-22e8-48d6-e722-d6cea8a90e49"
+# + colab={"base_uri": "https://localhost:8080/"} id="6bb7431e-90f2-4761-a906-69f25fea4a63" outputId="285660f2-8379-4b8f-f89f-9f5a7240c419"
 # %%time
 if GPU_AVAILABLE:
 
@@ -356,11 +356,12 @@ if GPU_AVAILABLE:
     rng = next(hk.PRNGSequence(42))
     outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
 
-# + colab={"base_uri": "https://localhost:8080/"} id="944dcb8e-211c-4b39-b854-12118fe775ed" outputId="d1f353b2-a7ed-4457-a26c-38ac4125aa65"
+# + colab={"base_uri": "https://localhost:8080/"} id="944dcb8e-211c-4b39-b854-12118fe775ed" outputId="fbeeab1e-e245-4d85-ad5c-09530ec7d331"
 outputs.device()
 
-# + colab={"base_uri": "https://localhost:8080/"} id="de99ee71-4e02-4843-9e6e-39d831f9697e" outputId="88a5e604-a722-43bf-d90c-49b11fde96b2"
+# + colab={"base_uri": "https://localhost:8080/"} id="de99ee71-4e02-4843-9e6e-39d831f9697e" outputId="4262991e-c488-4296-849d-b111e288c203"
 # %%timeit
 if GPU_AVAILABLE:
     outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
     _ = outputs.block_until_ready()
+# + id="6oYJTYfNCgX0"

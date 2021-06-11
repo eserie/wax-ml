@@ -734,7 +734,7 @@ To cite this repository:
   author = {Emmanuel Sérié},
   title = {{WAX-ML}: A {P}ython library for machine-learning and feedback loops on streaming data},
   url = {http://github.com/eserie/wax-ml},
-  version = {0.0.5},
+  version = {0.1.0},
   year = {2021},
 }
 ```

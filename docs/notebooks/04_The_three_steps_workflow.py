@@ -93,7 +93,7 @@ dataframe = pd.DataFrame(
 )
 
 # + [markdown] id="d1fd46f7"
-# ### Pandas EWMA
+# ### pandas EWMA
 
 # + colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="760f16e5-bc4d-4bf1-fa1b-7749e1d2366f" tags=[]
 # %%time
@@ -118,6 +118,7 @@ df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 # + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="7e3e0052-803a-48ac-ae9a-c2b68af8c575" tags=[]
 # %%time
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
+df_ewma_wax_no_format.block_until_ready()
 
 # + colab={"base_uri": "https://localhost:8080/"} id="88d0cab5-62ad-47f7-9d06-56fc45fa542e" outputId="41fe33ca-4713-4a9d-a595-5c85696ff76f"
 type(df_ewma_wax_no_format)
@@ -129,9 +130,10 @@ type(df_ewma_wax_no_format)
 df_ewma_wax_no_format.device()
 
 # + [markdown] id="784ee16e"
-# That's better! In fact (see below)
-# there is a performance problem in the final formatting step.
-# See WEP3 for a proposal to improve the formatting step.
+# Now we will see how to break down WAX-ML one-liners `<dataset>.ewm(...).mean()` or `<dataset>.stream(...).apply(...)` into 3 steps:
+# - a preparation step where we prepare JAX-ready data and functions.
+# - a processing step where we execute the JAX program
+# - a post-processing step where we format the results in pandas or xarray format.
 
 # + [markdown] id="c5e7b817"
 # ### Generate data (in dataset format)

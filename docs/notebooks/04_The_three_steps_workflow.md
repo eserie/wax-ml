@@ -127,7 +127,7 @@ dataframe = pd.DataFrame(
 
 +++ {"id": "d1fd46f7"}
 
-### Pandas EWMA
+### pandas EWMA
 
 ```{code-cell} ipython3
 ---
@@ -179,6 +179,7 @@ tags: []
 ---
 %%time
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
+df_ewma_wax_no_format.block_until_ready()
 ```
 
 ```{code-cell} ipython3
@@ -207,9 +208,10 @@ df_ewma_wax_no_format.device()
 
 +++ {"id": "784ee16e"}
 
-That's better! In fact (see below)
-there is a performance problem in the final formatting step.
-See WEP3 for a proposal to improve the formatting step.
+Now we will see how to break down WAX-ML one-liners `<dataset>.ewm(...).mean()` or `<dataset>.stream(...).apply(...)` into 3 steps:
+- a preparation step where we prepare JAX-ready data and functions.
+- a processing step where we execute the JAX program
+- a post-processing step where we format the results in pandas or xarray format.
 
 +++ {"id": "c5e7b817"}
 

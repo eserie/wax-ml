@@ -37,7 +37,7 @@ WAX-ML provides a simple mechanism for implementing feedback loops, allows the i
 end-users working with the object-oriented reinforcement learning framework from the
 [Gym](https://gym.openai.com/) library.
 
-To learn more, you can read our [article on ArXiv]()
+To learn more, you can read our [article on ArXiv](https://arxiv.org/abs/2106.3789470)
 or simply access the code in this repository.
 
 ## WAX-ML Goal
@@ -109,7 +109,7 @@ For now, WAX-ML contains:
   introduced in the library [Gym](https://gym.openai.com/), and illustrated this figure:
   
   <div align="center">
-  <img src="docs/tikz/gymfeedback.png" alt="logo" width="40%"></img>
+  <img src="docs/_static/gymfeedback.png" alt="logo" width="80%"></img>
   </div>
 
 - some ``universal'' modules powered by  [EagerPy](https://github.com/jonasrauber/eagerpy)
@@ -282,7 +282,10 @@ We have some "fundamental" modules that are specific to time series management,
   high and closing quantities of temperatures recorded during a day,
   the binning process being reset at each day change.  We show an illustrative graph of the final result:
 
-![](docs/_static/trailing_ohlc.png)
+
+<div align="center">
+<img src="docs/_static/trailing_ohlc.png" alt="logo" width="60%"></img>
+</div>
 
 We have a few more specific modules that aim to reproduce some of the logic that pandas users may be familiar with,
 such as:
@@ -347,7 +350,9 @@ output, state = dataset.wax.stream().apply(
 _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
 ```
 
-![](docs/_static/my_custom_function_on_dataset.png)
+<div align="center">
+<img src="docs/_static/my_custom_function_on_dataset.png" alt="logo" width="60%"></img>
+</div>
 
 You can see our [Documentation](https://wax-ml.readthedocs.io/en/latest/) for examples with
 EWMA or Binning on the air temperature dataset.
@@ -420,8 +425,9 @@ results, state = dataset.wax.stream(
 _ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
 ```
 
-
-![](docs/_static/synchronize_data_streams.png)
+<div align="center">
+<img src="docs/_static/synchronize_data_streams.png" alt="logo" width="60%"></img>
+</div>
 
 
 ### ⚡ Performance on big dataframes ⚡
@@ -469,7 +475,7 @@ In WAX-ML, we propose a simple module called
 This is built from an agent and an environment, both possibly having parameters and state: 
 
 <div align="center">
-<img src="docs/tikz/agent_env.png" alt="logo" width="40%"></img>
+<img src="docs/_static/agent_env.png" alt="logo" width="40%"></img>
 </div>
 
 - The agent is in charge of generating an action from observations.
@@ -481,7 +487,7 @@ A feedback instance `GymFeedback(agent, env)` is a function that processes the
 "raw observations" and returns a reward as represented here:
 
 <div align="center">
-<img src="docs/tikz/gym_feedback.png" alt="logo" width="40%"></img>
+<img src="docs/_static/gymfeedback.png" alt="logo" width="80%"></img>
 </div>
 
 Equivalently, we can describe the function `GymFeedback(agent, env)`, 
@@ -489,7 +495,7 @@ after transformation by Haiku transformation, by a pair of pure functions
 `init` and `apply` that we describe here:
 
 <div align="center">
-<img src="docs/tikz/gym_feedback_init_apply.png" alt="logo" width="40%"></img>
+<img src="docs/_static/gym_feedback_init_apply.png" alt="logo" width="80%"></img>
 </div>
 
 We have made concrete use of this feedback mechanism in this notebook where
@@ -499,7 +505,9 @@ we give an example of online linear regression in a non-stationary environment:
 
 Here is an illustrative plot of the final result of the study:
 
-![](docs/_static/online_linear_regression_regret.png)
+<div align="center">
+<img src="docs/_static/online_linear_regression_regret.png" alt="logo" width="100%"></img>
+</div>
 - Left: The regret (cumulative sum of losses) first becomes concave, which means that the agent "learns something".  
 Then, the regret curve has a bump at step 2000 where it becomes locally linear.  
 It finally ends in a concave regime concave regime, which means that the agent has adapted to the new regime.  

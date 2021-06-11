@@ -162,9 +162,17 @@ implement "functions" that must be pure to exploit the JAX ecosystem.
 We use the "module" mechanism proposed by the Haiku library to easily generate pure function pairs,
 called `init` and `apply` in Haiku, to implement programs that require the management of
 parameters and/or state variables.  
+You can see 
+[the Haiku module API](https://dm-haiku.readthedocs.io/en/latest/api.html#modules-parameters-and-state)
+and
+[Haiku transformation functions](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku-transforms)
+for more details.
 
 In this way, we can recover all the advantages of
 object-oriented programming but exposed in the functional programming approach.
+It permits to ease the development of robust and reusable features and to 
+develop "mini-languages" tailored to specific scientific domains.
+
 
 ### Work with others
 We want existing machine learning libraries to work well together while trying to leverage their strength, which is
@@ -174,15 +182,16 @@ WAX-ML is not a framework but either a set of tools that aim to complement
 [JAX Ecosystem](https://moocaholic.medium.com/jax-a13e83f49897).
 
 
+
+
 # Contents
 * [🚀 Quickstart: Colab in the Cloud 🚀](#-quicksart-colab-in-the-cloud-)
 * [⏱ Synchronize streams ⏱](#-synchronize-streams-)
 * [🌊 Streaming Data 🌊](#-streaming-data-)
 * [Implemented modules](#-implemented-modules-)
 * [♻ Feedback loops ♻](#-feedback-loops-)
-* [⚒ Implementation ⚒](#-Implementation-)
 * [Future plans](#future-plans)
-* [Installation](#installation)
+* [⚒ Installation ⚒](#installation)
 * [Disclaimer](#disclaimer)
 * [Development](#development)
 * [References](#references)
@@ -534,19 +543,6 @@ the one in the one in [dask](https://github.com/dask/dask).
 WAX-ML should provide tools for reinforcement learning that should complement well those
 already existing such as [RLax](https://github.com/deepmind/rlax) or [deluca](https://github.com/google/deluca).
 
-## ⚒ Implementation ⚒
-
-Currently, WAX-ML uses
-[the Haiku module API](https://dm-haiku.readthedocs.io/en/latest/api.html#modules-parameters-and-state)
-and
-[Haiku transformation functions](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku-transforms)
-to facilitate the development of robust and reusable features.
-
-Haiku's module API integrates well with the functional paradigm of JAX and makes it easy
-to develop "mini-languages" tailored to specific scientific domains.
-
-** [Flax](https://github.com/google/flax)
-also has a module API. We should consider using it in WAX-ML too!
 
 ## Universal functions
 
@@ -683,9 +679,15 @@ The WAX-ML team is open to discussion and collaboration with contributors from a
  By making this software public, we hope to find enthusiasts who aim to develop WAX-ML further!
 
 
-## Installation
+## ⚒ Installation ⚒
 
-For now, WAX-ML can only be installed from sources:
+You can install WAX-ML with the command:
+
+```bash
+pip install wax-ml"
+```
+
+To install the latest version from source, you can use the command :
 
 ```bash
 pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"

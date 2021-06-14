@@ -39,7 +39,7 @@ WAX-ML provides a simple mechanism for implementing feedback loops, allows the i
 end-users working with the object-oriented reinforcement learning framework from the
 [Gym](https://gym.openai.com/) library.
 
-To learn more, you can read our [article on ArXiv](https://arxiv.org/abs/2106.3789470)
+To learn more, you can read our [article on ArXiv](http://arxiv.org/abs/2106.06524)
 or simply access the code in this repository.
 
 ## WAX-ML Goal
@@ -767,17 +767,20 @@ The full text of these `licenses` is included in the licenses directory.
 
 ## Citing WAX-ML
 
-To cite this repository:
+If you use WAX-ML, please cite our [paper](http://arxiv.org/abs/2106.06524) using the BibTex entry:
 
 ```
-@software{wax-ml2021github,
-  author = {Emmanuel Sérié},
-  title = {{WAX-ML}: A {P}ython library for machine-learning and feedback loops on streaming data},
-  url = {http://github.com/eserie/wax-ml},
-  version = {0.1.0},
-  year = {2021},
+@misc{sérié2021waxml,
+      title={{WAX-ML}: {A} {P}ython library for machine learning and feedback loops on streaming data},
+      author={Emmanuel Sérié},
+      year={2021},
+      eprint={2106.06524},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url = {http://arxiv.org/abs/2106.06524},
 }
 ```
+
 
 ## Reference documentation
 

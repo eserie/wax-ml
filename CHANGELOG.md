@@ -10,6 +10,6 @@ PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
 
-## wax 0.0.5 (June 9 2021)
+## wax 0.1.0 (June 14 2021)
 
 * First realease.

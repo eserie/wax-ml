@@ -19,6 +19,7 @@ from wax.modules.diff import Diff
 from wax.modules.ewma import EWMA
 from wax.modules.ewmcov import EWMCov
 from wax.modules.ewmvar import EWMVar
+from wax.modules.ffill import Ffill
 from wax.modules.fill_nan_inf import FillNanInf
 from wax.modules.gym_feedback import GymFeedback
 from wax.modules.has_changed import HasChanged
@@ -42,6 +43,7 @@ __all__ = [
     "HasChanged",
     "Lag",
     "OHLC",
+    "Ffill",
     "PctChange",
     "RollingMean",
     "UpdateOnEvent",

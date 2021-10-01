@@ -14,7 +14,7 @@
 """Relative change between the current and a prior element."""
 import haiku as hk
 
-from wax.modules.buffer import Buffer
+from wax.modules import Ffill, Lag
 
 
 class PctChange(hk.Module):
@@ -34,6 +34,9 @@ class PctChange(hk.Module):
         assert periods == 1, "periods > 1 not implemented."
 
     def __call__(self, x):
-        buffer = Buffer(self.periods + 1)(x)
-        pct_change = buffer[-1] / buffer[0] - 1.0
+        if self.fill_method in ["ffill", "pad"]:
+            previous_x = Lag(self.periods)(Ffill()(x))
+        else:
+            previous_x = Lag(self.periods)()
+        pct_change = x / previous_x - 1.0
         return pct_change

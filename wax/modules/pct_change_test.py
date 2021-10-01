@@ -18,6 +18,7 @@ from jax import numpy as jnp
 
 from wax.compile import jit_init_apply
 from wax.modules.pct_change import PctChange
+from wax.unroll import dynamic_unroll
 
 
 @pytest.mark.parametrize("use_jit", [False, True])
@@ -41,3 +42,17 @@ def test_pct_change(use_jit):
     output, state = pct_change.apply(params, state, next(seq), x)
     assert len(output) == 2
     assert (output == (x / x1 - 1.0)).all()
+
+
+def test_pct_change_ffill():
+
+    x = jnp.array([90, 91, jnp.nan, 85])
+
+    fun = hk.transform_with_state(lambda x: PctChange()(x))
+    res, _ = dynamic_unroll(fun, None, None, None, False, x)
+
+    assert jnp.allclose(
+        res,
+        jnp.array([jnp.nan, 0.0111111, jnp.nan, -0.065934], dtype=jnp.float32),
+        equal_nan=True,
+    )

@@ -14,7 +14,8 @@
 """Defines a comparison function to compare two nested data structures."""
 from numbers import Number
 
-from jax import numpy as onp
+import numpy as onp
+from jax import numpy as jnp
 from jax import tree_flatten
 from jax._src.numpy.lax_numpy import int32, uint32
 
@@ -40,5 +41,7 @@ def assert_tree_all_close(x, y, check_treedef=True):
             assert x_.dtype == y_.dtype, f"{x_.dtype} != {y_.dtype}"
             if x_.dtype in [int32, uint32]:
                 assert (x_ == y_).all()
+            elif isinstance(x, jnp.ndarray):
+                assert jnp.allclose(x_, y_)
             else:
                 assert onp.allclose(x_, y_)

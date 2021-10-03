@@ -14,6 +14,7 @@
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import numpy as onp
 import pytest
 
 from wax.compile import jit_init_apply
@@ -99,10 +100,10 @@ def test_run_var_vs_pandas_not_adjust():
 
     var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
     var2 = pd.DataFrame(var2)
-    assert jnp.allclose(var, var2)
+    assert onp.allclose(var, var2)
 
     pandas_var = pd.DataFrame(x).ewm(alpha=0.1, adjust=False).var()
-    assert not jnp.allclose(var, pandas_var.values)
+    assert not onp.allclose(var, pandas_var.values)
 
 
 def test_run_var_vs_pandas_adjust():
@@ -129,11 +130,11 @@ def test_run_var_vs_pandas_adjust():
 
     var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
     var2 = pd.DataFrame(var2)
-    assert jnp.allclose(var, var2)
+    assert onp.allclose(var, var2)
 
     # pandas does something else
     pandas_var = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).var()
-    assert not jnp.allclose(var, pandas_var.values)
+    assert not onp.allclose(var, pandas_var.values)
 
 
 def test_run_var_vs_pandas_adjust_finite():
@@ -160,14 +161,14 @@ def test_run_var_vs_pandas_adjust_finite():
 
     var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
     var2 = pd.DataFrame(var2)
-    assert not jnp.allclose(var, var2)
+    assert not onp.allclose(var, var2)
     # TODO: understand why the two implementations are
     #  not agree for "linear" adjustement scheme.
 
     pandas_var_adjust = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).var()
     pandas_var_not_adjust = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).var()
-    assert not jnp.allclose(var, pandas_var_adjust.values)
-    assert not jnp.allclose(var, pandas_var_not_adjust.values)
+    assert not onp.allclose(var, pandas_var_adjust.values)
+    assert not onp.allclose(var, pandas_var_not_adjust.values)
     corr = jnp.corrcoef(
         var.fillna(0).values.flatten(), pandas_var_adjust.fillna(0).values.flatten()
     )[0, 1]

@@ -78,8 +78,10 @@ class OnlineSupervisedLearner(hk.Module):
         hk.set_state("step", step)
         hk.set_state("model_params_state", ParamsState(params, state))
         hk.set_state("opt_state", opt_state)
-        return {
+        action = {
             "loss": l,
             "y_pred": y_pred,
             "params": params,
         }
+        info = {}
+        return action, info

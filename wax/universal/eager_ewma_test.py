@@ -193,7 +193,7 @@ def test_backends(tensor_type):
     ).stack()
     df = df.xs(0, level=1)
     assert len(df)
-    assert not jnp.allclose(ema, pandas_ema.values)
+    assert not onp.allclose(ema, pandas_ema.values)
 
 
 def test_tf_optimized():
@@ -218,4 +218,4 @@ def test_tf_optimized():
     ).stack()
     df = df.xs(0, level=1)
     assert len(df)
-    assert not jnp.allclose(ema, pandas_ema.values)
+    assert not onp.allclose(ema, pandas_ema.values)

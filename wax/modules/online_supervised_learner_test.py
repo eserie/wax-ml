@@ -109,7 +109,7 @@ def test_online_model():
     # dynamic unroll the learner
     x0, y0 = tree_map(lambda x: x[0], (X, Y))
     online_params, online_state = learner.init(next(seq), x0, y0)
-    output, online_state = dynamic_unroll(
+    (output, info), online_state = dynamic_unroll(
         learner, online_params, online_state, next(seq), False, X, Y
     )
     assert len(output["loss"]) == T
@@ -152,7 +152,8 @@ def stationary_linear_regression_env(action, raw_obs):
     y_pred = action["y_pred"]
     reward = loss(y_pred, y_previous)
 
-    return reward, obs
+    info = {}
+    return reward, obs, info
 
 
 def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
@@ -178,7 +179,7 @@ def test_online_recast_as_reinforcement_learning_pb():
     T = 300
     raw_observations = generate_many_raw_observations(T)
     rng = jax.random.PRNGKey(42)
-    output_sequence, final_state = dynamic_unroll(
+    (gym_output, gym_info), final_state = dynamic_unroll(
         gym_fun,
         None,
         None,
@@ -187,9 +188,9 @@ def test_online_recast_as_reinforcement_learning_pb():
         raw_observations,
     )
 
-    assert len(output_sequence.reward) == T - 1
-    assert len(output_sequence.action["loss"]) == T - 1
-    assert len(output_sequence.action["params"]["linear"]["w"]) == T - 1
+    assert len(gym_output.reward) == T - 1
+    assert len(gym_output.action["loss"]) == T - 1
+    assert len(gym_output.action["params"]["linear"]["w"]) == T - 1
 
 
 class NonStationaryEnvironment(hk.Module):
@@ -226,7 +227,8 @@ class NonStationaryEnvironment(hk.Module):
         step += 1
         hk.set_state("step", step)
 
-        return reward, obs
+        info = {}
+        return reward, obs, info
 
 
 def test_non_stationary_environement():
@@ -243,7 +245,7 @@ def test_non_stationary_environement():
     T = 300
     raw_observations = generate_many_raw_observations(T)
     rng = jax.random.PRNGKey(42)
-    output_sequence, final_state = dynamic_unroll(
+    (gym_output, gym_info), final_state = dynamic_unroll(
         gym_fun,
         None,
         None,
@@ -252,6 +254,6 @@ def test_non_stationary_environement():
         raw_observations,
     )
 
-    assert len(output_sequence.reward) == T - 1
-    assert len(output_sequence.action["loss"]) == T - 1
-    assert len(output_sequence.action["params"]["linear"]["w"]) == T - 1
+    assert len(gym_output.reward) == T - 1
+    assert len(gym_output.action["loss"]) == T - 1
+    assert len(gym_output.action["params"]["linear"]["w"]) == T - 1

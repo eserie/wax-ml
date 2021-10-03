@@ -14,7 +14,7 @@
 """Gym feedback between an agent and a Gym environment."""
 from collections import namedtuple
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, NamedTuple
 
 import haiku as hk
 
@@ -47,6 +47,11 @@ class GymOutput:
         if self.return_action:
             outputs += [action]
         return self.gym_output_struct(*outputs)
+
+
+class GymInfo(NamedTuple):
+    env: Any
+    agent: Any
 
 
 class GymFeedback(hk.Module):
@@ -92,13 +97,14 @@ class GymFeedback(hk.Module):
         """
 
         action = hk.get_state(
-            "action", shape=[], init=lambda *_: self.GymState(self.agent(raw_obs))
+            "action", shape=[], init=lambda *_: self.GymState(self.agent(raw_obs)[0])
         )
 
-        rw, obs = self.env(action.action, raw_obs)
-        action = self.agent(obs)
+        rw, obs, info_env = self.env(action.action, raw_obs)
+        action, info_agent = self.agent(obs)
 
+        info = GymInfo(info_env, info_agent)
         outputs = self.GymOutput.format(rw, obs, action)
         state = self.GymState(action)
         hk.set_state("action", state)
-        return outputs
+        return outputs, info

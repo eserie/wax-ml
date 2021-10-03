@@ -14,7 +14,7 @@
 """Unroll modules on data along first axis."""
 import logging
 from collections import namedtuple
-from typing import Any
+from typing import Any, Callable, Union
 
 import haiku as hk
 import jax
@@ -48,7 +48,7 @@ def init_params_state(
 
 
 def dynamic_unroll(
-    fun: hk.TransformedWithState,
+    fun: Union[Callable, hk.TransformedWithState],
     params: Any,
     state: Any,
     rng: jnp.ndarray,
@@ -59,7 +59,7 @@ def dynamic_unroll(
     """Unroll a TransformedWithState function using jax.lax.scan.
 
     Args:
-        fun : pair of pure functions (init, apply).
+        fun : callable or pair of pure functions (init, apply).
         params: parameters for the function.
         state : state for the function.
         rng: random number generator key.
@@ -67,6 +67,8 @@ def dynamic_unroll(
         args, kwargs : Nested data structures with sequences as leaves passed to init and apply
             of the TransformedWithState pair.
     """
+    if isinstance(fun, Callable):
+        fun = hk.transform_with_state(fun)
     fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state

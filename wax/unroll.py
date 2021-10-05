@@ -13,12 +13,14 @@
 # limitations under the License.
 """Unroll modules on data along first axis."""
 import logging
+import warnings
 from collections import namedtuple
-from typing import Any, Callable, Union
+from typing import Any, Callable, NamedTuple, Union
 
 import haiku as hk
 import jax
 import jax.numpy as jnp
+from haiku import without_state
 from jax import tree_flatten, tree_unflatten
 from jax._src.lax.control_flow import fori_loop
 from jax.tree_util import tree_map
@@ -43,8 +45,70 @@ def init_params_state(
     """
     xs = (args, kwargs)
     args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-    fun_init_params, fun_init_state = fun.init(rng, *args_0, **kwargs_0)
-    return fun_init_params, fun_init_state
+    return fun.init(rng, *args_0, **kwargs_0)
+
+
+class TransformedUnroll(NamedTuple):
+    init: Callable
+    apply: Callable
+
+
+def transform_unroll(
+    fun: Union[Callable, hk.TransformedWithState],
+    skip_first: bool = False,
+):
+    return without_state(transform_unroll_with_state(fun, skip_first))
+
+
+class TransformedUnrollWithState(NamedTuple):
+    init: Callable
+    apply: Callable
+
+
+def transform_unroll_with_state(
+    fun: Union[Callable, hk.TransformedWithState],
+    skip_first: bool = False,
+    dynamic: bool = True,
+):
+    """Transforms a function using Haiku modules into a pair of pure functions.
+    which unroll onto the first axis of argument arrays.
+
+
+    Args:
+        fun : callable or pair of pure functions (init, apply).
+        skip_first : if true, first value of the sequence is not used in apply.
+        dynamic : if true,  unroll using jax.lax.scan.
+    """
+
+    if callable(fun):
+        fun = hk.transform_with_state(fun)
+
+    def init(rng: jnp.ndarray, *args, **kwargs):
+        xs = (args, kwargs)
+        args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
+        params, state = fun.init(rng, *args_0, **kwargs_0)
+        return params, state
+
+    def dynamic_apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
+        xs = (args, kwargs)
+
+        if skip_first:
+            xs = tree_map(lambda x: x[1:], xs)
+
+        def scan_f(prev_state, inputs):
+            args_step, kwargs_step = inputs
+            outputs, next_state = fun.apply(
+                params, prev_state, rng, *args_step, **kwargs_step
+            )
+            return next_state, outputs
+
+        final_state, output_sequence = jax.lax.scan(scan_f, init=state, xs=xs)
+        return output_sequence, final_state
+
+    if dynamic:
+        return TransformedUnrollWithState(init, dynamic_apply_fn)
+    else:
+        return TransformedUnrollWithState(init, static_apply_fn)
 
 
 def dynamic_unroll(
@@ -67,25 +131,21 @@ def dynamic_unroll(
         args, kwargs : Nested data structures with sequences as leaves passed to init and apply
             of the TransformedWithState pair.
     """
-    if callable(fun):
-        fun = hk.transform_with_state(fun)
-    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
+    warnings.warn(
+        "Deprecated function dynamic_unroll. Use transform_unroll_with_state instead."
+        "This function may be removed in the near future.",
+        DeprecationWarning,
+        2,
+    )
+
+
+    fun = transform_unroll_with_state(fun, skip_first, dynamic=True)
+
+    fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
-    xs = (args, kwargs)
 
-    if skip_first:
-        xs = tree_map(lambda x: x[1:], xs)
-
-    def scan_f(prev_state, inputs):
-        args_step, kwargs_step = inputs
-        outputs, next_state = fun.apply(
-            params, prev_state, rng, *args_step, **kwargs_step
-        )
-        return next_state, outputs
-
-    final_state, output_sequence = jax.lax.scan(scan_f, init=state, xs=xs)
-    return output_sequence, final_state
+    return fun.apply(params, state, rng, *args, **kwargs)
 
 
 def iter_first_axis(xs, pbar=False):

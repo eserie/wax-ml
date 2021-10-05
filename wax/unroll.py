@@ -172,7 +172,7 @@ def dynamic_unroll(
             of the TransformedWithState pair.
     """
     warnings.warn(
-        "Deprecated function dynamic_unroll. Use transform_unroll_with_state instead."
+        "Deprecated function dynamic_unroll. Use unroll or transform_unroll_with_state instead."
         "This function may be removed in the near future.",
         DeprecationWarning,
         2,
@@ -213,7 +213,7 @@ def static_unroll(
         pbar : if true, activate progress bar.
     """
     warnings.warn(
-        "Deprecated function static_unroll. Use transform_unroll_with_state instead."
+        "Deprecated function static_unroll. Use unroll or transform_unroll_with_state instead."
         "This function may be removed in the near future.",
         DeprecationWarning,
         2,

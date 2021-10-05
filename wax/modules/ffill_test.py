@@ -11,20 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import haiku as hk
 import pytest
 from jax import numpy as jnp
 
 from wax.modules import Ffill
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 
 @pytest.mark.parametrize("use_jit", [False, True])
 def test_ffill(use_jit):
 
     x = jnp.array([90, 91, jnp.nan, 85])
-
-    fun = hk.transform_with_state(lambda x: Ffill()(x))
-    res, _ = dynamic_unroll(fun, None, None, None, False, x)
-
+    res, _ = unroll(lambda x: Ffill()(x))(x)
     assert jnp.allclose(res, jnp.array([90, 91, 91, 85], dtype=jnp.float32))

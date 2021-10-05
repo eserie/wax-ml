@@ -48,28 +48,6 @@ def init_params_state(
     return fun.init(rng, *args_0, **kwargs_0)
 
 
-def unroll(
-    fun: Union[Callable, hk.TransformedWithState],
-    skip_first: bool = False,
-    dynamic: bool = True,
-    pbar: bool = False,
-    rng=None,
-    init_params=None,
-    init_state=None,
-):
-    fun = transform_unroll_with_state(
-        fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
-    )
-
-    def apply_fn(*args, **kwargs):
-        fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
-        params = fun_init_params if init_params is None else init_params
-        state = fun_init_state if init_state is None else init_state
-        return fun.apply(params, state, rng, *args, **kwargs)
-
-    return apply_fn
-
-
 class TransformedUnroll(NamedTuple):
     init: Callable
     apply: Callable
@@ -149,6 +127,28 @@ def transform_unroll_with_state(
         return TransformedUnrollWithState(init, dynamic_apply_fn)
     else:
         return TransformedUnrollWithState(init, static_apply_fn)
+
+
+def unroll(
+    fun: Union[Callable, hk.TransformedWithState],
+    skip_first: bool = False,
+    dynamic: bool = True,
+    pbar: bool = False,
+    rng=None,
+    init_params=None,
+    init_state=None,
+):
+    fun = transform_unroll_with_state(
+        fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
+    )
+
+    def apply_fn(*args, **kwargs):
+        fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
+        params = fun_init_params if init_params is None else init_params
+        state = fun_init_state if init_state is None else init_state
+        return fun.apply(params, state, rng, *args, **kwargs)
+
+    return apply_fn
 
 
 def dynamic_unroll(

@@ -225,7 +225,9 @@ X, Y = generate_many_observations(T)
 ### Unroll the learner
 
 ```{code-cell} ipython3
-output, online_state = dynamic_unroll(learner, None, None, next(seq), False, X, Y)
+(output, info), online_state = dynamic_unroll(
+    learner, None, None, next(seq), False, X, Y
+)
 ```
 
 ### Plot the regret
@@ -236,10 +238,10 @@ Let's look at the loss and regret over time.
 
 ```{code-cell} ipython3
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
-axs[0].plot(output["loss"].cumsum())
+axs[0].plot(info.loss.cumsum())
 axs[0].set_title("Regret")
 
-axs[1].plot(output["params"]["linear"]["w"][:, 0, 0])
+axs[1].plot(info.params["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 ```
 
@@ -286,10 +288,7 @@ def linear_regression_agent(obs):
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
-    def learner(x, y):
-        return OnlineSupervisedLearner(model, opt, loss)(x, y)
-
-    return learner(x, y)
+    return OnlineSupervisedLearner(model, opt, loss)(x, y)
 ```
 
 ### Linear regression environment
@@ -336,10 +335,10 @@ def stationary_linear_regression_env(action, raw_obs):
 
     y_previous = Lag(1)(y)
     # evaluate the prediction made by the agent
-    y_pred = action["y_pred"]
+    y_pred = action
     reward = loss(y_pred, y_previous)
 
-    return reward, obs
+    return reward, obs, {}
 ```
 
 ### Generate raw observation
@@ -391,7 +390,7 @@ seq = hk.PRNGSequence(42)
 T = 3000
 raw_observations = generate_many_raw_observations(T)
 rng = next(seq)
-output_sequence, final_state = dynamic_unroll(
+(gym_output, gym_info), final_state = dynamic_unroll(
     gym_fun,
     None,
     None,
@@ -412,8 +411,8 @@ import pandas as pd
 
 ```{code-cell} ipython3
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
-pd.Series(output_sequence.reward).cumsum().plot(ax=axs[0], title="Regret")
-axs[1].plot(output["params"]["linear"]["w"][:, 0, 0])
+pd.Series(gym_output.reward).cumsum().plot(ax=axs[0], title="Regret")
+axs[1].plot(info.params["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 ```
 
@@ -455,13 +454,13 @@ class NonStationaryEnvironment(hk.Module):
 
         # evaluate the prediction made by the agent
         y_previous = Lag(1)(y)
-        y_pred = action["y_pred"]
+        y_pred = action
         reward = loss(y_pred, y_previous)
 
         step += 1
         hk.set_state("step", step)
 
-        return reward, obs
+        return reward, obs, {}
 ```
 
 Now let's run a gym simulation to see how the agent adapt to the
@@ -479,7 +478,7 @@ def gym_fun(raw_obs):
 T = 6000
 raw_observations = generate_many_raw_observations(T)
 rng = jax.random.PRNGKey(42)
-output_sequence, final_state = dynamic_unroll(
+(gym_output, gym_info), final_state = dynamic_unroll(
     gym_fun,
     None,
     None,
@@ -495,8 +494,8 @@ import pandas as pd
 
 ```{code-cell} ipython3
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
-pd.Series(output_sequence.reward).cumsum().plot(ax=axs[0], title="Regret")
-axs[1].plot(output_sequence.action["params"]["linear"]["w"][:, 0, 0])
+pd.Series(gym_output.reward).cumsum().plot(ax=axs[0], title="Regret")
+axs[1].plot(gym_info.agent.params["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 # plt.savefig("../_static/online_linear_regression_regret.png")
 ```

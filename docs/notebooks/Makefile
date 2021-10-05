@@ -22,8 +22,7 @@ run: sync
 	papermill 03_*.ipynb _tmp/run_03.ipynb
 	papermill 04_*.ipynb _tmp/run_04.ipynb -p T 100 -p N 10
 	papermill 05_*.ipynb _tmp/run_05.ipynb -p TRAIN_STEPS 512 -p TOTAL_LEN 1000 -p TRAIN_SIZE 512 -p BATCH_SIZE 2 -p SEQ_LEN 32 -p TRAIN_DATE "2009-03-07"
-
-
+	papermill 06_*.ipynb _tmp/run_06.ipynb
 	$(MAKE) sync
 
 .PHONY: kernel

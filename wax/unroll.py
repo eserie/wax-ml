@@ -67,7 +67,7 @@ def dynamic_unroll(
         args, kwargs : Nested data structures with sequences as leaves passed to init and apply
             of the TransformedWithState pair.
     """
-    if isinstance(fun, Callable):
+    if callable(fun):
         fun = hk.transform_with_state(fun)
     fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
     params = fun_init_params if params is None else params

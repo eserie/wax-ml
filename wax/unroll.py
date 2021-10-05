@@ -66,7 +66,7 @@ class TransformedUnrollWithState(NamedTuple):
 
 
 def transform_unroll_with_state(
-    fun: Union[Callable, hk.TransformedWithState],
+    fun: Callable,
     skip_first: bool = False,
     dynamic: bool = True,
 ):
@@ -79,9 +79,6 @@ def transform_unroll_with_state(
         skip_first : if true, first value of the sequence is not used in apply.
         dynamic : if true,  unroll using jax.lax.scan.
     """
-
-    if callable(fun):
-        fun = hk.transform_with_state(fun)
 
     def init(rng: jnp.ndarray, *args, **kwargs):
         xs = (args, kwargs)
@@ -138,6 +135,8 @@ def dynamic_unroll(
         2,
     )
 
+    if callable(fun):
+        fun = hk.transform_with_state(fun)
 
     fun = transform_unroll_with_state(fun, skip_first, dynamic=True)
 

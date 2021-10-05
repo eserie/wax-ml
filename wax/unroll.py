@@ -15,12 +15,12 @@
 import logging
 import warnings
 from collections import namedtuple
-from typing import Any, Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple, Union, cast
 
 import haiku as hk
 import jax
 import jax.numpy as jnp
-from haiku import without_state
+from haiku import TransformedWithState, without_state
 from jax import tree_flatten, tree_unflatten
 from jax._src.lax.control_flow import fori_loop
 from jax.tree_util import tree_map
@@ -48,16 +48,40 @@ def init_params_state(
     return fun.init(rng, *args_0, **kwargs_0)
 
 
+def unroll(
+    fun: Union[Callable, hk.TransformedWithState],
+    skip_first: bool = False,
+    dynamic: bool = True,
+    pbar: bool = False,
+    rng=None,
+    init_params=None,
+    init_state=None,
+):
+    fun = transform_unroll_with_state(
+        fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
+    )
+
+    def apply_fn(*args, **kwargs):
+        fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
+        params = fun_init_params if init_params is None else init_params
+        state = fun_init_state if init_state is None else init_state
+        return fun.apply(params, state, rng, *args, **kwargs)
+
+    return apply_fn
+
+
 class TransformedUnroll(NamedTuple):
     init: Callable
     apply: Callable
 
 
-def transform_unroll(
+def transform_unroll_without_state(
     fun: Union[Callable, hk.TransformedWithState],
     skip_first: bool = False,
+    dynamic: bool = True,
+    pbar: bool = False,
 ):
-    return without_state(transform_unroll_with_state(fun, skip_first))
+    return without_state(transform_unroll_with_state(fun, skip_first, dynamic, pbar))
 
 
 class TransformedUnrollWithState(NamedTuple):
@@ -78,6 +102,10 @@ def transform_unroll_with_state(
         dynamic : if true,  unroll using jax.lax.scan.
         pbar: if true, activate progress bar. Currently, it only works when dynamic=False.
     """
+    if callable(fun):
+        fun = hk.transform_with_state(fun)
+
+    fun = cast(TransformedWithState, fun)
 
     def init(rng: jnp.ndarray, *args, **kwargs):
         xs = (args, kwargs)
@@ -185,7 +213,7 @@ def static_unroll(
         pbar : if true, activate progress bar.
     """
     warnings.warn(
-        "Deprecated function dynamic_unroll. Use transform_unroll_with_state instead."
+        "Deprecated function static_unroll. Use transform_unroll_with_state instead."
         "This function may be removed in the near future.",
         DeprecationWarning,
         2,

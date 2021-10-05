@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Online supervised learner."""
-from typing import Any, Callable, NamedTuple
+from typing import Any, Callable, NamedTuple, Tuple
 
 import haiku as hk
 import jax
+import jax.numpy as jnp
 import optax
 
 
 class ParamsState(NamedTuple):
     params: Any
     state: Any
+
+
+class OnlineSupervisedLearnerInfo(NamedTuple):
+    loss: float
+    params: Any
 
 
 class OnlineSupervisedLearner(hk.Module):
@@ -41,7 +47,9 @@ class OnlineSupervisedLearner(hk.Module):
         self.opt = opt
         self.loss = loss
 
-    def __call__(self, x, y):
+    def __call__(
+        self, x: jnp.ndarray, y: jnp.ndarray
+    ) -> Tuple[jnp.ndarray, OnlineSupervisedLearnerInfo]:
         """Update learner.
 
         Args:
@@ -78,10 +86,6 @@ class OnlineSupervisedLearner(hk.Module):
         hk.set_state("step", step)
         hk.set_state("model_params_state", ParamsState(params, state))
         hk.set_state("opt_state", opt_state)
-        action = {
-            "loss": l,
-            "y_pred": y_pred,
-            "params": params,
-        }
-        info = {}
-        return action, info
+
+        info = OnlineSupervisedLearnerInfo(loss=l, params=params)
+        return y_pred, info

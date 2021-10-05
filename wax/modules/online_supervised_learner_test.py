@@ -112,8 +112,8 @@ def test_online_model():
     (output, info), online_state = dynamic_unroll(
         learner, online_params, online_state, next(seq), False, X, Y
     )
-    assert len(output["loss"]) == T
-    assert len(output["params"]["linear"]["w"])
+    assert len(info.loss) == T
+    assert len(info.params["linear"]["w"])
 
 
 def linear_regression_agent(obs):
@@ -131,7 +131,7 @@ def linear_regression_agent(obs):
     return learner(x, y)
 
 
-def stationary_linear_regression_env(action, raw_obs):
+def stationary_linear_regression_env(y_pred, raw_obs):
     # Only the environment now the true value of the parameters
     w_true = -jnp.ones(3)
 
@@ -149,7 +149,6 @@ def stationary_linear_regression_env(action, raw_obs):
 
     y_previous = Lag(1)(y)
     # evaluate the prediction made by the agent
-    y_pred = action["y_pred"]
     reward = loss(y_pred, y_previous)
 
     info = {}
@@ -189,8 +188,8 @@ def test_online_recast_as_reinforcement_learning_pb():
     )
 
     assert len(gym_output.reward) == T - 1
-    assert len(gym_output.action["loss"]) == T - 1
-    assert len(gym_output.action["params"]["linear"]["w"]) == T - 1
+    assert len(gym_info.agent.loss) == T - 1
+    assert len(gym_info.agent.params["linear"]["w"]) == T - 1
 
 
 class NonStationaryEnvironment(hk.Module):
@@ -221,7 +220,7 @@ class NonStationaryEnvironment(hk.Module):
 
         # evaluate the prediction made by the agent
         y_previous = Lag(1)(y)
-        y_pred = action["y_pred"]
+        y_pred = action
         reward = loss(y_pred, y_previous)
 
         step += 1
@@ -255,5 +254,5 @@ def test_non_stationary_environement():
     )
 
     assert len(gym_output.reward) == T - 1
-    assert len(gym_output.action["loss"]) == T - 1
-    assert len(gym_output.action["params"]["linear"]["w"]) == T - 1
+    assert len(gym_info.agent.loss) == T - 1
+    assert len(gym_info.agent.params["linear"]["w"]) == T - 1

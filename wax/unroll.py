@@ -66,9 +66,7 @@ class TransformedUnrollWithState(NamedTuple):
 
 
 def transform_unroll_with_state(
-    fun: Callable,
-    skip_first: bool = False,
-    dynamic: bool = True,
+    fun: Callable, skip_first: bool = False, dynamic: bool = True, pbar: bool = False
 ):
     """Transforms a function using Haiku modules into a pair of pure functions.
     which unroll onto the first axis of argument arrays.
@@ -78,6 +76,7 @@ def transform_unroll_with_state(
         fun : callable or pair of pure functions (init, apply).
         skip_first : if true, first value of the sequence is not used in apply.
         dynamic : if true,  unroll using jax.lax.scan.
+        pbar: if true, activate progress bar. Currently, it only works when dynamic=False.
     """
 
     def init(rng: jnp.ndarray, *args, **kwargs):
@@ -100,6 +99,22 @@ def transform_unroll_with_state(
             return next_state, outputs
 
         final_state, output_sequence = jax.lax.scan(scan_f, init=state, xs=xs)
+        return output_sequence, final_state
+
+    def static_apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
+        xs = (args, kwargs)
+
+        if skip_first:
+            xs = tree_map(lambda x: x[1:], xs)
+
+        def scan_f(prev_state, inputs):
+            args_step, kwargs_step = inputs
+            outputs, next_state = fun.apply(
+                params, prev_state, rng, *args_step, **kwargs_step
+            )
+            return next_state, outputs
+
+        final_state, output_sequence = static_scan(scan_f, init=state, xs=xs, pbar=pbar)
         return output_sequence, final_state
 
     if dynamic:
@@ -139,6 +154,47 @@ def dynamic_unroll(
         fun = hk.transform_with_state(fun)
 
     fun = transform_unroll_with_state(fun, skip_first, dynamic=True)
+
+    fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
+    params = fun_init_params if params is None else params
+    state = fun_init_state if state is None else state
+
+    return fun.apply(params, state, rng, *args, **kwargs)
+
+
+def static_unroll(
+    fun: hk.TransformedWithState,
+    params: Any,
+    state: Any,
+    rng: jnp.ndarray,
+    skip_first: bool = False,
+    *args,
+    pbar: bool = False,
+    **kwargs,
+):
+    """Unroll a TransformedWithState function using static_scan.
+
+    Args:
+        fun : pair of pure functions (init, apply).
+        params: parameters for the function.
+        state : state for the function.
+        rng: random number generator key.
+        skip_first : if true, first value of the sequence is not used in apply.
+        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
+            of the TransformedWithState pair.
+        pbar : if true, activate progress bar.
+    """
+    warnings.warn(
+        "Deprecated function dynamic_unroll. Use transform_unroll_with_state instead."
+        "This function may be removed in the near future.",
+        DeprecationWarning,
+        2,
+    )
+
+    if callable(fun):
+        fun = hk.transform_with_state(fun)
+
+    fun = transform_unroll_with_state(fun, skip_first, dynamic=False, pbar=pbar)
 
     fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
     params = fun_init_params if params is None else params
@@ -189,49 +245,6 @@ def static_scan(scan_f, init, xs=None, length=None, pbar=False):
     ys = map(jnp.stack, ys)
     ys = tree_unflatten(treedef, ys)
     return carry, ys
-
-
-def static_unroll(
-    fun: hk.TransformedWithState,
-    params: Any,
-    state: Any,
-    rng: jnp.ndarray,
-    skip_first: bool = False,
-    *args,
-    pbar: bool = False,
-    **kwargs,
-):
-    """Unroll a TransformedWithState function using static_scan.
-
-    Args:
-        fun : pair of pure functions (init, apply).
-        params: parameters for the function.
-        state : state for the function.
-        rng: random number generator key.
-        skip_first : if true, first value of the sequence is not used in apply.
-        args, kwargs : Nested datastructure with sequences as leaves passed to init and apply
-            of the TransformedWithState pair.
-        pbar : if true, activate progress bar.
-    """
-    # init
-    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
-    params = fun_init_params if params is None else params
-    state = fun_init_state if state is None else state
-    xs = (args, kwargs)
-
-    if skip_first:
-        xs = tree_map(lambda x: x[1:], xs)
-
-    def scan_f(prev_state, inputs):
-        args_step, kwargs_step = inputs
-        outputs, next_state = fun.apply(
-            params, prev_state, rng, *args_step, **kwargs_step
-        )
-        return next_state, outputs
-
-    final_state, output_sequence = static_scan(scan_f, init=state, xs=xs, pbar=pbar)
-
-    return output_sequence, final_state
 
 
 # def static_scan_generator(scan_f, init, xs, length=None):

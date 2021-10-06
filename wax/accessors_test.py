@@ -1,3 +1,6 @@
+import haiku as hk
+import jax.numpy as jnp
+
 # Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +22,11 @@ from jax.config import config
 
 from wax.accessors import register_wax_accessors
 from wax.datasets.generate_temperature_data import generate_temperature_data
+from wax.format import format_dataframe, format_series
 from wax.modules import EWMA
 from wax.stream_test import prepare_test_data
 from wax.testing import assert_tree_all_close
+from wax.unroll import unroll
 
 
 def module_same_shape(x):
@@ -201,12 +206,7 @@ def test_wax_ewma(format):
 
 
 def _compute_ewma_direct(dataarray):
-    import haiku as hk
-    import jax.numpy as jnp
 
-    from wax.unroll import unroll
-
-    seq = hk.PRNGSequence(42)
     x = jnp.array(dataarray.values, dtype=jnp.float64)
 
     @hk.transform_with_state
@@ -330,8 +330,6 @@ def test_ewm_dataframe_no_format_outputs():
     assert (y - y2).abs().stack().max() < 1.0e-6
 
     y2 = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
-
-    from wax.format import format_dataframe, format_series
 
     dataset = xr.DataArray(y2)
     output = y2.values

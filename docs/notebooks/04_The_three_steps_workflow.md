@@ -8,7 +8,7 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.11.1
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
@@ -83,18 +83,16 @@ Let's illustrate how to reimplement WAX-ML EWMA yourself with the WAX-ML 3-step 
 :id: 2bdfbf9a
 :tags: []
 
-import haiku as hk
 import numpy as onp
 import pandas as pd
 import xarray as xr
 
 from wax.accessors import register_wax_accessors
-from wax.compile import jit_init_apply
 from wax.external.eagerpy import convert_to_tensors
 from wax.format import format_dataframe
 from wax.modules import EWMA
 from wax.stream import tree_access_data
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 register_wax_accessors()
 ```
@@ -277,40 +275,6 @@ transform_dataset, jxs = stream.prepare(dataset, my_ewma_on_dataset)
 Let's definite the init parameters and state of the transformation we
 will apply.
 
-+++ {"id": "78ea9eda-d0cc-4dba-8b2a-60fbf1dd41bd"}
-
-### Init params and state
-
-```{code-cell} ipython3
-:id: 47b1ebdf-ff32-4c2a-ae0b-51b88882328b
-
-from wax.unroll import init_params_state
-```
-
-```{code-cell} ipython3
-:id: ea6651f6-0db8-48f0-b578-013b2cb74272
-
-rng = jax.random.PRNGKey(42)
-params, state = init_params_state(transform_dataset, rng, jxs)
-```
-
-```{code-cell} ipython3
----
-colab:
-  base_uri: https://localhost:8080/
-id: dc9a4bce-83d1-494b-b053-c6f9ebfb7d0c
-outputId: b177e83e-d301-4071-bd37-803d93a64910
----
-params
-```
-
-```{code-cell} ipython3
-:id: 4dd83bef-ef68-4576-973f-594f18123944
-
-assert state["ewma"]["count"].shape == (N,)
-assert state["ewma"]["mean"].shape == (N,)
-```
-
 +++ {"id": "903a778c"}
 
 ## Step (2) (compile | code tracing | execution)
@@ -331,8 +295,7 @@ In this step we:
 ```{code-cell} ipython3
 :id: 6825fdc8-1773-4e04-a41c-a126a1527891
 
-rng = next(hk.PRNGSequence(42))
-outputs, state = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+outputs = unroll(transform_dataset)(jxs)
 ```
 
 ```{code-cell} ipython3
@@ -358,7 +321,7 @@ outputId: e69a75ff-4b00-4a1d-f101-49944e01d9b4
 tags: []
 ---
 %%timeit
-outputs, _ = dynamic_unroll(transform_dataset, params, state, rng, False, jxs)
+outputs = unroll(transform_dataset)(jxs)
 _ = outputs.block_until_ready()
 ```
 
@@ -423,8 +386,8 @@ pure functions:
 ```{code-cell} ipython3
 :id: e7ebbb08-d790-4977-b49d-c9224e299a42
 
-@jit_init_apply
-@hk.transform_with_state
+@jax.jit
+@unroll
 def transform_dataset(step):
     dataset = tree_access_data(jnp_data, jnp_index, step)
     return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
@@ -442,7 +405,19 @@ id: f851407a-597f-4711-8370-c3e83cb50da7
 outputId: 3892357f-2d91-40b6-85bc-542e471ed28f
 ---
 %%time
-outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+outputs = transform_dataset(jxs)
+_ = outputs.block_until_ready()
+```
+
+```{code-cell} ipython3
+---
+colab:
+  base_uri: https://localhost:8080/
+id: f851407a-597f-4711-8370-c3e83cb50da7
+outputId: 3892357f-2d91-40b6-85bc-542e471ed28f
+---
+%%time
+outputs = transform_dataset(jxs)
 _ = outputs.block_until_ready()
 ```
 
@@ -548,8 +523,7 @@ outputId: fda693e8-723e-436d-84f6-68a49a510be9
 ---
 %%time
 if GPU_AVAILABLE:
-    rng = next(hk.PRNGSequence(42))
-    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+    outputs = unroll(transform_dataset)(jxs)
 ```
 
 +++ {"id": "274b5615-8785-43e7-a2db-5f867566c913"}
@@ -564,19 +538,17 @@ id: 6bb7431e-90f2-4761-a906-69f25fea4a63
 outputId: 285660f2-8379-4b8f-f89f-9f5a7240c419
 ---
 %%time
+from functools import partial
+
 if GPU_AVAILABLE:
 
-    @hk.transform_with_state
+    @partial(jax.jit, device=gpus[0])
+    @unroll
     def transform_dataset(step):
         dataset = tree_access_data(jnp_data, jnp_index, step)
         return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
-    transform_dataset = type(transform_dataset)(
-        transform_dataset.init, jax.jit(transform_dataset.apply, device=gpus[0])
-    )
-
-    rng = next(hk.PRNGSequence(42))
-    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+    outputs = transform_dataset(jxs)
 ```
 
 ```{code-cell} ipython3
@@ -598,12 +570,6 @@ outputId: 4262991e-c488-4296-849d-b111e288c203
 ---
 %%timeit
 if GPU_AVAILABLE:
-    outputs, state = dynamic_unroll(transform_dataset, None, None, rng, False, jxs)
+    outputs = unroll(transform_dataset)(jxs)
     _ = outputs.block_until_ready()
-```
-
-```{code-cell} ipython3
-:id: 6oYJTYfNCgX0
-
-
 ```

@@ -40,7 +40,16 @@ def test_encode_float(seed):
 
 
 @pytest.mark.parametrize(
-    "seed", [2 ** 63 - 1, 2 ** 50 - 46, 2 ** 34, onp.int32(10), onp.int64(10), 10]
+    "seed",
+    [
+        2 ** 63 - 1,
+        2 ** 50 - 46,
+        2 ** 34,
+        onp.int32(10),
+        onp.uint32(10),
+        onp.int64(10),
+        10,
+    ],
 )
 def test_encode(seed):
     i32 = encode_int64(seed)

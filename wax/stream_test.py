@@ -13,7 +13,6 @@
 # limitations under the License.
 from functools import partial, reduce
 
-import haiku as hk
 import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
@@ -233,7 +232,6 @@ def test_stream_dataset_dynamic_unroll2():
     access_dataset = transform_with_state(partial(tree_access_data, np_data, np_index))
 
     xs = onp.arange(len(schema.coords["time"]))
-    seq = hk.PRNGSequence(42)
 
     # outputs, state = static_unroll(access_dataset, xs, next(seq))
     # now test dynamic unroll
@@ -317,7 +315,6 @@ def test_stream_dataset_dynamic_unroll3():
     access_dataset = transform_with_state(partial(tree_access_data, np_data, np_index))
 
     xs = onp.arange(len(schema.coords["time"]))
-    seq = hk.PRNGSequence(42)
 
     # outputs, state = static_unroll(access_dataset, xs, next(seq))
     # now test dynamic unroll

@@ -17,7 +17,7 @@
 # +
 # Uncomment to run the notebook in Colab
 # # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 # -
 
 # check available devices
@@ -174,7 +174,6 @@ dataframe_mean.loc[:, "008241079"].plot()
 from functools import partial
 
 from jax.tree_util import tree_map
-
 # -
 
 dataset = dataframe.to_xarray()

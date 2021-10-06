@@ -14,10 +14,10 @@
 #     name: python3
 # ---
 
-# + id="2b295407-92c4-4818-bfb9-f445f6967f10" outputId="dc6c8e1b-2875-4287-d83a-4bdc4c9db80a" colab={"base_uri": "https://localhost:8080/"}
+# + colab={"base_uri": "https://localhost:8080/"} id="2b295407-92c4-4818-bfb9-f445f6967f10" outputId="dc6c8e1b-2875-4287-d83a-4bdc4c9db80a"
 # Uncomment to run the notebook in Colab
 # # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install -q --upgrade jax jaxlib==0.1.67+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 
 # + id="ff30291d"
 # check available devices
@@ -93,14 +93,14 @@ dataframe = pd.DataFrame(
 # + [markdown] id="d1fd46f7"
 # ### pandas EWMA
 
-# + colab={"base_uri": "https://localhost:8080/"} id="27092faf" tags=[] outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424"
+# + colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424" tags=[]
 # %%time
 df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 
 # + [markdown] id="678be283"
 # ### WAX-ML EWMA
 
-# + colab={"base_uri": "https://localhost:8080/"} id="11f3705d" tags=[] outputId="744f0faa-7030-4155-80ae-4a5c745731f8"
+# + colab={"base_uri": "https://localhost:8080/"} id="11f3705d" outputId="744f0faa-7030-4155-80ae-4a5c745731f8" tags=[]
 # %%time
 df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 
@@ -113,7 +113,7 @@ df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 # + [markdown] id="7361def9"
 # Let's disable the final formatting step (the output is now in raw JAX format):
 
-# + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" tags=[] outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6"
+# + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6" tags=[]
 # %%time
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
 df_ewma_wax_no_format.block_until_ready()
@@ -171,7 +171,6 @@ stream = dataset.wax.stream()
 def my_ewma_on_dataset(dataset):
     return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
-
 # + id="4735903f"
 transform_dataset, jxs = stream.prepare(dataset, my_ewma_on_dataset)
 
@@ -204,7 +203,7 @@ outputs.device()
 # + [markdown] id="b73f3252"
 # Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="a889d294" tags=[] outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4"
+# + colab={"base_uri": "https://localhost:8080/"} id="a889d294" outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4" tags=[]
 # %%timeit
 outputs = unroll(transform_dataset)(jxs)
 _ = outputs.block_until_ready()

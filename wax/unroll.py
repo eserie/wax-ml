@@ -29,25 +29,6 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 
-def init_params_state(
-    fun: hk.TransformedWithState,
-    rng: jnp.ndarray,
-    *args,
-    **kwargs,
-):
-    """Unroll a TransformedWithState function using jax.lax.scan.
-
-    Args:
-        fun : pair of pure functions (init, apply).
-        rng: random number generator key.
-        args, kwargs : Nested data structures with sequences as leaves passed to
-            first element (init) of the TransformedWithState pair.
-    """
-    xs = (args, kwargs)
-    args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-    return fun.init(rng, *args_0, **kwargs_0)
-
-
 class TransformedUnrollWithState(NamedTuple):
     init: Callable
     apply: Callable
@@ -57,8 +38,7 @@ def transform_unroll_with_state(
     fun: Callable, skip_first: bool = False, dynamic: bool = True, pbar: bool = False
 ):
     """Transforms a function using Haiku modules into a pair of pure functions.
-    which unroll onto the first axis of argument arrays.
-
+        which is unrolled on input arguments.
 
     Args:
         fun : callable or pair of pure functions (init, apply).
@@ -120,21 +100,60 @@ def unroll(
     skip_first: bool = False,
     dynamic: bool = True,
     pbar: bool = False,
+    return_final_state=False,
     rng=None,
-    init_params=None,
-    init_state=None,
+    params=None,
+    state=None,
 ):
+    """Transforms a function using Haiku modules into a function
+    which is unrolled on input arguments.
+
+    Args:
+        fun : callable or pair of pure functions (init, apply).
+        skip_first : if true, first value of the sequence is not used in apply.
+        dynamic : if true,  unroll using jax.lax.scan.
+        pbar: if true, activate progress bar. Currently, it only works when dynamic=False.
+        return_final_state : if true, the returned function return unrolled outputs and final state.
+        rng : if specified, used as rng key for the init and apply functions.
+        params : if specified, used as params for the apply function.
+        state : if sepecified, used as initial state for the apply function.
+
+    Returns:
+        apply_fn: wrapped function.
+
+    """
     fun = transform_unroll_with_state(
         fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
     )
 
     def apply_fn(*args, **kwargs):
         fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
-        params = fun_init_params if init_params is None else init_params
-        state = fun_init_state if init_state is None else init_state
-        return fun.apply(params, state, rng, *args, **kwargs)
+        init_params = fun_init_params if params is None else params
+        init_state = fun_init_state if state is None else state
+        output, final_state = fun.apply(init_params, init_state, rng, *args, **kwargs)
+        if return_final_state:
+            return output, final_state
+        else:
+            return output
 
     return apply_fn
+
+
+def init_params_state(
+    fun: hk.TransformedWithState,
+    rng: jnp.ndarray,
+    *args,
+    **kwargs,
+):
+    """Call init of a TransformedUnrollWithState pair."""
+    warnings.warn(
+        "Deprecated function init_params_state. Use transform_unroll_with_state instead."
+        "This function may be removed in the near future.",
+        DeprecationWarning,
+        2,
+    )
+
+    return transform_unroll_with_state(fun).init(rng, *args, **kwargs)
 
 
 def dynamic_unroll(

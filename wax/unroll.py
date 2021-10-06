@@ -20,7 +20,7 @@ from typing import Any, Callable, NamedTuple, Union, cast
 import haiku as hk
 import jax
 import jax.numpy as jnp
-from haiku import TransformedWithState, without_state
+from haiku import TransformedWithState
 from jax import tree_flatten, tree_unflatten
 from jax._src.lax.control_flow import fori_loop
 from jax.tree_util import tree_map
@@ -46,20 +46,6 @@ def init_params_state(
     xs = (args, kwargs)
     args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
     return fun.init(rng, *args_0, **kwargs_0)
-
-
-class TransformedUnroll(NamedTuple):
-    init: Callable
-    apply: Callable
-
-
-def transform_unroll_without_state(
-    fun: Union[Callable, hk.TransformedWithState],
-    skip_first: bool = False,
-    dynamic: bool = True,
-    pbar: bool = False,
-):
-    return without_state(transform_unroll_with_state(fun, skip_first, dynamic, pbar))
 
 
 class TransformedUnrollWithState(NamedTuple):

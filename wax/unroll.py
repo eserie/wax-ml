@@ -96,7 +96,7 @@ def transform_unroll_with_state(
 
 
 def unroll(
-    fun: Union[Callable, hk.TransformedWithState],
+    fun: Union[Callable, hk.TransformedWithState, TransformedUnrollWithState],
     skip_first: bool = False,
     dynamic: bool = True,
     pbar: bool = False,
@@ -122,9 +122,10 @@ def unroll(
         apply_fn: wrapped function.
 
     """
-    fun = transform_unroll_with_state(
-        fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
-    )
+    if not isinstance(fun, TransformedUnrollWithState):
+        fun = transform_unroll_with_state(
+            fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
+        )
 
     def apply_fn(*args, **kwargs):
         fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)

@@ -20,7 +20,7 @@ from sklearn.covariance import EmpiricalCovariance
 
 from wax.compile import jit_init_apply
 from wax.modules.ewmcov import EWMCov
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 # Another implementation for checking
 
@@ -65,7 +65,7 @@ def test_run_cov_vs_sklearn(assume_centered):
     def model(data):
         return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(data)
 
-    cov, state = dynamic_unroll(model, None, None, next(seq), False, data)
+    cov, state = unroll(model, return_final_state=True)(data)
 
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
 
@@ -89,7 +89,7 @@ def test_run_cov_vs_sklearn_adjust(assume_centered):
 
         return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(data)
 
-    cov, state = dynamic_unroll(model, None, None, next(seq), False, data)
+    cov, state = unroll(model, return_final_state=True)(data)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
 
     assert jnp.allclose(cov[-1], cov_ref, atol=1.0e-6)
@@ -112,7 +112,7 @@ def test_run_cov_vs_pandas_adjust_finite(assume_centered):
     def model(data):
         return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(data)
 
-    cov, state = dynamic_unroll(model, None, None, next(seq), False, data)
+    cov, state = unroll(model, return_final_state=True)(data)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
 
     assert jnp.allclose(cov[-1], cov_ref, atol=1.0e-6)

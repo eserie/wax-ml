@@ -59,7 +59,7 @@ In this journey, we will use:
 - Haiku basic linear module `hk.Linear`.
 - Optax stochastic gradient descent optimizer: `sgd`.
 - WAX-ML modules: `OnlineSupervisedLearner`, `Lag`, `GymFeedBack`
-- WAX-ML helper functions: `dynamic_unroll`, `jit_init_apply`
+- WAX-ML helper functions: `unroll`, `jit_init_apply`
 
 ```{code-cell} ipython3
 %pylab inline
@@ -118,10 +118,10 @@ def linear_model(x):
 
 +++
 
-Let's run the model using WAX-ML `dynamic_unroll` on the batch of data.
+Let's run the model using WAX-ML `unroll` on the batch of data.
 
 ```{code-cell} ipython3
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 ```
 
 ```{code-cell} ipython3
@@ -130,7 +130,7 @@ linear_model.apply(params, state, None, X[0])
 ```
 
 ```{code-cell} ipython3
-Y_pred, state = dynamic_unroll(linear_model, None, None, next(seq), False, X)
+Y_pred = unroll(linear_model, rng=next(seq))(X)
 ```
 
 ```{code-cell} ipython3
@@ -225,9 +225,7 @@ X, Y = generate_many_observations(T)
 ### Unroll the learner
 
 ```{code-cell} ipython3
-(output, info), online_state = dynamic_unroll(
-    learner, None, None, next(seq), False, X, Y
-)
+(output, info) = unroll(learner, rng=next(seq))(X, Y)
 ```
 
 ### Plot the regret
@@ -390,14 +388,7 @@ seq = hk.PRNGSequence(42)
 T = 3000
 raw_observations = generate_many_raw_observations(T)
 rng = next(seq)
-(gym_output, gym_info), final_state = dynamic_unroll(
-    gym_fun,
-    None,
-    None,
-    rng,
-    True,
-    raw_observations,
-)
+(gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(raw_observations)
 ```
 
 Let's visualize the outputs.
@@ -478,12 +469,7 @@ def gym_fun(raw_obs):
 T = 6000
 raw_observations = generate_many_raw_observations(T)
 rng = jax.random.PRNGKey(42)
-(gym_output, gym_info), final_state = dynamic_unroll(
-    gym_fun,
-    None,
-    None,
-    rng,
-    True,
+(gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(
     raw_observations,
 )
 ```

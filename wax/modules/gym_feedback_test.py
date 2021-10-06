@@ -28,7 +28,7 @@ from wax.transform import (
     transform_batch_with_state,
     transform_batch_with_state_static,
 )
-from wax.unroll import data_unroll, dynamic_unroll, gym_static_unroll
+from wax.unroll import data_unroll, gym_static_unroll, unroll
 
 from .counter import Counter
 from .gym_feedback import GymOutput
@@ -99,14 +99,9 @@ def test_gym_module_dynamic_unroll():
 
     xs = data_unroll(iter(raw_observations()))
     rng = next(hk.PRNGSequence(42))
-    (gym_output, gym_info), final_state = dynamic_unroll(
-        gym_fun,
-        None,
-        None,
-        rng,
-        True,
-        xs,
-    )
+    (gym_output, gym_info), final_state = unroll(
+        gym_fun, return_final_state=True, rng=rng, skip_first=True
+    )(xs)
 
     # reference outputs
 

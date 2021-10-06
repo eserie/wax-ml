@@ -19,7 +19,7 @@ from jax.config import config
 
 from wax.compile import jit_init_apply
 from wax.modules.rolling_mean import RollingMean
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 
 def test_rolling_mean_init_apply():
@@ -60,8 +60,7 @@ def test_run_ema_vs_pandas_not_adjust(window=10, min_periods=5):
     def rolling_mean(x):
         return RollingMean(window, min_periods)(x)
 
-    mean, state = dynamic_unroll(rolling_mean, None, None, next(seq), False, x)
-
+    mean = unroll(rolling_mean)(x)
     mean_pandas = pd.DataFrame(x).rolling(window, min_periods).mean()
 
     assert jnp.allclose(mean, mean_pandas.values, equal_nan=True)

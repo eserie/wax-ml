@@ -44,7 +44,7 @@ from jax.tree_util import tree_map
 
 from wax.compile import jit_init_apply
 from wax.modules import GymFeedback, Lag, OnlineSupervisedLearner
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 
 @jit_init_apply
@@ -66,7 +66,7 @@ def test_static_model():
     params, state = linear_model.init(next(seq), X[0])
     linear_model.apply(params, state, None, X[0])
 
-    Y_pred, state = dynamic_unroll(linear_model, None, None, next(seq), False, X)
+    Y_pred = unroll(linear_model, rng=next(seq))(X)
 
     assert Y_pred.shape == (T, 1)
 
@@ -108,10 +108,7 @@ def test_online_model():
 
     # dynamic unroll the learner
     x0, y0 = tree_map(lambda x: x[0], (X, Y))
-    online_params, online_state = learner.init(next(seq), x0, y0)
-    (output, info), online_state = dynamic_unroll(
-        learner, online_params, online_state, next(seq), False, X, Y
-    )
+    (output, info) = unroll(learner, rng=next(seq))(X, Y)
     assert len(info.loss) == T
     assert len(info.params["linear"]["w"])
 
@@ -178,12 +175,7 @@ def test_online_recast_as_reinforcement_learning_pb():
     T = 300
     raw_observations = generate_many_raw_observations(T)
     rng = jax.random.PRNGKey(42)
-    (gym_output, gym_info), final_state = dynamic_unroll(
-        gym_fun,
-        None,
-        None,
-        rng,
-        True,
+    (gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(
         raw_observations,
     )
 
@@ -244,14 +236,9 @@ def test_non_stationary_environement():
     T = 300
     raw_observations = generate_many_raw_observations(T)
     rng = jax.random.PRNGKey(42)
-    (gym_output, gym_info), final_state = dynamic_unroll(
-        gym_fun,
-        None,
-        None,
-        rng,
-        True,
-        raw_observations,
-    )
+    (gym_output, gym_info), final_state = unroll(
+        gym_fun, return_final_state=True, skip_first=True, rng=rng
+    )(raw_observations)
 
     assert len(gym_output.reward) == T - 1
     assert len(gym_info.agent.loss) == T - 1

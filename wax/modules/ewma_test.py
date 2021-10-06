@@ -20,7 +20,7 @@ from jax.config import config
 
 from wax.compile import jit_init_apply
 from wax.modules.ewma import EWMA
-from wax.unroll import dynamic_unroll, dynamic_unroll_fori_loop, static_unroll
+from wax.unroll import dynamic_unroll_fori_loop, unroll
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
@@ -56,7 +56,7 @@ def test_run_ema_vs_pandas_not_adjust():
     def model(x):
         return EWMA(0.1, adjust=False)(x)
 
-    ema, state = static_unroll(model, None, None, next(seq), False, x)
+    ema, state = unroll(model, dynamic=False, return_final_state=True)(x)
 
     pandas_ema = pd.DataFrame(x).ewm(alpha=0.1, adjust=False).mean()
 
@@ -75,7 +75,7 @@ def test_dynamic_unroll_fori_loop():
     def model(x):
         return EWMA(0.1, adjust=True)(x)
 
-    ema, state = static_unroll(model, None, None, next(seq), False, x)
+    ema, state = unroll(model, dynamic=False, return_final_state=True)(x)
 
     ema2, state2 = dynamic_unroll_fori_loop(model, None, None, next(seq), False, x)
 
@@ -94,10 +94,10 @@ def test_dynamic_unroll():
     def model(x):
         return EWMA(0.1, adjust=True)(x)
 
-    ema, state = static_unroll(model, None, None, next(seq), False, x, pbar=False)
+    ema, state = unroll(model, dynamic=False, return_final_state=True)(x)
 
     seq = hk.PRNGSequence(42)
-    ema2, state2 = dynamic_unroll(model, None, None, next(seq), False, x)
+    ema2, state2 = unroll(model, return_final_state=True)(x)
 
     assert jnp.allclose(ema, ema2)
 
@@ -114,7 +114,7 @@ def test_run_ema_vs_pandas_adjust():
     def model(x):
         return EWMA(0.1, adjust=True)(x)
 
-    ema, state = dynamic_unroll(model, None, None, next(seq), False, x)
+    ema, state = unroll(model, return_final_state=True)(x)
 
     pandas_ema = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).mean()
     assert jnp.allclose(ema, pandas_ema.values)
@@ -132,8 +132,7 @@ def test_run_ema_vs_pandas_adjust_finite():
     def model(x):
         return EWMA(0.1, adjust="linear")(x)
 
-    ema, state = dynamic_unroll(model, None, None, next(seq), False, x)
-
+    ema, state = unroll(model, return_final_state=True)(x)
     pandas_ema_adjust = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).mean()
     pandas_ema_not_adjust = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).mean()
     assert not jnp.allclose(ema, pandas_ema_adjust.values)

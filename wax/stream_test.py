@@ -40,7 +40,7 @@ from wax.stream import (
     unroll_stream,
 )
 from wax.testing import assert_tree_all_close
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 from wax.utils import dict_map
 
 
@@ -237,7 +237,7 @@ def test_stream_dataset_dynamic_unroll2():
 
     # outputs, state = static_unroll(access_dataset, xs, next(seq))
     # now test dynamic unroll
-    outputs, state = dynamic_unroll(access_dataset, None, None, next(seq), False, xs)
+    outputs, state = unroll(access_dataset, return_final_state=True)(xs)
 
     check_outputs(outputs["news_time"], schema)
 
@@ -321,7 +321,7 @@ def test_stream_dataset_dynamic_unroll3():
 
     # outputs, state = static_unroll(access_dataset, xs, next(seq))
     # now test dynamic unroll
-    outputs, state = dynamic_unroll(access_dataset, None, None, next(seq), False, xs)
+    outputs, state = unroll(access_dataset, return_final_state=True)(xs)
 
     # decode outputs
     assert outputs["NEWS"].shape == (124, 3)

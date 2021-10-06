@@ -20,7 +20,7 @@ import pytest
 from wax.compile import jit_init_apply
 from wax.modules.ewma import EWMA
 from wax.modules.ewmvar import EWMVar
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 
 # Another implementation for checking
@@ -90,7 +90,7 @@ def test_run_var_vs_pandas_not_adjust():
     def model(x):
         return EWMVar(0.1, adjust=False)(x)
 
-    var, state = dynamic_unroll(model, None, None, next(seq), False, x)
+    var, state = unroll(model, return_final_state=True)(x)
     var = pd.DataFrame(var)
 
     @jit_init_apply
@@ -98,7 +98,7 @@ def test_run_var_vs_pandas_not_adjust():
     def model2(x):
         return EWMVar_v2(0.1, adjust=False)(x)
 
-    var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
+    var2, state2 = unroll(model2, return_final_state=True)(x)
     var2 = pd.DataFrame(var2)
     assert onp.allclose(var, var2)
 
@@ -120,7 +120,7 @@ def test_run_var_vs_pandas_adjust():
     def model(x):
         return EWMVar(0.1, adjust=True)(x)
 
-    var, state = dynamic_unroll(model, None, None, next(seq), False, x)
+    var, state = unroll(model, return_final_state=True)(x)
     var = pd.DataFrame(var)
 
     @jit_init_apply
@@ -128,7 +128,7 @@ def test_run_var_vs_pandas_adjust():
     def model2(x):
         return EWMVar_v2(0.1, adjust=True)(x)
 
-    var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
+    var2, state2 = unroll(model2, return_final_state=True)(x)
     var2 = pd.DataFrame(var2)
     assert onp.allclose(var, var2)
 
@@ -151,7 +151,7 @@ def test_run_var_vs_pandas_adjust_finite():
     def model(x):
         return EWMVar(0.1, adjust="linear")(x)
 
-    var, state = dynamic_unroll(model, None, None, next(seq), False, x)
+    var, state = unroll(model, return_final_state=True)(x)
     var = pd.DataFrame(var)
 
     @jit_init_apply
@@ -159,7 +159,7 @@ def test_run_var_vs_pandas_adjust_finite():
     def model2(x):
         return EWMVar_v2(0.1, adjust=True)(x)
 
-    var2, state2 = dynamic_unroll(model2, None, None, next(seq), False, x)
+    var2, state2 = unroll(model2, return_final_state=True)(x)
     var2 = pd.DataFrame(var2)
     assert not onp.allclose(var, var2)
     # TODO: understand why the two implementations are

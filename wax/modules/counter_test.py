@@ -18,16 +18,11 @@ from jax._src.numpy.lax_numpy import uint32
 
 from wax.modules.counter import Counter
 from wax.testing import assert_tree_all_close
-from wax.unroll import dynamic_unroll
+from wax.unroll import unroll
 
 
 def test_counter():
-    res, state = dynamic_unroll(
-        lambda _: Counter()(),
-        None,
-        None,
-        None,
-        False,
+    res, state = unroll(lambda _: Counter()(), return_final_state=True)(
         jnp.arange(10, 20),
     )
     assert_tree_all_close(res, jnp.arange(1, 11, dtype="uint32"))

@@ -204,7 +204,7 @@ def _compute_ewma_direct(dataarray):
     import haiku as hk
     import jax.numpy as jnp
 
-    from wax.unroll import dynamic_unroll
+    from wax.unroll import unroll
 
     seq = hk.PRNGSequence(42)
     x = jnp.array(dataarray.values, dtype=jnp.float64)
@@ -213,7 +213,7 @@ def _compute_ewma_direct(dataarray):
     def model(x):
         return EWMA(0.1, adjust=True)(x)
 
-    ema3, state3 = dynamic_unroll(model, None, None, next(seq), False, x)
+    ema3, state3 = unroll(model, return_final_state=True)(x)
     return ema3, state3
 
 

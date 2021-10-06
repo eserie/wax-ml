@@ -18,6 +18,7 @@ from jax import numpy as jnp
 
 from wax.compile import jit_init_apply
 from wax.modules.lag import Lag
+from wax.unroll import unroll
 
 
 @pytest.mark.parametrize("use_jit", [False, True])
@@ -41,3 +42,26 @@ def test_lag(use_jit):
     output, state = lag.apply(params, state, next(seq), x)
     assert len(output) == 2
     assert (output == (x1)).all()
+
+
+def test_lag_unroll_int():
+    xs = jnp.array([10, 11, 12], dtype="int")
+
+    res = unroll(lambda x: Lag(1)(x))(xs)
+    assert (res == jnp.array([0, 10, 11])).all()
+
+    res = unroll(lambda x: Lag(2)(x))(xs)
+    assert (res == jnp.array([0, 0, 10])).all()
+
+
+def test_lag_unroll_float():
+    xs = jnp.array([10, 11, 12], dtype="float32")
+
+    res = unroll(lambda x: Lag(1)(x))(xs)
+    assert jnp.allclose(res, jnp.array([jnp.nan, 10, 11]), equal_nan=True)
+
+    res = unroll(lambda x: Lag(2)(x))(xs)
+    assert jnp.allclose(res, jnp.array([jnp.nan, jnp.nan, 10]), equal_nan=True)
+
+    res = unroll(lambda x: Lag(1)(Lag(1)(x)))(xs)
+    assert jnp.allclose(res, jnp.array([jnp.nan, jnp.nan, 10]), equal_nan=True)

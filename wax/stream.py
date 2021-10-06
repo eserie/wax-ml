@@ -35,7 +35,6 @@ import jax
 import numpy as onp
 import pandas as pd
 import xarray as xr
-from haiku import transform_with_state
 from jax import numpy as jnp
 from jax import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from jax.tree_util import tree_multimap
@@ -50,7 +49,7 @@ from wax.encode import (
     floor_datetime,
     string_encoder,
 )
-from wax.unroll import dynamic_unroll
+from wax.unroll import transform_unroll_with_state
 from wax.utils import get_unique_dtype
 
 # DTypeLike = TypeVar("DTypeLike")
@@ -505,6 +504,7 @@ class Stream:
         dataset: xr.Dataset,
         module: Callable,
         encoders: EncoderMapping = None,
+        skip_first=False,
     ) -> Tuple[Callable, jnp.ndarray]:
         """Prepare a function that wraps the input function with the actual data and indices
          in a pair of pure functions (TransformedWithState tuple).
@@ -513,7 +513,7 @@ class Stream:
             dataset : dataset on which the transformation is applied
             module : callable being able to be transformed with Haiku transform_with_state.
             encoders : encoders used to encode numpy dtypes which are not supported by Jax.
-
+            skip_first : argument passed to transform_unroll_with_state
         Returns:
             transform_dataset: transformed function ready to process in-memory data in local time.
             xs : range of steps in local time.
@@ -542,56 +542,12 @@ class Stream:
         )
 
         @jit_init_apply
-        @transform_with_state
+        @partial(transform_unroll_with_state, skip_first=skip_first)
         def transform_dataset(step):
             dataset = partial(tree_access_data, np_data, np_index)(step)
             return module(dataset)
 
         return transform_dataset, xs
-
-    def unroll_dataset(
-        self,
-        fun: Callable,
-        params: Any,
-        state: Any,
-        rng: Any,
-        skip_first: bool,
-        encoders: EncoderMapping,
-        dataset: xr.Dataset,
-    ) -> Any:
-        """Unroll a function onto a dataset.
-
-        Args:
-            fun : callable being able to be transformed with Haiku transform_with_state.
-            params: parameters for the module
-            state : state for the module
-            rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
-            encoders : encoders used to encode numpy dtypes which are not supported by Jax.
-            dataset : dataset on which the transformation is applied
-
-        Return:
-            Unroll results of the module formatted as a nested data structure with dataarray leaves.
-        """
-        transform_dataset, xs = self.prepare(dataset, fun, encoders)
-
-        outputs, state = dynamic_unroll(
-            transform_dataset, params, state, rng, skip_first, xs
-        )
-
-        if self.format_outputs:
-            # outputs = ep.convert_to_tensors(outputs, "numpy")
-            # TODO: fix eagerpy convert_to_tensor for numpy conversion.
-            if isinstance(outputs, jnp.ndarray):
-                # try to avoid tree_map which seems a bit slow.
-                outputs = onp.array(outputs)
-            else:
-                outputs = tree_map(lambda x: onp.array(x), outputs)
-
-        if self.return_state:
-            return outputs, state
-        else:
-            return outputs
 
     def get_local_time(self, time_datasets):
         if not self.local_time:

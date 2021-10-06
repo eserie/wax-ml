@@ -19,6 +19,7 @@ import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
 import xarray as xr
+from jax.tree_util import tree_map
 
 from wax.format import format_dataarray, format_dataframe, format_dataset, format_series
 from wax.stream import Stream
@@ -39,33 +40,38 @@ class StreamDataset(Stream):
     def apply(
         self,
         module: Callable,
+        skip_first: bool = False,
+        format_dims: Union[Tuple, onp.ndarray] = (),
         params: Any = None,
         state: Any = None,
         rng: jnp.ndarray = None,
-        skip_first: bool = False,
-        format_dims: Union[Tuple, onp.ndarray] = (),
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            skip_first : if true, first value of the sequence is not used in apply.
+            format_dims : nested data structure with specification of dims for dataarray formatting.
             params: parameters for the module.
             state : state for the module.
             rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
-            format_dims : nested data structure with specification of dims for dataarray formatting.
 
         Return:
             Unroll results of the module formated as a nested data structure with dataarray leaves.
         """
         dataset = self.accessor._obj
         schema = self.get_dataset_schema(dataset)
-        outputs = self.unroll_dataset(
-            module, params, state, rng, skip_first, schema.encoders, dataset
+        transform_dataset, xs = self.prepare(
+            dataset, module, schema.encoders, skip_first=skip_first
         )
-        if self.return_state:
-            outputs, state = outputs
+
+        init_params, init_state = transform_dataset.init(rng, xs)
+        params = params if params is not None else init_params
+        state = state if state is not None else init_state
+        outputs, state = transform_dataset.apply(params, state, rng, xs)
+
         if self.format_outputs:
+            outputs = tree_map(lambda x: onp.array(x), outputs)
             try:
                 outputs = format_dataset(schema.coords, outputs, format_dims)
             except ValueError:
@@ -91,22 +97,21 @@ class StreamDataArray(Stream):
     def apply(
         self,
         module: Callable,
+        skip_first: bool = False,
+        format_dims: Any = None,
         params: Any = None,
         state: Any = None,
         rng: jnp.ndarray = None,
-        skip_first: bool = False,
-        format_dims: Any = None,
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            skip_first : if true, first value of the sequence is not used in apply.
+            format_dims : nested data structure with specification of dims for dataarray formatting.
             params: parameters for the module.
             state : state for the module.
             rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
-            format_dims : nested data structure with specification of dims for dataarray formatting.
-
 
         Return:
             Unroll results of the module formated as a nested data structure with dataarray leaves.
@@ -119,13 +124,17 @@ class StreamDataArray(Stream):
             array = dataset["dataarray"]
             return module(array)
 
-        outputs = self.unroll_dataset(
-            module_dataset, params, state, rng, skip_first, schema.encoders, dataset
+        transform_dataset, xs = self.prepare(
+            dataset, module_dataset, schema.encoders, skip_first=skip_first
         )
-        if self.return_state:
-            outputs, state = outputs
+
+        init_params, init_state = transform_dataset.init(rng, xs)
+        params = params if params is not None else init_params
+        state = state if state is not None else init_state
+        outputs, state = transform_dataset.apply(params, state, rng, xs)
 
         if self.format_outputs:
+            outputs = tree_map(lambda x: onp.array(x), outputs)
             if format_dims is None:
                 format_dims = dataarray.dims
 
@@ -154,21 +163,21 @@ class StreamDataFrame(Stream):
     def apply(
         self,
         module: Callable,
+        skip_first: bool = False,
+        format_dims: Any = None,
         params: Any = None,
         state: Any = None,
         rng: jnp.ndarray = None,
-        skip_first: bool = False,
-        format_dims: Any = None,
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            skip_first : if true, first value of the sequence is not used in apply.
+            format_dims : nested data structure with specification of dims for dataarray formatting.
             params: parameters for the module.
             state : state for the module.
             rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
-            format_dims : nested data structure with specification of dims for dataarray formatting.
 
         Return:
             Unroll results of the module formated as a nested data structure with dataarray leaves.
@@ -196,13 +205,17 @@ class StreamDataFrame(Stream):
             array = dataset["dataarray"]
             return module(array)
 
-        outputs = self.unroll_dataset(
-            module_dataset, params, state, rng, skip_first, schema.encoders, dataset
+        transform_dataset, xs = self.prepare(
+            dataset, module_dataset, schema.encoders, skip_first=skip_first
         )
-        if self.return_state:
-            outputs, state = outputs
+        init_params, init_state = transform_dataset.init(rng, xs)
+        params = params if params is not None else init_params
+        state = state if state is not None else init_state
+        outputs, state = transform_dataset.apply(params, state, rng, xs)
 
         if self.format_outputs:
+            outputs = tree_map(lambda x: onp.array(x), outputs)
+
             if format_dims is None:
                 format_dims = dataarray.dims
 
@@ -241,21 +254,21 @@ class StreamSeries(Stream):
     def apply(
         self,
         module: Callable,
+        skip_first: bool = False,
+        format_dims: Any = None,
         params: Any = None,
         state: Any = None,
         rng: jnp.ndarray = None,
-        skip_first: bool = False,
-        format_dims: Any = None,
     ) -> Any:
         """Apply a module to a dataset.
 
         Args:
             module : callable being able to be transformed with Haiku transform_with_state.
+            skip_first : if true, first value of the sequence is not used in apply.
+            format_dims : nested data structure with specification of dims for dataarray formatting.
             params: parameters for the module.
             state : state for the module.
             rng: random number generator key.
-            skip_first : if true, first value of the sequence is not used in apply.
-            format_dims : nested data structure with specification of dims for dataarray formatting.
 
         Return:
             Unroll results of the module formated as a nested data structure with dataarray leaves.
@@ -269,13 +282,16 @@ class StreamSeries(Stream):
             array = dataset["dataarray"]
             return module(array)
 
-        outputs = self.unroll_dataset(
-            module_dataset, params, state, rng, skip_first, schema.encoders, dataset
+        transform_dataset, xs = self.prepare(
+            dataset, module_dataset, schema.encoders, skip_first=skip_first
         )
-        if self.return_state:
-            outputs, state = outputs
+        init_params, init_state = transform_dataset.init(rng, xs)
+        params = params if params is not None else init_params
+        state = state if state is not None else init_state
+        outputs, state = transform_dataset.apply(params, state, rng, xs)
 
         if self.format_outputs:
+            outputs = tree_map(lambda x: onp.array(x), outputs)
             if format_dims is None:
                 format_dims = dataarray.dims
 

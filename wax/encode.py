@@ -46,13 +46,13 @@ def encode_int64(seed: int) -> onp.ndarray:
         raise TypeError("seed must be a scalar.")
     if isinstance(seed, onp.ndarray):
         seed = onp.asscalar(seed)
-    if not isinstance(seed, (int, onp.int32, onp.int64)):
+    if not isinstance(seed, (int, onp.int32, onp.uint32, onp.int64)):
         raise TypeError(f"seed must be an int, got {type(seed)}")
 
     def _convert(k):
         return onp.reshape(k.astype(onp.uint32), [1])
 
-    if isinstance(seed, (int, onp.ndarray)):
+    if isinstance(seed, (int, onp.ndarray, onp.int32, onp.uint32)):
         # Special handling of raw integer values, which may have be 64bit even
         # when jax_enable_x64=False and we don't want to drop the top 32 bits
         high = _convert(onp.bitwise_and(onp.right_shift(seed, 32), 0xFFFFFFFF))

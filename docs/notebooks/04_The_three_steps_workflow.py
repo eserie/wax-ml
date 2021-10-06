@@ -171,6 +171,7 @@ stream = dataset.wax.stream()
 def my_ewma_on_dataset(dataset):
     return EWMA(alpha=1.0 / 10.0, adjust=True)(dataset["dataarray"])
 
+
 # + id="4735903f"
 transform_dataset, jxs = stream.prepare(dataset, my_ewma_on_dataset)
 

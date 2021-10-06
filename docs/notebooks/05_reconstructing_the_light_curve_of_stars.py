@@ -174,6 +174,7 @@ dataframe_mean.loc[:, "008241079"].plot()
 from functools import partial
 
 from jax.tree_util import tree_map
+
 # -
 
 dataset = dataframe.to_xarray()

@@ -48,6 +48,12 @@ class EWMA(hk.Module):
             dtype=x.dtype,
             init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
         )
+        is_initialized = hk.get_state(
+            "is_initialized",
+            shape=x.shape,
+            dtype=bool,
+            init=lambda shape, dtype: jnp.full(shape, False, dtype),
+        )
         count = hk.get_state(
             "count",
             shape=x.shape,
@@ -63,10 +69,15 @@ class EWMA(hk.Module):
         )
 
         # initialization on first non-nan value
-        mean = jnp.where(jnp.isnan(mean), x, mean)
+        mean = jnp.where(is_initialized, mean, x)
+        is_initialized = jnp.where(jnp.isnan(x), is_initialized, True)
+        hk.set_state("is_initialized", is_initialized)
 
-        mask = jnp.logical_not(jnp.isnan(x))
-        count = jnp.where(mask, count + 1, count)
+        isnan_x = jnp.isnan(x)
+        x = jnp.nan_to_num(x)
+        mean = jnp.nan_to_num(mean)
+
+        count = jnp.where(isnan_x, count, count + 1)
 
         # alpha adjustement scheme
         if self.adjust == "linear":
@@ -75,12 +86,16 @@ class EWMA(hk.Module):
             alpha = jnp.where(tscale > 0, 1.0 / tscale, jnp.nan)
         elif self.adjust:
             # exponential scheme (as in pandas)
-            alpha = alpha / (1.0 - (1.0 - alpha) ** (count))
+            eps = jnp.finfo(x.dtype).resolution
+            alpha = jnp.where(
+                count > 0, alpha / (eps + 1.0 - (1.0 - alpha) ** (count)), 1.0
+            )
+            # alpha = alpha / (1.0 - (1.0 - alpha) ** (count))
 
         # update mean  if x is not nan
-        mean = jnp.where(mask, (1.0 - alpha) * mean + alpha * x, mean)
+        mean = jnp.where(isnan_x, mean, (1.0 - alpha) * mean + alpha * x)
 
+        mean = jnp.where(is_initialized, mean, self.initial_value)
         hk.set_state("mean", mean)
         hk.set_state("count", count)
-
         return mean

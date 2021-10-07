@@ -1,30 +1,31 @@
 ---
-jupytext:
-  encoding: '# -*- coding: utf-8 -*-'
-  formats: ipynb,py,md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.11.1
-kernelspec:
-  display_name: Python 3
-  language: python
-  name: python3
+jupyter:
+  jupytext:
+    encoding: '# -*- coding: utf-8 -*-'
+    formats: ipynb,py,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.11.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
 ---
 
-```{code-cell} ipython3
+```python
 # Uncomment to run the notebook in Colab
 # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
 # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
-```{code-cell} ipython3
+```python
 # check available devices
 import jax
 ```
 
-```{code-cell} ipython3
+```python
 print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
 jax.devices()
 ```
@@ -33,8 +34,7 @@ jax.devices()
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb)
 
-+++
-
+<!-- #region -->
 We implement an online learning non-stationary linear regression problem.
 
 We go there progressively by showing how a linear regression problem can be cast
@@ -60,12 +60,13 @@ In this journey, we will use:
 - Optax stochastic gradient descent optimizer: `sgd`.
 - WAX-ML modules: `OnlineSupervisedLearner`, `Lag`, `GymFeedBack`
 - WAX-ML helper functions: `unroll`, `jit_init_apply`
+<!-- #endregion -->
 
-```{code-cell} ipython3
+```python
 %pylab inline
 ```
 
-```{code-cell} ipython3
+```python
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -73,26 +74,23 @@ import optax
 from matplotlib import pyplot as plt
 ```
 
-```{code-cell} ipython3
+```python
 from wax.compile import jit_init_apply
 from wax.modules import OnlineSupervisedLearner
 ```
 
 ## Static Linear Regression
 
-+++
 
 First, let's implement a simple linear regression
 
-+++
 
 ### Generate data
 
-+++
 
 Let's generate a batch of data:
 
-```{code-cell} ipython3
+```python
 seq = hk.PRNGSequence(42)
 X = jax.random.normal(next(seq), (100, 3))
 w_true = jnp.ones(3)
@@ -100,14 +98,14 @@ w_true = jnp.ones(3)
 
 ### Define the model
 
-+++
 
 We use the basic module `hk.Linear` which is a linear layer.
 By default, it initializes the weights with random values from the truncated normal,
 with a standard deviation of $1 / \sqrt{N}$ (See https://arxiv.org/abs/1502.03167v3)
 where $N$ is the size of the inputs.
 
-```{code-cell} ipython3
+
+```python
 @jit_init_apply
 @hk.transform_with_state
 def linear_model(x):
@@ -116,34 +114,33 @@ def linear_model(x):
 
 ### Run the model
 
-+++
 
 Let's run the model using WAX-ML `unroll` on the batch of data.
 
-```{code-cell} ipython3
+```python
 from wax.unroll import unroll
 ```
 
-```{code-cell} ipython3
+```python
 params, state = linear_model.init(next(seq), X[0])
 linear_model.apply(params, state, None, X[0])
 ```
 
-```{code-cell} ipython3
+```python
 Y_pred = unroll(linear_model, rng=next(seq))(X)
 ```
 
-```{code-cell} ipython3
+```python
 Y_pred.shape
 ```
 
+
 ### Check cost
 
-+++
 
 Let's look at the mean squared error for this non-trained model.
 
-```{code-cell} ipython3
+```python
 noise = jax.random.normal(next(seq), (100,))
 Y = X.dot(w_true) + noise
 L = ((Y - Y_pred) ** 2).sum(axis=1)
@@ -151,62 +148,66 @@ mean_loss = L.mean()
 assert mean_loss > 0
 ```
 
+
 Let's look at the regret (cumulative sum of the loss) for the non-trained model.
 
-```{code-cell} ipython3
+```python
 plt.plot(L.cumsum())
 plt.title("Regret")
 ```
 
 As expected, we have a linear regret when we did not train the model!
 
-+++
 
 ## Online Linear Regression
 
-+++
 
+<!-- #region -->
 We will now start training the model online.
 For a review on online-learning methods see [1]
 
 
 [1] [Elad Hazan, Introduction to Online Convex Optimization](https://arxiv.org/abs/1909.05207)
-
-+++
+<!-- #endregion -->
 
 ### Define an optimizer
 
-```{code-cell} ipython3
+```python
 opt = optax.sgd(1e-3)
 ```
 
+
 ### Define a loss
 
-+++
 
 Since we are doing online learning, we need to define a local loss function:
 $$
 \ell_t(y, w, x) = \lVert y_t -  w \cdot x_t \rVert^2
 $$
 
-```{code-cell} ipython3
+
+```python
 @jax.jit
 def loss(y_pred, y):
     return jnp.mean(jnp.square(y_pred - y))
 ```
 
+
 ### Define a learning strategy
 
-```{code-cell} ipython3
+
+```python
 @jit_init_apply
 @hk.transform_with_state
 def learner(x, y):
     return OnlineSupervisedLearner(linear_model, opt, loss)(x, y)
 ```
 
+
 ### Generate data
 
-```{code-cell} ipython3
+
+```python
 def generate_many_observations(T=300, sigma=1.0e-2, rng=None):
     rng = jax.random.PRNGKey(42) if rng is None else rng
     X = jax.random.normal(rng, (T, 3))
@@ -217,24 +218,23 @@ def generate_many_observations(T=300, sigma=1.0e-2, rng=None):
     return (X, Y)
 ```
 
-```{code-cell} ipython3
+```python
 T = 3000
 X, Y = generate_many_observations(T)
 ```
 
 ### Unroll the learner
 
-```{code-cell} ipython3
+```python
 (output, info) = unroll(learner, rng=next(seq))(X, Y)
 ```
 
 ### Plot the regret
 
-+++
 
 Let's look at the loss and regret over time.
 
-```{code-cell} ipython3
+```python
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 axs[0].plot(info.loss.cumsum())
 axs[0].set_title("Regret")
@@ -245,7 +245,6 @@ axs[1].set_title("Weight[0,0]")
 
 We have sub-linear regret!
 
-+++
 
 ##  Online learning with Gym
 
@@ -256,22 +255,20 @@ For that, we define:
 - obserbations (`obs`) : pairs  `(x, y)` of features and labels
 - raw observations (`raw_obs`): pairs `(x, noise)`  of features and noise.
 
-+++
 
 ### Linear regression agent
 
-+++
 
 In WAX-ML, an agent is a simple function with the following API:
 <div align="center">
 <img src="../tikz/agent.png" alt="logo" width="20%"></img>
 </div>
 
-+++
 
 Let's define a simple linear regression agent with the elements we have defined so far.
 
-```{code-cell} ipython3
+
+```python
 def linear_regression_agent(obs):
     x, y = obs
 
@@ -291,15 +288,13 @@ def linear_regression_agent(obs):
 
 ### Linear regression environment
 
-+++
 
 In WAX-ML, an environment is a simple function with the following API:
 <div align="center">
 <img src="../tikz/env.png" alt="logo" width="20%"></img>
 </div>
 
-+++
-
+<!-- #region -->
 Let's now define a linear regression environment that, for the moment,
 have static weights.
 
@@ -308,12 +303,13 @@ It is responsible for generating the real labels and evaluating the agent's rewa
 
 For the evaluation of the reward, we need the `Lag` module to evaluate the action of
 the agent with the labels generated in the previous time step.
+<!-- #endregion -->
 
-```{code-cell} ipython3
+```python
 from wax.modules import Lag
 ```
 
-```{code-cell} ipython3
+```python
 def stationary_linear_regression_env(action, raw_obs):
 
     # Only the environment now the true value of the parameters
@@ -339,11 +335,13 @@ def stationary_linear_regression_env(action, raw_obs):
     return reward, obs, {}
 ```
 
+
 ### Generate raw observation
 
 Let's define a function that generate the raw observation:
 
-```{code-cell} ipython3
+
+```python
 def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
     rng = jax.random.PRNGKey(42) if rng is None else rng
     X = jax.random.normal(rng, (T, 3))
@@ -353,7 +351,6 @@ def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
 
 ### Implement Feedback
 
-+++
 
 We are now ready to set things up with the `GymFeedback` module implemented in WAX-ML.
 
@@ -362,18 +359,17 @@ It implements the following feedback loop:
 <img src="../tikz/gymfeedback.png" alt="logo" width="50%"></img>
 </div>
 
-+++
 
 Equivalently, it can be described with the pair of `init` and `apply` functions:
 <div align="center">
 <img src="../tikz/gymfeedback_init_apply.png" alt="logo" width="100%"></img>
 </div>
 
-```{code-cell} ipython3
+```python
 from wax.modules import GymFeedback
 ```
 
-```{code-cell} ipython3
+```python
 @hk.transform_with_state
 def gym_fun(raw_obs):
     return GymFeedback(
@@ -383,7 +379,7 @@ def gym_fun(raw_obs):
 
 And now we can unroll it on a sequence of raw observations!
 
-```{code-cell} ipython3
+```python
 seq = hk.PRNGSequence(42)
 T = 3000
 raw_observations = generate_many_raw_observations(T)
@@ -391,16 +387,18 @@ rng = next(seq)
 (gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(raw_observations)
 ```
 
+<!-- #region -->
 Let's visualize the outputs.
 
 
 We now use `pd.Series` to represent the reward sequence since its first value is Nan due to the use of the lag operator.
+<!-- #endregion -->
 
-```{code-cell} ipython3
+```python
 import pandas as pd
 ```
 
-```{code-cell} ipython3
+```python
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 pd.Series(gym_output.reward).cumsum().plot(ax=axs[0], title="Regret")
 axs[1].plot(info.params["linear"]["w"][:, 0, 0])
@@ -409,13 +407,13 @@ axs[1].set_title("Weight[0,0]")
 
 ## Non-stationary environment
 
-+++
 
 Now, let's implement a non-stationary environment.
 
 We implement it so that the sign of the weight is reversed after 2000$ steps.
 
-```{code-cell} ipython3
+
+```python
 class NonStationaryEnvironment(hk.Module):
     def __call__(self, action, raw_obs):
 
@@ -454,10 +452,12 @@ class NonStationaryEnvironment(hk.Module):
         return reward, obs, {}
 ```
 
+
 Now let's run a gym simulation to see how the agent adapt to the
 change of environment.
 
-```{code-cell} ipython3
+
+```python
 @hk.transform_with_state
 def gym_fun(raw_obs):
     return GymFeedback(
@@ -465,7 +465,7 @@ def gym_fun(raw_obs):
     )(raw_obs)
 ```
 
-```{code-cell} ipython3
+```python
 T = 6000
 raw_observations = generate_many_raw_observations(T)
 rng = jax.random.PRNGKey(42)
@@ -474,11 +474,11 @@ rng = jax.random.PRNGKey(42)
 )
 ```
 
-```{code-cell} ipython3
+```python
 import pandas as pd
 ```
 
-```{code-cell} ipython3
+```python
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 pd.Series(gym_output.reward).cumsum().plot(ax=axs[0], title="Regret")
 axs[1].plot(gym_info.agent.params["linear"]["w"][:, 0, 0])

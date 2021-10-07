@@ -1,30 +1,31 @@
 ---
-jupytext:
-  encoding: '# -*- coding: utf-8 -*-'
-  formats: ipynb,py,md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.11.1
-kernelspec:
-  display_name: Python 3
-  language: python
-  name: python3
+jupyter:
+  jupytext:
+    encoding: '# -*- coding: utf-8 -*-'
+    formats: ipynb,py,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.11.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
 ---
 
-```{code-cell} ipython3
+```python
 # Uncomment to run the notebook in Colab
 # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
 # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
-```{code-cell} ipython3
+```python
 # check available devices
 import jax
 ```
 
-```{code-cell} ipython3
+```python
 print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
 jax.devices()
 ```
@@ -33,7 +34,6 @@ jax.devices()
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/02_Synchronize_data_streams.ipynb)
 
-+++
 
 Physicists, and not the least 😅, have brought a solution to the synchronization
 problem.  See [Poincaré-Einstein synchronization Wikipedia
@@ -65,9 +65,7 @@ Let's use the dataset "air temperature" with :
 - An air temperature is defined with hourly resolution.
 - A "fake" ground temperature is defined with a daily resolution as the air temperature minus 10 degrees.
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 import xarray as xr
 
 dataset = xr.tutorial.open_dataset("air_temperature")
@@ -76,21 +74,17 @@ dataset["ground"] = dataset.air.resample(time="d").last().rename({"time": "day"}
 
 Let's see what this dataset looks like:
 
-```{code-cell} ipython3
+```python
 dataset
 ```
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 from wax.accessors import register_wax_accessors
 
 register_wax_accessors()
 ```
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 from wax.modules import EWMA
 
 
@@ -102,12 +96,12 @@ def my_custom_function(dataset):
     }
 ```
 
-```{code-cell} ipython3
+```python
 results, state = dataset.wax.stream(
     local_time="time", ffills={"day": 1}, pbar=True
 ).apply(my_custom_function, format_dims=dataset.air.dims)
 ```
 
-```{code-cell} ipython3
+```python
 _ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
 ```

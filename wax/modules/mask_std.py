@@ -59,7 +59,10 @@ class MaskStd(hk.Module):
                 diff = x - mean
 
             diff = ApplyMask()(mask, diff)
-            std = jnp.sqrt((diff ** 2).sum(axis=self.axis) / count)
+
+            eps = jnp.finfo(x.dtype).resolution ** 2
+            var = (diff ** 2).sum(axis=self.axis) / count
+            std = jnp.where(var > 0.0, jnp.sqrt(eps + var), 0.0)
             return std
 
         return tree_map(mask_std, input)

@@ -311,7 +311,7 @@ def test_ewm_dataframe():
     )
     y = dataframe.ewm(alpha=1.0 / 10.0).mean()
     y2 = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
-    assert (y - y2).abs().stack().max() < 1.0e-6
+    assert (y - y2).abs().stack().max() < 1.0e-5
 
 
 def test_ewm_dataframe_no_format_outputs():
@@ -326,7 +326,7 @@ def test_ewm_dataframe_no_format_outputs():
     y2 = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
     y2 = pd.DataFrame(onp.array(y2), index=y.index)
 
-    assert (y - y2).abs().stack().max() < 1.0e-6
+    assert (y - y2).abs().stack().max() < 1.0e-5
 
     y2 = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 

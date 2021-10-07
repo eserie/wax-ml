@@ -90,3 +90,61 @@ def test_mask_std_axis_1():
     for col in range(3):
         x_std_col_ref = x[:, col][mask[:, col]].std()
         assert jnp.allclose(x_std[col], x_std_col_ref)
+
+
+def test_grad_mask_std():
+    rng = jax.random.PRNGKey(42)
+
+    shape = (10, 2)
+    x = jax.random.normal(rng, shape)
+
+    _, rng = jax.random.split(rng)
+    mask = jax.random.choice(rng, 2, shape=shape).astype(bool)
+
+    _, rng = jax.random.split(rng)
+    params = {"w": jax.random.normal(rng, shape)}
+
+    # put some nan values
+    x = jax.ops.index_update(x, 0, jnp.nan)
+
+    @hk.transform
+    def fun(x):
+        w = hk.get_parameter("w", x.shape, init=lambda *_: jnp.zeros_like(x))
+        y = w * x
+        score = MaskStd()(mask, y)
+        return score
+
+    params = fun.init(rng, x)
+    scrore, grads = jax.value_and_grad(fun.apply)(params, rng, x)
+    assert not jnp.isnan(grads["~"]["w"]).all()
+
+
+def test_grad_mask_std_unroll():
+    rng = jax.random.PRNGKey(42)
+
+    shape = (10, 2)
+    x = jax.random.normal(rng, shape)
+
+    _, rng = jax.random.split(rng)
+    mask = jax.random.choice(rng, 2, shape=shape).astype(bool)
+
+    _, rng = jax.random.split(rng)
+    params = {"w": jax.random.normal(rng, shape)}
+
+    # put some nan values
+    x = jax.ops.index_update(x, 0, jnp.nan)
+
+    from wax.unroll import transform_unroll_with_state
+
+    @transform_unroll_with_state
+    def fun(mask, x):
+        w = hk.get_parameter("w", x.shape, init=lambda *_: jnp.zeros_like(x))
+        return MaskStd()(mask, (w * jnp.nan_to_num(x)))
+
+    def batch(params, state, rng, mask, x):
+        score, state = fun.apply(params, state, rng, mask, x)
+        return jnp.nanmean(score)
+
+    params, state = fun.init(rng, mask, x)
+    scrore, grads = jax.value_and_grad(batch)(params, state, rng, mask, x)
+    assert not jnp.isnan(grads["~"]["w"]).all()

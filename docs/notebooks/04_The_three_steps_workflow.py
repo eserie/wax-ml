@@ -2,12 +2,12 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py,md:myst
+#     formats: ipynb,py,md
 #     text_representation:
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.11.1
+#       jupytext_version: 1.3.3
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python

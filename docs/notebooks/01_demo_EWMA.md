@@ -1,30 +1,31 @@
 ---
-jupytext:
-  encoding: '# -*- coding: utf-8 -*-'
-  formats: ipynb,py,md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.11.1
-kernelspec:
-  display_name: Python 3
-  language: python
-  name: python3
+jupyter:
+  jupytext:
+    encoding: '# -*- coding: utf-8 -*-'
+    formats: ipynb,py,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.11.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
 ---
 
-```{code-cell} ipython3
+```python
 # Uncomment to run the notebook in Colab
 # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
 # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
 ```
 
-```{code-cell} ipython3
+```python
 # check available devices
 import jax
 ```
 
-```{code-cell} ipython3
+```python
 print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
 jax.devices()
 ```
@@ -33,7 +34,6 @@ jax.devices()
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/01_demo_EWMA.ipynb)
 
-+++
 
 WAX-ML implements pandas and xarray accessors to ease the usage of machine-learning algorithms with
 high-level data APIs :
@@ -48,17 +48,13 @@ with this mechanism.
 
 Let's show how it works.
 
-+++
 
 ## Load accessors
 
-+++
 
 First you need to load accessors:
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 from wax.accessors import register_wax_accessors
 
 register_wax_accessors()
@@ -66,19 +62,15 @@ register_wax_accessors()
 
 ## EWMA on dataframes
 
-+++
 
 Let's look at a simple example: The exponential moving average (EWMA).
 
 Let's apply the EWMA algorithm to the [NCEP/NCAR 's Air temperature data](http://www.esrl.noaa.gov/psd/data/gridded/data.ncep.reanalysis.html).
 
-+++
 
 ### 🌡 Load temperature dataset 🌡
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 import xarray as xr
 
 dataset = xr.tutorial.open_dataset("air_temperature")
@@ -86,9 +78,7 @@ dataset = xr.tutorial.open_dataset("air_temperature")
 
 Let's see what this dataset looks like:
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 dataset
 ```
 
@@ -99,20 +89,20 @@ in pandas
 
 So, let's convert the dataset into a dataframe to illustrate `accessors` on a dataframe:
 
-```{code-cell} ipython3
+```python
 dataframe = dataset.air.to_series().unstack(["lon", "lat"])
 ```
 
 ### EWMA with pandas
 
-```{code-cell} ipython3
+```python
 air_temp_ewma = dataframe.ewm(alpha=1.0 / 10.0).mean()
 _ = air_temp_ewma.iloc[:, 0].plot()
 ```
 
 ### EWMA with WAX-ML
 
-```{code-cell} ipython3
+```python
 air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 _ = air_temp_ewma.iloc[:, 0].plot()
 ```
@@ -123,11 +113,10 @@ WAX-ML's accessors are interesting to use on large data loads
 
 ## Apply a custom function to a Dataset
 
-+++
 
 Now let's illustrate how WAX-ML accessors work on [xarray datasets](http://xarray.pydata.org/en/stable/generated/xarray.Dataset.html).
 
-```{code-cell} ipython3
+```python
 from wax.modules import EWMA
 
 

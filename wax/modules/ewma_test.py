@@ -139,3 +139,41 @@ def test_run_ema_vs_pandas_adjust_finite():
     assert not jnp.allclose(ema, pandas_ema_not_adjust.values)
     corr = jnp.corrcoef(ema.flatten(), pandas_ema_adjust.values.flatten())[0, 1]
     assert 1.0e-3 < 1 - corr < 1.0e-2
+
+
+@pytest.mark.parametrize("adjust", [False, True, "linear"])
+def test_grad_ewma(adjust):
+    from functools import partial
+
+    import jax
+    import jax.numpy as jnp
+
+    from wax.unroll import transform_unroll_with_state
+
+    rng = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng, (10, 3))
+    _, rng = jax.random.split(rng)
+    params = {"w": jax.random.normal(rng, (10,))}
+
+    # put some nan values
+    x = jax.ops.index_update(x, 0, jnp.nan)
+
+    @partial(transform_unroll_with_state, dynamic=False)
+    def fun(x):
+        return EWMA(1 / 10, adjust=adjust)(x)
+
+    # print("init")
+    params, state = fun.init(rng, x)
+
+    # print("apply")
+    res, final_state = fun.apply(params, state, rng, x)
+    # print(res)
+
+    # print("gradient")
+    @jax.value_and_grad
+    def batch(params):
+        res, final_state = fun.apply(params, state, rng, x)
+        return res.mean()
+
+    score, grad = batch(params)
+    assert not jnp.isnan(grad["ewma"]["alpha"])

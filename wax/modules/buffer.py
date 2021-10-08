@@ -13,18 +13,42 @@
 # limitations under the License.
 """Implement buffering mechanism."""
 
-from typing import Any, NamedTuple
+from typing import Any, Callable, NamedTuple
 
 import haiku as hk
 import jax
 import jax.numpy as jnp
-from jax.tree_util import tree_flatten, tree_map, tree_unflatten
 
 
 class BufferState(NamedTuple):
     buffer: Any
     len_buffer: int
     i_start: int
+
+
+class BufferFun(NamedTuple):
+    init: Callable
+    apply: Callable
+
+
+def buffer_fn(maxlen: int, fill_value=jnp.nan):
+    def init(shape, dtype):
+        buffer = jnp.full((maxlen,) + shape, fill_value, dtype=dtype)
+        len_buffer = 0
+        i_start = maxlen
+        return BufferState(buffer, len_buffer, i_start)
+
+    def apply(x, state):
+        buffer, len_buffer, i_start = state
+
+        buffer = jnp.roll(buffer, -1, axis=0)
+        buffer = jax.ops.index_update(buffer, -1, x)
+        len_buffer = jnp.minimum(len_buffer + 1, maxlen)
+        i_start = maxlen - len_buffer
+
+        return buffer, BufferState(buffer, len_buffer, i_start)
+
+    return BufferFun(init, apply)
 
 
 class Buffer(hk.Module):
@@ -59,57 +83,19 @@ class Buffer(hk.Module):
             input: data to record.
         """
 
-        def _initial_state(shape, dtype):
-            nonlocal input
-            if type(self.fill_value) == type(input):
-                input_flat, treedef = tree_flatten(input)
-                fill_value_flat, _ = tree_flatten(self.fill_value)
-                buffer_flat = list(
-                    map(
-                        lambda x, f: jnp.full(
-                            (self.maxlen,) + x.shape, f, dtype=x.dtype
-                        ),
-                        input_flat,
-                        fill_value_flat,
-                    )
-                )
-                buffer = tree_unflatten(treedef, buffer_flat)
-            else:
-                buffer = tree_map(
-                    lambda x: jnp.full(
-                        (self.maxlen,) + x.shape, self.fill_value, dtype=x.dtype
-                    ),
-                    input,
-                )
-            len_buffer = 0
-            i_start = self.maxlen
-            return BufferState(buffer, len_buffer, i_start)
+        fun = buffer_fn(self.maxlen, self.fill_value)
 
         buffer_state = hk.get_state(
             "buffer_state",
-            [],
-            init=_initial_state,
+            input.shape,
+            input.dtype,
+            init=fun.init,
         )
 
-        buffer, len_buffer, i_start = buffer_state
+        buffer, buffer_state = fun.apply(input, buffer_state)
 
-        input, treedef = tree_flatten(input)
-        buffer, _ = tree_flatten(buffer)
-
-        for i, (x_i, buffer_i) in enumerate(zip(input, buffer)):
-            buffer_i = jnp.roll(buffer_i, -1, axis=0)
-            buffer_i = jax.ops.index_update(buffer_i, -1, x_i)
-            buffer[i] = buffer_i
-
-        buffer = tree_unflatten(treedef, buffer)
-
-        len_buffer = jnp.minimum(len_buffer + 1, self.maxlen)
-        i_start = self.maxlen - len_buffer
-
-        next_state = BufferState(buffer, len_buffer, i_start)
-
-        hk.set_state("buffer_state", next_state)
+        hk.set_state("buffer_state", buffer_state)
         if self.return_state:
-            return buffer, next_state
+            return buffer, buffer_state
         else:
             return buffer

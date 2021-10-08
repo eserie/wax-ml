@@ -49,7 +49,7 @@ from wax.encode import (
     floor_datetime,
     string_encoder,
 )
-from wax.unroll import transform_unroll_with_state
+from wax.unroll import unroll_transform_with_state
 from wax.utils import get_unique_dtype
 
 # DTypeLike = TypeVar("DTypeLike")
@@ -513,7 +513,7 @@ class Stream:
             dataset : dataset on which the transformation is applied
             module : callable being able to be transformed with Haiku transform_with_state.
             encoders : encoders used to encode numpy dtypes which are not supported by Jax.
-            skip_first : argument passed to transform_unroll_with_state
+            skip_first : argument passed to unroll_transform_with_state
         Returns:
             transform_dataset: transformed function ready to process in-memory data in local time.
             xs : range of steps in local time.
@@ -542,7 +542,7 @@ class Stream:
         )
 
         @jit_init_apply
-        @partial(transform_unroll_with_state, skip_first=skip_first)
+        @partial(unroll_transform_with_state, skip_first=skip_first)
         def transform_dataset(step):
             dataset = partial(tree_access_data, np_data, np_index)(step)
             return module(dataset)

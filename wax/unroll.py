@@ -34,7 +34,7 @@ class TransformedUnrollWithState(NamedTuple):
     apply: Callable
 
 
-def transform_unroll_with_state(
+def unroll_transform_with_state(
     fun: Callable, skip_first: bool = False, dynamic: bool = True, pbar: bool = False
 ):
     """Transforms a function using Haiku modules into a pair of pure functions.
@@ -123,7 +123,7 @@ def unroll(
 
     """
     if not isinstance(fun, TransformedUnrollWithState):
-        fun = transform_unroll_with_state(
+        fun = unroll_transform_with_state(
             fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
         )
 
@@ -148,13 +148,13 @@ def init_params_state(
 ):
     """Call init of a TransformedUnrollWithState pair."""
     warnings.warn(
-        "Deprecated function init_params_state. Use transform_unroll_with_state instead."
+        "Deprecated function init_params_state. Use unroll_transform_with_state instead."
         "This function may be removed in the near future.",
         DeprecationWarning,
         2,
     )
 
-    return transform_unroll_with_state(fun).init(rng, *args, **kwargs)
+    return unroll_transform_with_state(fun).init(rng, *args, **kwargs)
 
 
 def dynamic_unroll(
@@ -178,7 +178,7 @@ def dynamic_unroll(
             of the TransformedWithState pair.
     """
     warnings.warn(
-        "Deprecated function dynamic_unroll. Use unroll or transform_unroll_with_state instead."
+        "Deprecated function dynamic_unroll. Use unroll or unroll_transform_with_state instead."
         "This function may be removed in the near future.",
         DeprecationWarning,
         2,
@@ -187,7 +187,7 @@ def dynamic_unroll(
     if callable(fun):
         fun = hk.transform_with_state(fun)
 
-    fun = transform_unroll_with_state(fun, skip_first, dynamic=True)
+    fun = unroll_transform_with_state(fun, skip_first, dynamic=True)
 
     fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
     params = fun_init_params if params is None else params
@@ -219,7 +219,7 @@ def static_unroll(
         pbar : if true, activate progress bar.
     """
     warnings.warn(
-        "Deprecated function static_unroll. Use unroll or transform_unroll_with_state instead."
+        "Deprecated function static_unroll. Use unroll or unroll_transform_with_state instead."
         "This function may be removed in the near future.",
         DeprecationWarning,
         2,
@@ -228,7 +228,7 @@ def static_unroll(
     if callable(fun):
         fun = hk.transform_with_state(fun)
 
-    fun = transform_unroll_with_state(fun, skip_first, dynamic=False, pbar=pbar)
+    fun = unroll_transform_with_state(fun, skip_first, dynamic=False, pbar=pbar)
 
     fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
     params = fun_init_params if params is None else params

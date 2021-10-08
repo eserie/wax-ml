@@ -148,7 +148,7 @@ def test_grad_ewma(adjust):
     import jax
     import jax.numpy as jnp
 
-    from wax.unroll import transform_unroll_with_state
+    from wax.unroll import unroll_transform_with_state
 
     rng = jax.random.PRNGKey(42)
     x = jax.random.normal(rng, (10, 3))
@@ -158,7 +158,7 @@ def test_grad_ewma(adjust):
     # put some nan values
     x = jax.ops.index_update(x, 0, jnp.nan)
 
-    @partial(transform_unroll_with_state, dynamic=False)
+    @partial(unroll_transform_with_state, dynamic=False)
     def fun(x):
         return EWMA(1 / 10, adjust=adjust)(x)
 

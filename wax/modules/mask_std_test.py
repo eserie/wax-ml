@@ -134,9 +134,9 @@ def test_grad_mask_std_unroll():
     # put some nan values
     x = jax.ops.index_update(x, 0, jnp.nan)
 
-    from wax.unroll import transform_unroll_with_state
+    from wax.unroll import unroll_transform_with_state
 
-    @transform_unroll_with_state
+    @unroll_transform_with_state
     def fun(mask, x):
         w = hk.get_parameter("w", x.shape, init=lambda *_: jnp.zeros_like(x))
         return MaskStd()(mask, (w * jnp.nan_to_num(x)))

@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Format nested data structures to numpy/xarray/pandas containers."""
-from typing import Any, TypeVar
+from functools import partial
+from typing import Any, TypeVar, Union
 
+import jax.numpy as jnp
 import numpy as onp
+import pandas as pd
 import xarray as xr
-from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
+from jax.tree_util import tree_flatten, tree_leaves, tree_map, tree_unflatten
 
 DatasetCoordinates = TypeVar(
     "DatasetCoordinates"
@@ -175,3 +178,50 @@ def format_series(ref_coords: DatasetCoordinates, data: Any, format_dims: Any) -
             _to_series(ref_coords, dataarray, format_dims) for dataarray in data_flat
         )
     return tree_unflatten(treedef, vals)
+
+
+def auto_format_with_shape(
+    dataset: xr.Dataset, data: jnp.ndarray, output_format: str = "dataarray"
+) -> Union[jnp.ndarray, pd.DataFrame, xr.DataArray]:
+    """Format data structure in pandas / xarray DataFrame / DataArray using coordinates
+    of variables with similar shapes in a reference Dataset.
+
+    :param dataset: template dataset
+    :param data: data to format
+    :param output_format: format type, can be in ("dataarray", "pandas")
+    :return: formated data
+    """
+
+    def get_dims():
+        for k, v in dataset.items():
+            for i in range(len(v.shape) + 1):
+                shape = tuple(v.shape[:i])
+                if data.shape == shape:
+                    return v.dims[:i]
+        print(f"The dataset does not have variable with shape {data.shape}.")
+
+    dims = get_dims()
+    if dims:
+        if output_format == "dataarray":
+            data = format_dataarray(dataset.coords, onp.array(data), format_dims=dims)
+        elif output_format == "dataframe":
+            data = format_dataframe(dataset.coords, onp.array(data), format_dims=dims)
+        else:
+            raise ValueError(f"Unknown format {output_format}.")
+    return data
+
+
+def tree_auto_format_with_shape(
+    dataset: xr.Dataset, pytree: Any, output_format: str = "dataarray"
+) -> Any:
+    """Format data structure in pandas / xarray DataFrame / DataArray using coordinates
+    of variables with similar shapes in a reference Dataset.
+
+    :param dataset: template dataset
+    :param data: data to format
+    :param output_format: format type, can be in ("dataarray", "pandas")
+    :return: formated data
+    """
+    return tree_map(
+        partial(auto_format_with_shape, dataset, output_format=output_format), pytree
+    )

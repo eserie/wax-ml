@@ -21,56 +21,6 @@ from wax.modules.buffer import Buffer
 
 
 @pytest.mark.parametrize("use_jit", [False, True])
-def test_buffer_dict(use_jit):
-    seq = hk.PRNGSequence(42)
-    x = {
-        "x": jax.random.normal(next(seq), (2, 3)),
-        "y": jax.random.normal(next(seq), (3, 4)),
-    }
-
-    @hk.transform_with_state
-    def buffer(x):
-        return Buffer(2, return_state=False, name="buf")(x)
-
-    if use_jit:
-        buffer = jit_init_apply(buffer)
-
-    params, state = buffer.init(next(seq), x)
-    assert jnp.isnan(state["buf"]["buffer_state"].buffer["x"]).all()
-    assert jnp.isnan(state["buf"]["buffer_state"].buffer["y"]).all()
-    assert state["buf"]["buffer_state"].len_buffer == 0
-    assert state["buf"]["buffer_state"].i_start == 2
-
-    output, state = buffer.apply(params, state, next(seq), x)
-
-
-@pytest.mark.parametrize("use_jit", [False, True])
-def test_buffer_dict_fillna_struct(use_jit):
-    seq = hk.PRNGSequence(42)
-    x = {
-        "x": jax.random.normal(next(seq), (2, 3)),
-        "y": jax.random.normal(next(seq), (3, 4)),
-    }
-
-    fill_value = {"x": -1, "y": 999}
-
-    @hk.transform_with_state
-    def buffer(x):
-        return Buffer(2, return_state=False, name="buf", fill_value=fill_value)(x)
-
-    if use_jit:
-        buffer = jit_init_apply(buffer)
-
-    params, state = buffer.init(next(seq), x)
-    assert (state["buf"]["buffer_state"].buffer["x"] == -1).all()
-    assert (state["buf"]["buffer_state"].buffer["y"] == 999).all()
-    assert state["buf"]["buffer_state"].len_buffer == 0
-    assert state["buf"]["buffer_state"].i_start == 2
-
-    output, state = buffer.apply(params, state, next(seq), x)
-
-
-@pytest.mark.parametrize("use_jit", [False, True])
 def test_buffer(use_jit):
     seq = hk.PRNGSequence(42)
     x = jax.random.normal(next(seq), (2, 3))

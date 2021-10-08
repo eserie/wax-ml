@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.11.1
+      jupytext_version: 1.13.0
   kernelspec:
     display_name: Python 3
     language: python
@@ -639,7 +639,6 @@ def train_model(
                 return params, _format_results(records)
 ```
 
-
 ```python colab={} colab_type="code" id="AssgDctokbl5"
 %%time
 trained_params, records = train_model(train_ds, valid_ds, TRAIN_STEPS)
@@ -716,7 +715,6 @@ def autoregressive_predict(
     # Return the final full prediction.
     return outs
 ```
-
 
 ```python colab={} colab_type="code" id="Cg8oQ75Ulvld"
 sample_x, _ = next(valid_ds)

@@ -78,12 +78,12 @@ class UpdateOnEvent(hk.Module):
         self.module = module
         self.initial_output_value = initial_output_value
 
-    def __call__(self, on_event, input):
+    def __call__(self, on_event, *args, **kwargs):
         # state_dict = self.state_dict()
 
         prev_state_dict = self.module.state_dict()
 
-        output = self.module(input)
+        output = self.module(*args, **kwargs)
 
         prev_output = hk.get_state(
             "prev_output",

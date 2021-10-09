@@ -22,12 +22,9 @@ from wax.compile import jit_init_apply
 from wax.modules.ewmcov import EWMCov
 from wax.unroll import unroll
 
-# Another implementation for checking
-
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_init_and_first_step_cov_float64(dtype):
-
     if dtype == "float64":
         config.update("jax_enable_x64", True)
     else:
@@ -35,38 +32,33 @@ def test_init_and_first_step_cov_float64(dtype):
     seq = hk.PRNGSequence(42)
     x = jax.random.normal(shape=(3,), key=next(seq), dtype=jnp.float64)
     y = jax.random.normal(shape=(3,), key=next(seq), dtype=jnp.float64)
-    data = (x, y)
 
     @jit_init_apply
     @hk.transform_with_state
-    def model(data):
+    def model(x, y):
+        return EWMCov(jnp.array(0.1), adjust=True)(x, y)
 
-        return EWMCov(jnp.array(0.1), adjust=True)(data)
-
-    params, state = model.init(next(seq), data)
-    cov, state = model.apply(params, state, next(seq), data)
+    params, state = model.init(next(seq), x, y)
+    cov, state = model.apply(params, state, next(seq), x, y)
     assert cov.dtype == jnp.dtype(dtype)
 
 
 @pytest.mark.parametrize("assume_centered", [False, True])
 def test_run_cov_vs_sklearn(assume_centered):
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
     x = jax.random.normal(shape=(10, 3), key=next(seq), dtype=jnp.float64)
     y = x
-    data = (x, y)
 
     alpha = 1.0e-6
 
     @jit_init_apply
     @hk.transform_with_state
-    def model(data):
-        return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(data)
+    def model(x, y):
+        return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(x, y)
 
-    cov, state = unroll(model, return_final_state=True)(data)
-
+    cov = unroll(model)(x, y)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
 
     assert jnp.allclose(cov[-1], cov_ref, atol=1.0e-6)
@@ -74,22 +66,20 @@ def test_run_cov_vs_sklearn(assume_centered):
 
 @pytest.mark.parametrize("assume_centered", [False, True])
 def test_run_cov_vs_sklearn_adjust(assume_centered):
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
     x = jax.random.normal(shape=(10, 3), key=next(seq), dtype=jnp.float64)
     y = x
-    data = (x, y)
+
     alpha = 1.0e-6
 
     @jit_init_apply
     @hk.transform_with_state
-    def model(data):
+    def model(x, y):
+        return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(x, y)
 
-        return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(data)
-
-    cov, state = unroll(model, return_final_state=True)(data)
+    cov = unroll(model)(x, y)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
 
     assert jnp.allclose(cov[-1], cov_ref, atol=1.0e-6)
@@ -97,22 +87,47 @@ def test_run_cov_vs_sklearn_adjust(assume_centered):
 
 @pytest.mark.parametrize("assume_centered", [False, True])
 def test_run_cov_vs_pandas_adjust_finite(assume_centered):
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
     x = jax.random.normal(shape=(10, 3), key=next(seq), dtype=jnp.float64)
     y = x
-    data = (x, y)
 
     alpha = 1.0e-6
 
     @jit_init_apply
     @hk.transform_with_state
-    def model(data):
-        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(data)
+    def model(x, y):
+        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(x, y)
 
-    cov, state = unroll(model, return_final_state=True)(data)
+    cov = unroll(model)(x, y)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
 
     assert jnp.allclose(cov[-1], cov_ref, atol=1.0e-6)
+
+
+@pytest.mark.parametrize("assume_centered", [False, True])
+def test_run_cov_with_legacy_api(assume_centered):
+    config.update("jax_enable_x64", True)
+
+    seq = hk.PRNGSequence(42)
+    x = jax.random.normal(shape=(10, 3), key=next(seq), dtype=jnp.float64)
+    y = x
+
+    alpha = 1 / 10.0
+
+    @jit_init_apply
+    @hk.transform_with_state
+    def model(x, y):
+        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(x, y)
+
+    cov = unroll(model)(x, y)
+
+    @jit_init_apply
+    @hk.transform_with_state
+    def model(x_y):
+        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(x_y)
+
+    cov_ref = unroll(model)(x_y=(x, y))
+
+    assert jnp.allclose(cov, cov_ref, atol=1.0e-6)

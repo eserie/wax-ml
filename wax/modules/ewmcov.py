@@ -49,9 +49,17 @@ class EWMCov(hk.Module):
         self.adjust = adjust
         self.assume_centered = assume_centered
 
-    def __call__(self, data):
+    def __call__(self, x, y=None):
         """Compute"""
-        x, y = data
+        if y is None:
+            import warnings
+
+            warnings.warn(
+                "x and y arguments may be passed directly"
+                "instead as a tuple argument. The tuple argument syntax"
+                "may be removed in the future."
+            )
+            x, y = x
         mean_xy = EWMA(self.alpha, self.adjust, initial_value=jnp.nan, name="mean_xy")(
             jnp.outer(x, y)
         )

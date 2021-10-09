@@ -29,7 +29,7 @@ from tqdm.auto import tqdm
 logger = logging.getLogger(__name__)
 
 
-class TransformedUnrollWithState(NamedTuple):
+class UnrollTransformedWithState(NamedTuple):
     init: Callable
     apply: Callable
 
@@ -90,13 +90,13 @@ def unroll_transform_with_state(
         return output_sequence, final_state
 
     if dynamic:
-        return TransformedUnrollWithState(init, dynamic_apply_fn)
+        return UnrollTransformedWithState(init, dynamic_apply_fn)
     else:
-        return TransformedUnrollWithState(init, static_apply_fn)
+        return UnrollTransformedWithState(init, static_apply_fn)
 
 
 def unroll(
-    fun: Union[Callable, hk.TransformedWithState, TransformedUnrollWithState],
+    fun: Union[Callable, hk.TransformedWithState, UnrollTransformedWithState],
     skip_first: bool = False,
     dynamic: bool = True,
     pbar: bool = False,
@@ -122,7 +122,7 @@ def unroll(
         apply_fn: wrapped function.
 
     """
-    if not isinstance(fun, TransformedUnrollWithState):
+    if not isinstance(fun, UnrollTransformedWithState):
         fun = unroll_transform_with_state(
             fun, skip_first=skip_first, dynamic=dynamic, pbar=pbar
         )

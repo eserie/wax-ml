@@ -19,6 +19,8 @@ import jax
 import jax.numpy as jnp
 import optax
 
+from wax.modules import FillNanInf
+
 
 class ParamsState(NamedTuple):
     params: Any
@@ -33,7 +35,14 @@ class OnlineSupervisedLearnerInfo(NamedTuple):
 class OnlineSupervisedLearner(hk.Module):
     """Online supervised learner."""
 
-    def __init__(self, model: Any, opt: Any, loss: Callable, name: str = None):
+    def __init__(
+        self,
+        model: Any,
+        opt: Any,
+        loss: Callable,
+        grads_fill_nan_inf=True,
+        name: str = None,
+    ):
         """Initialize module.
 
         Args:
@@ -41,11 +50,14 @@ class OnlineSupervisedLearner(hk.Module):
             opt : optimizer.
             loss : loss function.
             name : name of the module
+            grads_fill_nan_inf: if true, fill nan and
+                +/- infinite values in gradients with zeros.
         """
         super().__init__(name=name)
         self.model = model
         self.opt = opt
         self.loss = loss
+        self.grads_fill_nan_inf = grads_fill_nan_inf
 
     def __call__(
         self, x: jnp.ndarray, y: jnp.ndarray
@@ -72,6 +84,9 @@ class OnlineSupervisedLearner(hk.Module):
 
         # compute loss and gradients
         l, grads = jax.value_and_grad(_loss)(params, state, x, y)
+
+        if self.grads_fill_nan_inf:
+            grads = FillNanInf()(grads)
 
         # compute prediction and update model state
         y_pred, state = self.model.apply(params, state, None, x)

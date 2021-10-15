@@ -126,18 +126,31 @@ Let's setup an online model to try to learn the dynamic of the time-series.
 
 ```python
 # %load ../../wax/modules/snarimax.py
-
-
 class SNARIMAX(hk.Module):
+    """SNARIMAX Adaptive filter.
+
+    It can be used to forecast timeseries with a ARMA dynamic using online learning as described in [^1].
+
+    The API of this module is similar to the one of SNARIMAX model in the river Python library.
+
+    References
+    ----------
+    [^1] [Anava, O., Hazan, E., Mannor, S. and Shamir, O., 2013, June.
+    Online learning for time series prediction. In Conference on learning theory (pp. 172-184)]
+    (https://arxiv.org/pdf/1302.6927.pdf)
+
+    """
+
     def __init__(
         self,
         p: int,  # AR
-        d: int,
+        d: int,  # differenciate
         q: int,  # MA
         m: int = 1,  # Seasonal part
         sp: int = 0,  # Seasonal AR
         sd: int = 0,
         sq: int = 0,  # Seasonal MA
+        model=None,
         name=None,
     ):
         super().__init__(name=name)
@@ -148,6 +161,7 @@ class SNARIMAX(hk.Module):
         self.sp = sp
         self.sd = sd
         self.sq = sq
+        self.model = model if model is not None else hk.Linear(1, with_bias=False)
 
     def __call__(self, y, X=None):
         yp = Buffer(self.p + 1, name="y_trues")(y)[1:]
@@ -163,11 +177,12 @@ class SNARIMAX(hk.Module):
         X = jnp.concatenate(X)
         X = FillNanInf()(X)
 
-        y_pred = hk.Linear(1, with_bias=False)(X).reshape(y.shape)
+        y_pred = self.model(X).reshape(y.shape)
         err = y - y_pred
         errp = Buffer(self.q + 1, name="err_lag")(err)[1:]
         hk.set_state("errp", errp)
         return y_pred, {}
+
 ```
 
 First let's run the filter with it's initial random weights.
@@ -185,7 +200,6 @@ params, state = sim.init(rng, y)
 
 pd.Series((y - y_pred)).plot()
 ```
-
 
 ```python
 def evaluate(y_pred, y):
@@ -233,9 +247,9 @@ params
 
 ```python
 def project_params(params):
-    w = params["snarimax/linear"]["w"]
+    w = params["snarimax/~/linear"]["w"]
     w = jnp.clip(w, -1, 1)
-    params["snarimax/linear"]["w"] = w
+    params["snarimax/~/linear"]["w"] = w
     return params
 
 
@@ -430,7 +444,7 @@ pd.DataFrame(gym_info.agent.optim.loss).mean().expanding().mean().plot(
 
 ```python
 i_batch = 0
-w = gym_info.agent.optim.updated_params["snarimax/linear"]["w"][i_batch, :, :, 0]
+w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"][i_batch, :, :, 0]
 w = pd.DataFrame(w)
 
 ax = w.plot(title=f"weights on batch {i_batch}")
@@ -444,7 +458,7 @@ w.iloc[-1][::-1].plot(kind="bar")
 ```
 
 ```python
-w = gym_info.agent.optim.updated_params["snarimax/linear"]["w"].mean(axis=0)[:, :, 0]
+w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"].mean(axis=0)[:, :, 0]
 w = pd.DataFrame(w)
 ax = w.plot(title="averaged weights (over batches)")
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -492,7 +506,7 @@ pd.DataFrame(gym_info.agent.optim.loss).mean(1).expanding().mean().plot(
 
 ```python
 i_batch = 0
-w = gym_info.agent.optim.updated_params["snarimax/linear"]["w"][:, i_batch, :, 0]
+w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"][:, i_batch, :, 0]
 w = pd.DataFrame(w)
 
 ax = w.plot(title=f"weights on batch {i_batch}")
@@ -506,7 +520,7 @@ w.iloc[-1][::-1].plot(kind="bar")
 ```
 
 ```python
-w = gym_info.agent.optim.updated_params["snarimax/linear"]["w"].mean(axis=1)[:, :, 0]
+w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"].mean(axis=1)[:, :, 0]
 w = pd.DataFrame(w)
 ax = w.plot(title="averaged weights (over batches)")
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -541,7 +555,7 @@ pd.Series(-gym_output.reward).expanding().mean().plot(ylim=(0.09, 0.15))
 ```
 
 ```python
-w = gym_info.agent.optim.updated_params["snarimax/linear"]["w"][:, :, 0]
+w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"][:, :, 0]
 w = pd.DataFrame(w)
 ax = w.plot(title="averaged weights (over batches)")
 ax.legend(bbox_to_anchor=(1.0, 1.0))

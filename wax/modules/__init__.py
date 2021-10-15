@@ -14,6 +14,7 @@
 
 
 from wax.modules.apply_mask import ApplyMask
+from wax.modules.arma import ARMA
 from wax.modules.buffer import Buffer
 from wax.modules.diff import Diff
 from wax.modules.ewma import EWMA
@@ -28,10 +29,14 @@ from wax.modules.mask_mean import MaskMean
 from wax.modules.mask_normalize import MaskNormalize
 from wax.modules.mask_std import MaskStd
 from wax.modules.ohlc import OHLC
+from wax.modules.online_optimizer import OnlineOptimizer
 from wax.modules.online_supervised_learner import OnlineSupervisedLearner
 from wax.modules.pct_change import PctChange
 from wax.modules.rolling_mean import RollingMean
+from wax.modules.set_params import SetParams
+from wax.modules.snarimax import SNARIMAX
 from wax.modules.update_on_event import UpdateOnEvent
+from wax.modules.vmap import VMap
 
 __all__ = [
     "Buffer",
@@ -53,4 +58,9 @@ __all__ = [
     "MaskStd",
     "MaskNormalize",
     "OnlineSupervisedLearner",
+    "VMap",
+    "SetParams",
+    "ARMA",
+    "SNARIMAX",
+    "OnlineOptimizer",
 ]

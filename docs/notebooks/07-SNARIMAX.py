@@ -60,6 +60,7 @@ from wax.modules import (
 )
 from wax.optim import newton
 from wax.unroll import unroll_transform_with_state
+
 # -
 
 # # ARMA
@@ -182,7 +183,6 @@ class SNARIMAX(hk.Module):
         return y_pred, {}
 
 
-
 # First let's run the filter with it's initial random weights.
 
 # +
@@ -202,6 +202,7 @@ pd.Series((y - y_pred)).plot()
 # +
 def evaluate(y_pred, y):
     return jnp.linalg.norm(y_pred - y) ** 2, {}
+
 
 def lag(shift=1):
     def __call__(y, X=None):
@@ -318,7 +319,7 @@ class Env(hk.Module):
         beta = jnp.array([0.3, -0.2])
 
         y = ARMA(alpha, beta)(eps)
-        
+
         # prediction used on a fresh y observation.
         rw = -((y - y_pred) ** 2)
         return rw, y, {"y": y, "y_pred": y_pred}
@@ -327,9 +328,9 @@ class Env(hk.Module):
 # +
 def parametrized_learn_and_forecast(opt):
     def learn_and_forecast(y, X=None):
-        optim_res = OnlineOptimizer(predict_and_evaluate, opt, project_params=project_params)(
-            *lag(1)(y, X)
-        )
+        optim_res = OnlineOptimizer(
+            predict_and_evaluate, opt, project_params=project_params
+        )(*lag(1)(y, X))
 
         predict_params = optim_res.updated_params
 
@@ -451,7 +452,7 @@ w.iloc[-1][::-1].plot(kind="bar")
 
 # ## With VMap module
 #
-# We can use the wrapper module `VMap` of WAX-ML. It permits to have an ever simpler syntax. 
+# We can use the wrapper module `VMap` of WAX-ML. It permits to have an ever simpler syntax.
 
 
 # > Note: we have to swap in position of time and batch dimension in the generation of eps.

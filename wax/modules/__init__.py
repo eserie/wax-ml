@@ -16,6 +16,7 @@
 from wax.modules.apply_mask import ApplyMask
 from wax.modules.arma import ARMA
 from wax.modules.buffer import Buffer
+from wax.modules.counter import Counter
 from wax.modules.diff import Diff
 from wax.modules.ewma import EWMA
 from wax.modules.ewmcov import EWMCov
@@ -63,4 +64,5 @@ __all__ = [
     "ARMA",
     "SNARIMAX",
     "OnlineOptimizer",
+    "Counter",
 ]

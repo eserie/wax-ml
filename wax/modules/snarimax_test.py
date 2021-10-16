@@ -19,6 +19,7 @@ import jax.numpy as jnp
 import numpy as onp
 import optax
 import pandas as pd
+from optax._src.base import OptState
 
 from wax.modules import (
     ARMA,
@@ -26,7 +27,7 @@ from wax.modules import (
     GymFeedback,
     Lag,
     OnlineOptimizer,
-    SetParams,
+    UpdateParams,
     VMap,
 )
 from wax.optim.newton import newton
@@ -99,19 +100,29 @@ def build_env_agent():
 
                 return loss, dict(pred_info=pred_info, loss_info=loss_info)
 
-            def project_params(params):
+            def project_params(params: Any, opt_state: OptState = None):
                 w = params["snarimax/~/linear"]["w"]
                 w = jnp.clip(w, -1, 1)
                 params["snarimax/~/linear"]["w"] = w
                 return params
 
+            def split_params(params):
+                def filter_params(m, n, p):
+                    # print(m, n, p)
+                    return m == "snarimax/~/linear" and n == "w"
+
+                return hk.data_structures.partition(filter_params, params)
+
             optim_res = OnlineOptimizer(
-                model_with_loss, opt, project_params=project_params
+                model_with_loss,
+                opt,
+                project_params=project_params,
+                split_params=split_params,
             )(*lag(1)(y, X))
 
             predict_params = optim_res.updated_params
 
-            forecast, forecast_info = SetParams(predict)(predict_params, y, X)
+            forecast, forecast_info = UpdateParams(predict)(predict_params, y, X)
             return forecast, ForecastInfo(optim_res, forecast_info)
 
         return learn_and_forecast
@@ -141,7 +152,7 @@ def test_gym_lopp():
     params, state = sim.init(rng, eps)
     (gym, info), state = sim.apply(params, state, rng, eps)
     # pd.Series(-gym.reward).expanding().mean().plot(label="AR(10) model")
-    assert 18 > -gym.reward.sum() > 0
+    assert -gym.reward.sum() > 0
 
 
 def test_scan_hyper_params():

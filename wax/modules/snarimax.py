@@ -21,13 +21,45 @@ from wax.modules.fill_nan_inf import FillNanInf
 class SNARIMAX(hk.Module):
     """SNARIMAX Adaptive filter.
 
-    It can be used to forecast timeseries with a ARMA dynamic using online learning as described in [^1].
+    It can be used to forecast timeseries with a ARMA dynamic using the online learning
+    method as described in [^4].
 
     The API of this module is similar to the one of SNARIMAX model in the river Python library.
 
+    Parameters
+    ----------
+    p
+        Order of the autoregressive part. This is the number of past target values that will be
+        included as features.
+    d
+        Differencing order.
+    q
+        Order of the moving average part. This is the number of past error terms that will be
+        included as features.
+    m
+        Season length used for extracting seasonal features. If you believe your data has a
+        seasonal pattern, then set this accordingly. For instance, if the data seems to exhibit
+        a yearly seasonality, and that your data is spaced by month, then you should set this
+        to 12. Note that for this parameter to have any impact you should also set at least one
+        of the `p`, `d`, and `q` parameters.
+    sp
+        Seasonal order of the autoregressive part. This is the number of past target values
+        that will be included as features.
+    sd
+        Seasonal differencing order.
+    sq
+        Seasonal order of the moving average part. This is the number of past error terms that
+        will be included as features.
+
+    regressor
+        The online regression model to use. By default, a haiku `Linear` module.
+
     References
     ----------
-    [^1] [Anava, O., Hazan, E., Mannor, S. and Shamir, O., 2013, June.
+    [^1]: [Wikipedia page on ARMA](https://www.wikiwand.com/en/Autoregressive%E2%80%93moving-average_model)
+    [^2]: [Wikipedia page on NARX](https://www.wikiwand.com/en/Nonlinear_autoregressive_exogenous_model)
+    [^3]: [ARIMA models](https://otexts.com/fpp2/arima.html)
+    [^4] [Anava, O., Hazan, E., Mannor, S. and Shamir, O., 2013, June.
     Online learning for time series prediction. In Conference on learning theory (pp. 172-184)]
     (https://arxiv.org/pdf/1302.6927.pdf)
 
@@ -35,14 +67,14 @@ class SNARIMAX(hk.Module):
 
     def __init__(
         self,
-        p: int,  # AR
-        d: int,  # differenciate
-        q: int,  # MA
-        m: int = 1,  # Seasonal part
-        sp: int = 0,  # Seasonal AR
+        p: int,
+        d: int = 0,
+        q: int = 0,
+        m: int = 1,
+        sp: int = 0,
         sd: int = 0,
-        sq: int = 0,  # Seasonal MA
-        model=None,
+        sq: int = 0,
+        regressor=None,
         name=None,
     ):
         super().__init__(name=name)
@@ -53,7 +85,7 @@ class SNARIMAX(hk.Module):
         self.sp = sp
         self.sd = sd
         self.sq = sq
-        self.model = model if model is not None else hk.Linear(1, with_bias=False)
+        self.regressor = regressor if regressor is not None else hk.Linear(1)
 
     def __call__(self, y, X=None):
         yp = Buffer(self.p + 1, name="y_trues")(y)[1:]
@@ -69,7 +101,7 @@ class SNARIMAX(hk.Module):
         X = jnp.concatenate(X)
         X = FillNanInf()(X)
 
-        y_pred = self.model(X).reshape(y.shape)
+        y_pred = self.regressor(X).reshape(y.shape)
         err = y - y_pred
         errp = Buffer(self.q + 1, name="err_lag")(err)[1:]
         hk.set_state("errp", errp)

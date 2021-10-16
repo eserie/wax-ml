@@ -15,7 +15,7 @@ jupyter:
 ---
 
 <!-- #region -->
-# Online learning for time series prediction
+# 🔄 Online learning for time series prediction 🔄
 
 We implement the online learning filter developped in [1] and reproduce
 the "setting 1" in the paper.
@@ -51,15 +51,16 @@ import numpy as onp
 import optax
 import pandas as pd
 import seaborn as sns
+from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
 from wax.modules import (
-    Buffer,
-    FillNanInf,
+    ARMA,
+    SNARIMAX,
     GymFeedback,
     Lag,
     OnlineOptimizer,
-    SetParams,
+    UpdateParams,
     VMap,
 )
 from wax.optim import newton
@@ -70,40 +71,6 @@ from wax.unroll import unroll_transform_with_state
 # ARMA
 
 
-```python
-# %load ../../wax/modules/arma.py
-
-
-class ARMA(hk.Module):
-    def __init__(self, alpha, beta, name=None):
-        super().__init__(name=name)
-        self.alpha = alpha
-        self.beta = beta
-
-    def __call__(self, eps):
-        eps_buffer = Buffer(len(self.beta) + 1, 0.0, name="eps_buffer")(eps)[:-1]
-
-        y_buffer = hk.get_state(
-            "y_buffer",
-            eps.shape,
-            eps.dtype,
-            init=lambda shape, dtype: jnp.zeros(
-                ((len(self.alpha),) + shape), dtype=dtype
-            ),
-        )
-
-        y = self.alpha @ y_buffer + self.beta @ eps_buffer + eps
-
-        y = FillNanInf()(y)
-
-        # reshape with shape of eps (for scalar case)
-        y = y.reshape(eps.shape)
-
-        y_buffer = Buffer(len(self.alpha), 0, name="y_buffer")(y)
-
-        hk.set_state("y_buffer", y_buffer)
-        return y
-```
 
 Let's generate a sample of the "setting 1" of [1]:
 
@@ -125,65 +92,6 @@ y.shape
 
 Let's setup an online model to try to learn the dynamic of the time-series.
 
-```python
-# %load ../../wax/modules/snarimax.py
-class SNARIMAX(hk.Module):
-    """SNARIMAX Adaptive filter.
-
-    It can be used to forecast timeseries with a ARMA dynamic using online learning as described in [^1].
-
-    The API of this module is similar to the one of SNARIMAX model in the river Python library.
-
-    References
-    ----------
-    [^1] [Anava, O., Hazan, E., Mannor, S. and Shamir, O., 2013, June.
-    Online learning for time series prediction. In Conference on learning theory (pp. 172-184)]
-    (https://arxiv.org/pdf/1302.6927.pdf)
-
-    """
-
-    def __init__(
-        self,
-        p: int,  # AR
-        d: int,  # differenciate
-        q: int,  # MA
-        m: int = 1,  # Seasonal part
-        sp: int = 0,  # Seasonal AR
-        sd: int = 0,
-        sq: int = 0,  # Seasonal MA
-        model=None,
-        name=None,
-    ):
-        super().__init__(name=name)
-        self.p = p
-        self.d = d
-        self.q = q
-        self.m = m
-        self.sp = sp
-        self.sd = sd
-        self.sq = sq
-        self.model = model if model is not None else hk.Linear(1, with_bias=False)
-
-    def __call__(self, y, X=None):
-        yp = Buffer(self.p + 1, name="y_trues")(y)[1:]
-
-        errp = hk.get_state(
-            "errp",
-            [],
-            init=lambda *_: jnp.full((self.q + 1,) + y.shape, 0.0, y.dtype)[1:],
-        )
-
-        X = [X] if X is not None else []
-        X += [errp.flatten(), yp.flatten()]
-        X = jnp.concatenate(X)
-        X = FillNanInf()(X)
-
-        y_pred = self.model(X).reshape(y.shape)
-        err = y - y_pred
-        errp = Buffer(self.q + 1, name="err_lag")(err)[1:]
-        hk.set_state("errp", errp)
-        return y_pred, {}
-```
 
 First let's run the filter with it's initial random weights.
 
@@ -247,7 +155,7 @@ params
 ## Setup projection
 
 ```python
-def project_params(params):
+def project_params(params, opt_state=None):
     w = params["snarimax/~/linear"]["w"]
     w = jnp.clip(w, -1, 1)
     params["snarimax/~/linear"]["w"] = w
@@ -299,7 +207,7 @@ def learn_and_forecast(y, X=None):
 
     predict_params = optim_res.updated_params
 
-    forecast, forecast_info = SetParams(predict)(predict_params, y, X)
+    forecast, forecast_info = UpdateParams(predict)(predict_params, y, X)
     return forecast, ForecastInfo(optim_res, forecast_info)
 ```
 
@@ -344,7 +252,7 @@ def parametrized_learn_and_forecast(opt):
 
         predict_params = optim_res.updated_params
 
-        forecast, forecast_info = SetParams(predict)(predict_params, y, X)
+        forecast, forecast_info = UpdateParams(predict)(predict_params, y, X)
         return forecast, ForecastInfo(optim_res, forecast_info)
 
     return learn_and_forecast

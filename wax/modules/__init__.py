@@ -33,9 +33,9 @@ from wax.modules.online_optimizer import OnlineOptimizer
 from wax.modules.online_supervised_learner import OnlineSupervisedLearner
 from wax.modules.pct_change import PctChange
 from wax.modules.rolling_mean import RollingMean
-from wax.modules.set_params import SetParams
 from wax.modules.snarimax import SNARIMAX
 from wax.modules.update_on_event import UpdateOnEvent
+from wax.modules.update_params import UpdateParams
 from wax.modules.vmap import VMap
 
 __all__ = [
@@ -59,7 +59,7 @@ __all__ = [
     "MaskNormalize",
     "OnlineSupervisedLearner",
     "VMap",
-    "SetParams",
+    "UpdateParams",
     "ARMA",
     "SNARIMAX",
     "OnlineOptimizer",

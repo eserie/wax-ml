@@ -19,6 +19,7 @@ import jax
 import jax.numpy as jnp
 import optax
 from jax.tree_util import tree_map
+from optax import GradientTransformation
 
 
 class ParamsState(NamedTuple):
@@ -49,21 +50,21 @@ class OnlineOptimizer(hk.Module):
     def __init__(
         self,
         model: Union[Callable, hk.TransformedWithState],
-        opt: Any,
-        split_params: Callable = None,
+        opt: GradientTransformation,
         project_params: Callable = None,
         regularize_loss: Callable = None,
+        split_params: Callable = None,
         name: str = None,
     ):
         """Initialize module.
 
         Args:
             model : model to optimize. The model should return a tuple (loss, info)
-            opt : optimizer.
+            opt : optimizer: Optax transformation consisting of a function pair: (initialise, update).
+            project_params : function to project parameters. It applies to parameters and optimizer state .
+            regularize_loss: function to regularize the model loss. It applies to the parameters.
             split_params: function to split params in trainable and non-trainable params.
                 See https://dm-haiku.readthedocs.io/en/latest/notebooks/non_trainable.html
-            project_params : function to project parameters
-            regularize_loss: function applied to parameters which will be added to the model loss.
             name : name of the module
         """
         super().__init__(name=name)
@@ -73,13 +74,13 @@ class OnlineOptimizer(hk.Module):
             else hk.transform_with_state(model)
         )
         self.opt = opt
+        self.project_params = project_params
+        self.regularize_loss = regularize_loss
         self.split_params = (
             split_params
             if split_params is not None
             else lambda params: (params, type(params)())
         )
-        self.project_params = project_params
-        self.regularize_loss = regularize_loss
 
     def __call__(self, *args, **kwargs):
         """Update learner.
@@ -138,7 +139,9 @@ class OnlineOptimizer(hk.Module):
         updated_trainable_params = optax.apply_updates(trainable_params, updated_grads)
 
         if self.project_params:
-            updated_trainable_params = self.project_params(updated_trainable_params)
+            updated_trainable_params = self.project_params(
+                updated_trainable_params, opt_state
+            )
 
         updated_params = hk.data_structures.merge(
             updated_trainable_params, non_trainable_params

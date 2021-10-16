@@ -14,7 +14,7 @@
 import haiku as hk
 
 
-class SetParams(hk.Module):
+class UpdateParams(hk.Module):
     def __init__(self, fun, name=None):
         super().__init__(name=name)
         self.fun = (

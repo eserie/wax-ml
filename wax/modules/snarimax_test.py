@@ -1,3 +1,5 @@
+from functools import partial
+
 # Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,6 +89,16 @@ def lag(shift=1):
     return __call__
 
 
+def add_batch(fun, take_mean=True):
+    def fun_batch(*args, **kwargs):
+        res = VMap(fun)(*args, **kwargs)
+        if take_mean:
+            res = jax.tree_map(lambda x: x.mean(axis=0), res)
+        return res
+
+    return fun_batch
+
+
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
         time_series_model = lambda y, X: SNARIMAX(10)(y, X)
@@ -132,17 +144,22 @@ def build_agent(time_series_model=None, opt=None):
 
             return hk.data_structures.partition(filter_params, params)
 
-        optim_res = OnlineOptimizer(
-            model_with_loss,
-            opt,
-            project_params=project_params,
-            split_params=split_params,
-        )(*lag(1)(y, X))
+        def learn_and_forecast(y, X=None):
+            optim_res = OnlineOptimizer(
+                model_with_loss,
+                opt,
+                project_params=project_params,
+                split_params=split_params,
+            )(*lag(1)(y, X))
 
-        predict_params = optim_res.updated_params
+            predict_params = optim_res.updated_params
 
-        y_pred, forecast_info = UpdateParams(time_series_model)(predict_params, y, X)
-        return y_pred, AgentInfo(optim_res, forecast_info)
+            y_pred, forecast_info = UpdateParams(time_series_model)(
+                predict_params, y, X
+            )
+            return y_pred, AgentInfo(optim_res, forecast_info)
+
+        return learn_and_forecast(y, X)
 
     return agent
 
@@ -159,6 +176,7 @@ def run_scan_hyper_params(env):
     HPARAMS_idx = pd.MultiIndex.from_product([STEP_SIZE, EPS])
     HPARAMS = jnp.stack(list(map(onp.array, HPARAMS_idx)))
 
+    @partial(add_batch, take_mean=False)
     def gym_loop_scan_hparams(eps):
         def scan_params(hparams):
             step_size, newton_eps = hparams
@@ -167,12 +185,7 @@ def run_scan_hyper_params(env):
 
         return VMap(scan_params)(HPARAMS)
 
-    def gym_loop_scan_hparams_batch(eps):
-        # uncomment to take the mean
-        # return jax.tree_map(lambda x: x.mean(axis=0), VMap(batch_eps)(eps))
-        return VMap(gym_loop_scan_hparams)(eps)
-
-    sim = unroll_transform_with_state(gym_loop_scan_hparams_batch)
+    sim = unroll_transform_with_state(gym_loop_scan_hparams)
     rng = jax.random.PRNGKey(42)
     eps = jax.random.normal(rng, (n_time_step, n_batches)) * 0.3
 

@@ -648,3 +648,7 @@ ax.legend(bbox_to_anchor=(1.0, 1.0))
 # In addition, we note that
 # - adam does not perform well in this online setting.
 # - adagrad performormance is between newton and sgd.
+
+# # Wrapup of everithing
+#
+# In notebook [](), we wrapup the whole thing in one function which prepare an environment and an agent for training and then will play with different settings.

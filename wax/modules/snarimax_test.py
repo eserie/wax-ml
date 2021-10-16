@@ -140,7 +140,7 @@ def build_env_agent():
     return Env, Agent
 
 
-def test_gym_lopp():
+def test_gym_loop():
     Env, Agent = build_env_agent()
 
     def gym_loop(eps):

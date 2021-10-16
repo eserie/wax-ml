@@ -16,8 +16,11 @@
 
 # # 🔄 Online learning for time series prediction 🔄
 #
-# We implement the online learning filter developped in [1] and reproduce
-# the "setting 1" in the paper.
+# We implement the online learning filter developped in [1].
+#
+# In the first part of this notebook, we reproduce
+# the "setting 1" of the paper and introduce the functions implemented in WAX-ML.
+# We finally reproduce the other settings (2, 3, 4) which permit to see how differnet algorithms behave in more challenging environments.
 #
 #
 # We use the following modules from WAX-ML:
@@ -211,61 +214,120 @@ params, state = sim.init(rng, y)
 pd.Series(info.optim.loss).expanding().mean().plot()
 # -
 
-# # Simulation Environment
-
 # # Gym simulation
 
-# ## GymFeedback
+# ## Environment
 
-
-class Env(hk.Module):
-    def __call__(self, y_pred, eps):
-        alpha = jnp.array([0.6, -0.5, 0.4, -0.4, 0.3])
-        beta = jnp.array([0.3, -0.2])
-
-        y = ARMA(alpha, beta)(eps)
-
-        # prediction used on a fresh y observation.
-        rw = -((y - y_pred) ** 2)
-        return rw, y, {"y": y, "y_pred": y_pred}
-
+# let's build an environment corresponding to "setting 1" in [1]
 
 # +
-def parametrized_learn_and_forecast(opt):
-    def learn_and_forecast(y, X=None):
-        optim_res = OnlineOptimizer(
-            predict_and_evaluate, opt, project_params=project_params
-        )(*lag(1)(y, X))
-
-        predict_params = optim_res.updated_params
-
-        forecast, forecast_info = UpdateParams(predict)(predict_params, y, X)
-        return forecast, ForecastInfo(optim_res, forecast_info)
-
-    return learn_and_forecast
 
 
-class Agent(hk.Module):
-    def __init__(self, opt=None, name=None):
-        super().__init__(name=name)
-        self.opt = opt if opt is not None else optax.sgd(1.0e-3)
+def build_env():
+    def env(action, obs):
+        y_pred, eps = action, obs
+        ar_coefs = jnp.array([0.6, -0.5, 0.4, -0.4, 0.3])
+        ma_coefs = jnp.array([0.3, -0.2])
 
-    def __call__(self, y):
-        y_pred, info = parametrized_learn_and_forecast(self.opt)(y)
-        return y_pred, info
+        y = ARMA(ar_coefs, ma_coefs)(eps)
+        # prediction used on a fresh y observation.
+        rw = -((y - y_pred) ** 2)
+
+        env_info = {"y": y, "y_pred": y_pred}
+        obs = y
+        return rw, obs, env_info
+
+    return env
+
+
+# -
+
+env = build_env()
+
+
+# ## Agent
+
+from optax._src.base import OptState
+
+# +
+
+
+def build_agent(time_series_model=None, opt=None):
+    if time_series_model is None:
+        time_series_model = lambda y, X: SNARIMAX(10)(y, X)
+
+    if opt is None:
+        opt = optax.sgd(1.0e-3)
+
+    class AgentInfo(NamedTuple):
+        optim: Any
+        forecast: Any
+
+    class ModelWithLossInfo(NamedTuple):
+        pred: Any
+        loss: Any
+
+    def agent(obs):
+        if isinstance(obs, tuple):
+            y, X = obs
+        else:
+            y = obs
+            X = None
+
+        def evaluate(y_pred, y):
+            return jnp.linalg.norm(y_pred - y) ** 2, {}
+
+        def model_with_loss(y, X=None):
+            # predict with lagged data
+            y_pred, pred_info = time_series_model(*lag(1)(y, X))
+
+            # evaluate loss with actual data
+            loss, loss_info = evaluate(y_pred, y)
+
+            return loss, ModelWithLossInfo(pred_info, loss_info)
+
+        def project_params(params: Any, opt_state: OptState = None):
+            del opt_state
+            return jax.tree_map(lambda w: jnp.clip(w, -1, 1), params)
+
+        def split_params(params):
+            def filter_params(m, n, p):
+                # print(m, n, p)
+                return m.endswith("snarimax/~/linear") and n == "w"
+
+            return hk.data_structures.partition(filter_params, params)
+
+        def learn_and_forecast(y, X=None):
+            optim_res = OnlineOptimizer(
+                model_with_loss,
+                opt,
+                project_params=project_params,
+                split_params=split_params,
+            )(*lag(1)(y, X))
+
+            predict_params = optim_res.updated_params
+
+            y_pred, forecast_info = UpdateParams(time_series_model)(
+                predict_params, y, X
+            )
+            return y_pred, AgentInfo(optim_res, forecast_info)
+
+        return learn_and_forecast(y, X)
+
+    return agent
 
 
 # -
 
 
+agent = build_agent()
+
+
+# ## Gym loop
+
+
 def gym_loop(eps):
-    return GymFeedback(
-        Agent(),
-        Env(),
-        return_obs=True,
-        return_action=True,
-        init_action=jnp.array(0.0),
-    )(eps)
+    return GymFeedback(agent, env)(eps)
 
 
 rng = jax.random.PRNGKey(42)
@@ -281,6 +343,8 @@ pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(0.09, 0.15))
 
 
 # We see that the agent suffers the same loss as the environment but with a time lag.
+
+# # Batch simulations
 
 # ## Average over 20 experiments
 
@@ -413,17 +477,24 @@ w.iloc[-1][::-1].plot(kind="bar")
 
 # -
 
-# # Taking mean inside simulation
+# ## Taking mean inside simulation
 
 # +
 # %%time
-def batched_gym_loop(eps):
-    res = VMap(gym_loop)(eps)
-    res = jax.tree_map(lambda x: x.mean(axis=0), res)
-    return res
 
 
-sim = unroll_transform_with_state(batched_gym_loop)
+def add_batch(fun, take_mean=True):
+    def fun_batch(*args, **kwargs):
+        res = VMap(fun)(*args, **kwargs)
+        if take_mean:
+            res = jax.tree_map(lambda x: x.mean(axis=0), res)
+        return res
+
+    return fun_batch
+
+
+gym_loop_batch = add_batch(gym_loop)
+sim = unroll_transform_with_state(gym_loop_batch)
 
 rng = jax.random.PRNGKey(42)
 eps = jax.random.normal(rng, (10000, 20)) * 0.3
@@ -473,18 +544,14 @@ OPTIMIZERS = [optax.sgd, optax.adam, optax.adagrad]
 res = {}
 for optimizer in tqdm(OPTIMIZERS):
 
-    def gym_loop_scan_hyper_param(eps):
-        def batch_eps(eps):
-            def scan_params(step_size):
-                opt = optimizer(step_size)
-                return GymFeedback(Agent(opt), Env())(eps)
+    def gym_loop_scan_hparams(eps):
+        def scan_params(step_size):
+            return GymFeedback(build_agent(opt=optimizer(step_size)), env)(eps)
 
-            res = VMap(scan_params)(STEP_SIZE)
-            return res
+        res = VMap(scan_params)(STEP_SIZE)
+        return res
 
-        return jax.tree_map(lambda x: x.mean(axis=0), VMap(batch_eps)(eps))
-
-    sim = unroll_transform_with_state(gym_loop_scan_hyper_param)
+    sim = unroll_transform_with_state(add_batch(gym_loop_scan_hparams))
     rng = jax.random.PRNGKey(42)
     eps = jax.random.normal(rng, (10000, 40)) * 0.3
 
@@ -530,15 +597,14 @@ pd.Series(BEST_STEP_SIZE).plot(kind="bar", logy=True)
 
 # +
 # %%time
-def gym_loop_scan_hyper_param(eps):
-    def batch_eps(eps):
-        opt = newton(0.05, eps=20.0)
-        return GymFeedback(Agent(opt), Env())(eps)
-
-    return jax.tree_map(lambda x: x.mean(axis=0), VMap(batch_eps)(eps))
 
 
-sim = unroll_transform_with_state(gym_loop_scan_hyper_param)
+@add_batch
+def gym_loop_newton(eps):
+    return GymFeedback(build_agent(opt=newton(0.05, eps=20.0)), env)(eps)
+
+
+sim = unroll_transform_with_state(gym_loop_newton)
 rng = jax.random.PRNGKey(42)
 eps = jax.random.normal(rng, (10000, 20)) * 0.3
 
@@ -561,21 +627,17 @@ HPARAMS_idx = pd.MultiIndex.from_product([STEP_SIZE, EPS])
 HPARAMS = jnp.stack(list(map(onp.array, HPARAMS_idx)))
 
 
-def gym_loop_scan_hyper_param(eps):
-    def batch_eps(eps):
-        def scan_params(hparams):
-            step_size, newton_eps = hparams
-            opt = newton(step_size, eps=newton_eps)
+@add_batch
+def gym_loop_scan_hparams(eps):
+    def scan_params(hparams):
+        step_size, newton_eps = hparams
+        agent = build_agent(opt=newton(step_size, eps=newton_eps))
+        return GymFeedback(agent, env)(eps)
 
-            return GymFeedback(Agent(opt), Env())(eps)
-
-        res = VMap(scan_params)(HPARAMS)
-        return res
-
-    return jax.tree_map(lambda x: x.mean(axis=0), VMap(batch_eps)(eps))
+    return VMap(scan_params)(HPARAMS)
 
 
-sim = unroll_transform_with_state(gym_loop_scan_hyper_param)
+sim = unroll_transform_with_state(gym_loop_scan_hparams)
 rng = jax.random.PRNGKey(42)
 eps = jax.random.normal(rng, (10000, 40)) * 0.3
 
@@ -643,12 +705,425 @@ ax = (
 )
 ax.legend(bbox_to_anchor=(1.0, 1.0))
 
+
 # In agreement with Hazan's paper, we see that Newton's algorithm performs much better than sgd.
 #
 # In addition, we note that
 # - adam does not perform well in this online setting.
 # - adagrad performormance is between newton and sgd.
 
-# # Wrapup of everithing
+# # Non-stationnary environment
+
+
+def scan_hparams_first_order():
+
+    STEP_SIZE_idx = pd.Index(onp.logspace(-4, 1, 30), name="step_size")
+    STEP_SIZE = jax.device_put(STEP_SIZE_idx.values)
+    OPTIMIZERS = [optax.sgd, optax.adam, optax.adagrad]
+
+    res = {}
+    for optimizer in tqdm(OPTIMIZERS):
+
+        def gym_loop_scan_hparams(eps):
+            def scan_params(step_size):
+                return GymFeedback(build_agent(opt=optimizer(step_size)), env)(eps)
+
+            res = VMap(scan_params)(STEP_SIZE)
+            return res
+
+        sim = unroll_transform_with_state(add_batch(gym_loop_scan_hparams))
+
+        params, state = sim.init(rng, eps)
+        _res, state = sim.apply(params, state, rng, eps)
+        res[optimizer.__name__] = _res
+
+    ax = None
+    BEST_STEP_SIZE = {}
+    BEST_GYM = {}
+    for name, (gym, info) in res.items():
+
+        loss = pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[-5000:].mean()
+
+        BEST_STEP_SIZE[name] = loss.idxmin()
+        best_idx = loss.reset_index(drop=True).idxmin()
+        BEST_GYM[name] = jax.tree_map(lambda x: x[:, best_idx], gym)
+
+        ax = loss[loss < 0.15].plot(logx=True, logy=False, ax=ax, label=name)
+    plt.legend()
+    return BEST_STEP_SIZE, BEST_GYM
+
+
+def scan_hparams_newton():
+    STEP_SIZE = pd.Index(onp.logspace(-2, 3, 10), name="step_size")
+    EPS = pd.Index(onp.logspace(-4, 3, 5), name="eps")
+
+    HPARAMS_idx = pd.MultiIndex.from_product([STEP_SIZE, EPS])
+    HPARAMS = jnp.stack(list(map(onp.array, HPARAMS_idx)))
+
+    @add_batch
+    def gym_loop_scan_hparams(eps):
+        def scan_params(hparams):
+            step_size, newton_eps = hparams
+            agent = build_agent(opt=newton(step_size, eps=newton_eps))
+            return GymFeedback(agent, env)(eps)
+
+        return VMap(scan_params)(HPARAMS)
+
+    sim = unroll_transform_with_state(gym_loop_scan_hparams)
+    params, state = sim.init(rng, eps)
+    res_newton, state = sim.apply(params, state, rng, eps)
+
+    gym_newton, info_newton = res_newton
+
+    loss_newton = pd.DataFrame(-gym_newton.reward, columns=HPARAMS_idx).mean().unstack()
+
+    loss_newton = (
+        pd.DataFrame(-gym_newton.reward, columns=HPARAMS_idx)
+        .iloc[-5000:]
+        .mean()
+        .unstack()
+    )
+
+    sns.heatmap(loss_newton[loss_newton < 0.4], annot=True, cmap="YlGnBu")
+
+    STEP_SIZE, NEWTON_EPS = loss_newton.stack().idxmin()
+
+    x = -gym_newton.reward[-5000:].mean(axis=0)
+    x = jax.ops.index_update(x, jnp.isnan(x), jnp.inf)
+    I_BEST_PARAM = jnp.argmin(x)
+
+    BEST_NEWTON_GYM = jax.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
+    print("Best newton parameters: ", STEP_SIZE, NEWTON_EPS)
+    return (STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM
+
+
+# # Setting 2
+
+# let's build an environment corresponding to "setting 2" in [1]
+
+# +
+from wax.modules import Counter
+
+T = int(1.0e4)
+
+
+def build_env_setting_2():
+    def env(action, obs):
+        y_pred, eps = action, obs
+        t = Counter()()
+        ar_coefs_1 = jnp.array([-0.4, -0.5, 0.4, 0.4, 0.1])
+        ar_coefs_2 = jnp.array([0.6, -0.4, 0.4, -0.5, 0.5])
+        alpha = t / T
+        ar_coefs = ar_coefs_1 * alpha + ar_coefs_2 * (1 - alpha)
+        ma_coefs = jnp.array([0.32, -0.2])
+
+        y = ARMA(ar_coefs, ma_coefs)(eps)
+        # prediction used on a fresh y observation.
+        rw = -((y - y_pred) ** 2)
+
+        env_info = {"y": y, "y_pred": y_pred}
+        obs = y
+        return rw, obs, env_info
+
+    return env
+
+
+# -
+
+# ## sample noise
+
+# +
+env = build_env_setting_2()
+rng = jax.random.PRNGKey(42)
+
+eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
+MIN_ERR = 0.0833
+# -
+
+
+BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
+
+(STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM = scan_hparams_newton()
+
+# +
+for name, gym in BEST_GYM.items():
+    pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
+        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.1)
+    )
+
+gym = BEST_NEWTON_GYM
+ax = (
+    pd.Series(-gym.reward)
+    .rolling(5000, min_periods=5000)
+    .mean()
+    .plot(
+        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+    )
+)
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+plt.title("Rolling mean of loss (5000) time-steps")
+# -
+
+for name, gym in BEST_GYM.items():
+    pd.Series(-gym.reward).expanding().mean().plot(
+        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.15)
+    )
+gym = BEST_NEWTON_GYM
+ax = (
+    pd.Series(-gym.reward)
+    .expanding()
+    .mean()
+    .plot(
+        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+    )
+)
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+
+
+# ## Sensibility to hyper parameters
 #
-# In notebook [](), we wrapup the whole thing in one function which prepare an environment and an agent for training and then will play with different settings.
+# If we choose the wrong hyper-parameters, we see that the agent can failed to capture the changing dynamic.
+
+# +
+# %%time
+
+
+@add_batch
+def gym_loop_newton(eps):
+    return GymFeedback(build_agent(opt=newton(0.1, eps=0.3)), env)(eps)
+
+
+sim = unroll_transform_with_state(gym_loop_newton)
+params, state = sim.init(rng, eps)
+(gym, info), state = sim.apply(params, state, rng, eps)
+
+pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
+
+
+# -
+
+
+# # Setting 3
+
+# let's build an environment corresponding to "setting 3" in [1]
+
+# +
+from wax.modules import Counter
+
+T = int(1.0e4)
+
+
+def build_env_setting_3():
+    def env(action, obs):
+        y_pred, eps = action, obs
+        t = Counter()()
+        ar_coefs_1 = jnp.array([0.6, -0.5, 0.4, -0.4, 0.3])
+        ar_coefs_2 = jnp.array([-0.4, -0.5, 0.4, 0.4, 0.1])
+
+        ar_coefs = jnp.where(t < T / 2, ar_coefs_1, ar_coefs_2)
+        ma_coefs_1 = jnp.array([0.3, -0.2])
+        ma_coefs_2 = jnp.array([-0.3, 0.2])
+        ma_coefs = jnp.where(t < T / 2, ma_coefs_1, ma_coefs_2)
+
+        y = ARMA(ar_coefs, ma_coefs)(eps)
+        # prediction used on a fresh y observation.
+        rw = -((y - y_pred) ** 2)
+
+        env_info = {"y": y, "y_pred": y_pred}
+        obs = y
+        return rw, obs, env_info
+
+    return env
+
+
+# -
+
+# ## sample noise
+
+# +
+env = build_env_setting_3()
+rng = jax.random.PRNGKey(42)
+
+eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
+MIN_ERR = 0.0833
+# -
+
+
+BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
+
+(STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM = scan_hparams_newton()
+
+# +
+for name, gym in BEST_GYM.items():
+    pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
+        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.1)
+    )
+
+gym = BEST_NEWTON_GYM
+ax = (
+    pd.Series(-gym.reward)
+    .rolling(5000, min_periods=5000)
+    .mean()
+    .plot(
+        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+    )
+)
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+plt.title("Rolling mean of loss (5000) time-steps")
+# -
+
+for name, gym in BEST_GYM.items():
+    pd.Series(-gym.reward).expanding().mean().plot(
+        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.15)
+    )
+gym = BEST_NEWTON_GYM
+ax = (
+    pd.Series(-gym.reward)
+    .expanding()
+    .mean()
+    .plot(
+        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+    )
+)
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+
+
+# ## Sensibility to hyper parameters
+#
+# If we choose the wrong hyper-parameters, we see that the agent can failed to capture the changing dynamic.
+
+# +
+# %%time
+
+
+@add_batch
+def gym_loop_newton(eps):
+    return GymFeedback(build_agent(opt=newton(0.1, eps=0.3)), env)(eps)
+
+
+sim = unroll_transform_with_state(gym_loop_newton)
+params, state = sim.init(rng, eps)
+(gym, info), state = sim.apply(params, state, rng, eps)
+
+pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
+
+
+# -
+
+
+# # Setting 4
+
+# let's build an environment corresponding to "setting 4" in [1]
+
+# +
+from wax.modules import Counter
+
+T = int(1.0e4)
+
+
+def build_env_setting_3():
+    def env(action, obs):
+        y_pred, eps = action, obs
+        t = Counter()()
+        ar_coefs = jnp.array([0.11, -0.5])
+
+        ma_coefs = jnp.array([0.41, -0.39, -0.685, 0.1])
+
+        rng = hk.next_rng_key()
+
+        prev_eps = hk.get_state("prev_eps", (1,), init=lambda *_: jnp.zeros_like(eps))
+        eps = prev_eps + eps  # jax.random.normal(rng, (1, 20))
+
+        hk.set_state("prev_eps", eps)
+
+        y = ARMA(ar_coefs, ma_coefs)(eps)
+        # prediction used on a fresh y observation.
+        rw = -((y - y_pred) ** 2)
+
+        env_info = {"y": y, "y_pred": y_pred}
+        obs = y
+        return rw, obs, env_info
+
+    return env
+
+
+# -
+
+#
+# ## sample noise
+
+# +
+env = build_env_setting_3()
+rng = jax.random.PRNGKey(42)
+
+eps = jax.random.normal(rng, (T, 20)) * 0.3
+MIN_ERR = 0.3 ** 2
+MAX_ERR = 0.22
+# -
+
+
+BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
+
+(STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM = scan_hparams_newton()
+
+# +
+for name, gym in BEST_GYM.items():
+    pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
+        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
+        ylim=(MIN_ERR, MAX_ERR),
+    )
+
+gym = BEST_NEWTON_GYM
+ax = (
+    pd.Series(-gym.reward)
+    .rolling(5000, min_periods=5000)
+    .mean()
+    .plot(
+        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+    )
+)
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+plt.title("Rolling mean of loss (5000) time-steps")
+# -
+
+for name, gym in BEST_GYM.items():
+    pd.Series(-gym.reward).expanding().mean().plot(
+        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
+        ylim=(MIN_ERR, MAX_ERR),
+    )
+gym = BEST_NEWTON_GYM
+ax = (
+    pd.Series(-gym.reward)
+    .expanding()
+    .mean()
+    .plot(
+        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+    )
+)
+ax.legend(bbox_to_anchor=(1.0, 1.0))
+
+
+# As noted in [1], the newton algorithm seems to be the only one to achieve an average error rate that converges to the variance of the noise (0.09).
+#
+
+# ## Sensibility to hyper parameters
+#
+
+# We observe that for too low value of the step size $\eta$,
+# the newton algorithm does not work anymore.
+
+# +
+# %%time
+
+
+@add_batch
+def gym_loop_newton(eps):
+    return GymFeedback(build_agent(opt=newton(0.18, eps=0.3)), env)(eps)
+
+
+sim = unroll_transform_with_state(gym_loop_newton)
+params, state = sim.init(rng, eps)
+(gym, info), state = sim.apply(params, state, rng, eps)
+
+pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
+

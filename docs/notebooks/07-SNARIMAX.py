@@ -21,7 +21,7 @@
 # In the first part of this notebook, we reproduce
 # the "setting 1" of [1] and show how to setup a training environment with WAX-ML to study improper learning of ARMA time-series models.
 #
-# We finally study how 
+# We finally study how
 # to reproduce the other settings (2, 3, 4) of [1], which are non-stationnary environments.
 #
 # We use the following modules from WAX-ML:
@@ -67,6 +67,7 @@ from wax.modules import (
 )
 from wax.optim import newton
 from wax.unroll import unroll_transform_with_state
+
 # -
 
 # # ARMA
@@ -1051,7 +1052,7 @@ sim = unroll_transform_with_state(gym_loop_newton)
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
 
-pd.Series(-gym.reward).expanding().mean().plot()#ylim=(MIN_ERR, MAX_ERR))
+pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, MAX_ERR))
 
 
 # -

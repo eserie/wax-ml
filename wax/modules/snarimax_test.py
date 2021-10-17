@@ -114,6 +114,7 @@ def add_batch(fun, take_mean=True):
 
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
+
         def time_series_model(y, X):
             return SNARIMAX(10)(y, X)
 

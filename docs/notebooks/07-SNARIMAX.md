@@ -983,7 +983,7 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
     ax = measure(BEST_NEWTON_GYM.reward).plot(
         ax=ax,
         color=COLORS[i],
-        label=f"(TRAIN) -  {name}    -    $\eta$={STEP_SIZE:.2e}",
+        label=f"(TRAIN) -  Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
         ylim=(MIN_ERR, MAX_ERR),
         style="--",
     )
@@ -992,7 +992,7 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
         ax=ax,
         color=COLORS[i],
         ylim=(MIN_ERR, MAX_ERR),
-        label=f"(VALIDATE) -  {name}    -    $\eta$={STEP_SIZE:.2e}",
+        label=f"(VALIDATE) - Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
     )
 
     plt.legend()
@@ -1082,12 +1082,9 @@ T = int(2.0e4)
 
 MIN_ERR = 0.09
 MAX_ERR = 0.15
-```
 
-```python
 env = build_env_setting_1()
 ```
-
 
 ```python
 BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
@@ -1109,9 +1106,7 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
 
-## Sensibility to hyper parameters
-
-If we choose the wrong hyper-parameters, we see that the agent can failed to capture the changing dynamic.
+## Fixed setting
 
 ```python
 %%time
@@ -1196,9 +1191,7 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
 
-## Sensibility to hyper parameters
-
-If we choose the wrong hyper-parameters, we see that the agent can failed to capture the changing dynamic.
+## Fixed setting
 
 ```python
 %%time
@@ -1286,9 +1279,7 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
 
-## Sensibility to hyper parameters
-
-If we choose the wrong hyper-parameters, we see that the agent can failed to capture the changing dynamic.
+## Fixed setting
 
 ```python
 %%time
@@ -1387,12 +1378,7 @@ As noted in [1], the newton algorithm seems to be the only one to achieve an ave
 
 
 
-## Sensibility to hyper parameters
-
-
-
-We observe that for too low value of the step size $\eta$,
-the newton algorithm does not work anymore.
+## Fixed setting
 
 ```python
 %%time

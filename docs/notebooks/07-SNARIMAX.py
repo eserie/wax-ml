@@ -19,9 +19,10 @@
 # We implement the online learning filter developped in [1].
 #
 # In the first part of this notebook, we reproduce
-# the "setting 1" of the paper and introduce the functions implemented in WAX-ML.
-# We finally reproduce the other settings (2, 3, 4) which permit to see how differnet algorithms behave in more challenging environments.
+# the "setting 1" of [1] and show how to setup a training environment with WAX-ML to study improper learning of ARMA time-series models.
 #
+# We finally study how 
+# to reproduce the other settings (2, 3, 4) of [1], which are non-stationnary environments.
 #
 # We use the following modules from WAX-ML:
 # - ARMA : to generate a modeled time-series
@@ -29,6 +30,8 @@
 # - GymFeedback: To setup a training loop.
 # - VMap: to add batch dimensions to the training loop
 # - optim.newton: a newton algorithm as used in [1] and developped in [2]. It extends optax optimizers.
+#
+# ## References
 #
 # [1] [Anava, O., Hazan, E., Mannor, S. and Shamir, O., 2013, June. Online learning for time series prediction. In Conference on learning theory (pp. 172-184)](https://arxiv.org/pdf/1302.6927.pdf)
 #
@@ -64,7 +67,6 @@ from wax.modules import (
 )
 from wax.optim import newton
 from wax.unroll import unroll_transform_with_state
-
 # -
 
 # # ARMA
@@ -249,7 +251,7 @@ env = build_env()
 
 from optax._src.base import OptState
 
-# +
+# + tags=[]
 
 
 def build_agent(time_series_model=None, opt=None):
@@ -712,7 +714,24 @@ ax.legend(bbox_to_anchor=(1.0, 1.0))
 # - adam does not perform well in this online setting.
 # - adagrad performormance is between newton and sgd.
 
-# # Non-stationnary environment
+# # Non-stationnary environments
+
+
+# We will now wrapup the study of an environment + agent in few analysis functions.
+#
+# We will then use them to perform the sam analysis on the non-stationnary setting proposed in [1], namely
+# - setting 2 : slowly varaying parameters.
+# - setting 3 : brutal variation of parameters.
+# - setting 4 : non-stationnary (random walk) noise.
+
+# ## Analysis functions
+
+# For each solver, we will select the best hyper parameters (step size $\eta$, $epsilon$) by mesuring the averaged loss over the 5000 first time steps.
+
+LEARN_TIME_SLICE = slice(5000, 10000)
+
+
+# ### First order solvers
 
 
 def scan_hparams_first_order():
@@ -720,6 +739,9 @@ def scan_hparams_first_order():
     STEP_SIZE_idx = pd.Index(onp.logspace(-4, 1, 30), name="step_size")
     STEP_SIZE = jax.device_put(STEP_SIZE_idx.values)
     OPTIMIZERS = [optax.sgd, optax.adam, optax.adagrad]
+
+    rng = jax.random.PRNGKey(42)
+    eps = sample_noise(rng)
 
     res = {}
     for optimizer in tqdm(OPTIMIZERS):
@@ -740,17 +762,81 @@ def scan_hparams_first_order():
     ax = None
     BEST_STEP_SIZE = {}
     BEST_GYM = {}
+
     for name, (gym, info) in res.items():
 
-        loss = pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[-5000:].mean()
+        loss = (
+            pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[LEARN_TIME_SLICE].mean()
+        )
 
         BEST_STEP_SIZE[name] = loss.idxmin()
-        best_idx = loss.reset_index(drop=True).idxmin()
+
+        best_idx = jnp.argmax(gym.reward[LEARN_TIME_SLICE].mean(axis=0))
         BEST_GYM[name] = jax.tree_map(lambda x: x[:, best_idx], gym)
 
-        ax = loss[loss < 0.15].plot(logx=True, logy=False, ax=ax, label=name)
+        ax = loss.plot(
+            logx=True, logy=False, ax=ax, label=name, ylim=(MIN_ERR, MAX_ERR)
+        )
     plt.legend()
+
     return BEST_STEP_SIZE, BEST_GYM
+
+
+# We will "cross-validate" the result by running the agent on new samples.
+
+CROSS_VAL_RNG = jax.random.PRNGKey(44)
+
+COLORS = sns.color_palette("hls")
+
+
+def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
+    plt.figure()
+    eps = sample_noise(CROSS_VAL_RNG)
+    CROSS_VAL_GYM = {}
+    ax = None
+
+    def measure(reward):
+        return pd.Series(-reward).rolling(5000, min_periods=5000).mean()
+
+    def measure(reward):
+        return pd.Series(-reward).expanding().mean()
+
+    for i, (name, gym) in enumerate(BEST_GYM.items()):
+        ax = measure(gym.reward).plot(
+            ax=ax,
+            color=COLORS[i],
+            label=(f"(TRAIN) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"),
+            style="--",
+        )
+    for i, optimizer in enumerate(tqdm(OPTIMIZERS)):
+
+        name = optimizer.__name__
+
+        def gym_loop(eps):
+            return GymFeedback(build_agent(opt=optimizer(BEST_STEP_SIZE[name])), env)(
+                eps
+            )
+
+        sim = unroll_transform_with_state(add_batch(gym_loop))
+
+        params, state = sim.init(rng, eps)
+        (gym, info), state = sim.apply(params, state, rng, eps)
+        CROSS_VAL_GYM[name] = gym
+
+        ax = measure(gym.reward).plot(
+            ax=ax,
+            color=COLORS[i],
+            ylim=(MIN_ERR, MAX_ERR),
+            label=(
+                f"(VALIDATE) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"
+            ),
+        )
+    plt.legend()
+
+    return CROSS_VAL_GYM
+
+
+# ### Newton solver
 
 
 def scan_hparams_newton():
@@ -770,6 +856,10 @@ def scan_hparams_newton():
         return VMap(scan_params)(HPARAMS)
 
     sim = unroll_transform_with_state(gym_loop_scan_hparams)
+
+    rng = jax.random.PRNGKey(42)
+    eps = sample_noise(rng)
+
     params, state = sim.init(rng, eps)
     res_newton, state = sim.apply(params, state, rng, eps)
 
@@ -779,7 +869,7 @@ def scan_hparams_newton():
 
     loss_newton = (
         pd.DataFrame(-gym_newton.reward, columns=HPARAMS_idx)
-        .iloc[-5000:]
+        .iloc[LEARN_TIME_SLICE]
         .mean()
         .unstack()
     )
@@ -788,7 +878,7 @@ def scan_hparams_newton():
 
     STEP_SIZE, NEWTON_EPS = loss_newton.stack().idxmin()
 
-    x = -gym_newton.reward[-5000:].mean(axis=0)
+    x = -gym_newton.reward[LEARN_TIME_SLICE].mean(axis=0)
     x = jax.ops.index_update(x, jnp.isnan(x), jnp.inf)
     I_BEST_PARAM = jnp.argmin(x)
 
@@ -797,28 +887,121 @@ def scan_hparams_newton():
     return (STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM
 
 
-# # Setting 2
+# +
 
-# let's build an environment corresponding to "setting 2" in [1]
+
+def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
+    (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
+    plt.figure()
+
+    eps = sample_noise(CROSS_VAL_RNG)
+    CROSS_VAL_GYM = {}
+    ax = None
+
+    def measure(reward):
+        return pd.Series(-reward).rolling(5000, min_periods=5000).mean()
+
+    def measure(reward):
+        return pd.Series(-reward).expanding().mean()
+
+    @add_batch
+    def gym_loop(eps):
+        agent = build_agent(opt=newton(STEP_SIZE, eps=NEWTON_EPS))
+        return GymFeedback(agent, env)(eps)
+
+    sim = unroll_transform_with_state(gym_loop)
+
+    rng = jax.random.PRNGKey(44)
+    eps = sample_noise(rng)
+    params, state = sim.init(rng, eps)
+    (gym, info), state = sim.apply(params, state, rng, eps)
+
+    ax = None
+    name = "Newton"
+    i = 3
+    ax = measure(BEST_NEWTON_GYM.reward).plot(
+        ax=ax,
+        color=COLORS[i],
+        label=f"(TRAIN) -  {name}    -    $\eta$={STEP_SIZE:.2e}",
+        ylim=(MIN_ERR, MAX_ERR),
+        style="--",
+    )
+
+    ax = measure(gym.reward).plot(
+        ax=ax,
+        color=COLORS[i],
+        ylim=(MIN_ERR, MAX_ERR),
+        label=f"(VALIDATE) -  {name}    -    $\eta$={STEP_SIZE:.2e}",
+    )
+
+    plt.legend()
+
+    return gym
+
+
+# -
+
+
+# ### Plot everithing
+
+
+def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
+
+    rng = jax.random.PRNGKey(43)
+    eps = sample_noise(rng)
+
+    MESURES = []
+
+    def measure(reward):
+        return pd.Series(-reward).rolling(5000, min_periods=5000).mean()
+
+    MESURES.append(("Rolling mean of loss (5000) time-steps", measure))
+
+    def measure(reward):
+        return pd.Series(-reward).expanding().mean()
+
+    MESURES.append(("Expanding means", measure))
+
+    for MEASURE_NAME, MEASUR_FUNC in MESURES:
+
+        plt.figure()
+
+        for i, (name, gym) in enumerate(BEST_GYM.items()):
+            MEASUR_FUNC(gym.reward).plot(
+                label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
+                ylim=(MIN_ERR, MAX_ERR),
+                color=COLORS[i],
+            )
+
+        i = 3
+        (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
+        gym = BEST_NEWTON_GYM
+        ax = MEASUR_FUNC(gym.reward).plot(
+            label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
+            ylim=(MIN_ERR, MAX_ERR),
+            color=COLORS[i],
+        )
+        ax.legend(bbox_to_anchor=(1.0, 1.0))
+        plt.title(MEASURE_NAME)
+
+
+# # Setting 1
+
+# let's wrapup the results for the "setting 1" in [1]
 
 # +
 from wax.modules import Counter
 
-T = int(1.0e4)
 
-
-def build_env_setting_2():
+def build_env_setting_1():
     def env(action, obs):
         y_pred, eps = action, obs
-        t = Counter()()
-        ar_coefs_1 = jnp.array([-0.4, -0.5, 0.4, 0.4, 0.1])
-        ar_coefs_2 = jnp.array([0.6, -0.4, 0.4, -0.5, 0.5])
-        alpha = t / T
-        ar_coefs = ar_coefs_1 * alpha + ar_coefs_2 * (1 - alpha)
-        ma_coefs = jnp.array([0.32, -0.2])
+
+        ar_coefs = jnp.array([0.6, -0.5, 0.4, -0.4, 0.3])
+        ma_coefs = jnp.array([0.3, -0.2])
 
         y = ARMA(ar_coefs, ma_coefs)(eps)
-        # prediction used on a fresh y observation.
+
         rw = -((y - y_pred) ** 2)
 
         env_info = {"y": y, "y_pred": y_pred}
@@ -828,57 +1011,30 @@ def build_env_setting_2():
     return env
 
 
+def sample_noise(rng):
+    eps = jax.random.normal(rng, (T, 20)) * 0.3
+    return eps
+
+
+T = int(2.0e4)
+
+
+MIN_ERR = 0.09
+MAX_ERR = 0.15
 # -
 
-# ## sample noise
-
-# +
-env = build_env_setting_2()
-rng = jax.random.PRNGKey(42)
-
-eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
-MIN_ERR = 0.0833
-# -
+env = build_env_setting_1()
 
 
 BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
 
-(STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM = scan_hparams_newton()
+CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
 
-# +
-for name, gym in BEST_GYM.items():
-    pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.1)
-    )
+BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
 
-gym = BEST_NEWTON_GYM
-ax = (
-    pd.Series(-gym.reward)
-    .rolling(5000, min_periods=5000)
-    .mean()
-    .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
-    )
-)
-ax.legend(bbox_to_anchor=(1.0, 1.0))
-plt.title("Rolling mean of loss (5000) time-steps")
-# -
+CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 
-for name, gym in BEST_GYM.items():
-    pd.Series(-gym.reward).expanding().mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.15)
-    )
-gym = BEST_NEWTON_GYM
-ax = (
-    pd.Series(-gym.reward)
-    .expanding()
-    .mean()
-    .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
-    )
-)
-ax.legend(bbox_to_anchor=(1.0, 1.0))
-
+plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 
 # ## Sensibility to hyper parameters
 #
@@ -893,11 +1049,88 @@ def gym_loop_newton(eps):
     return GymFeedback(build_agent(opt=newton(0.1, eps=0.3)), env)(eps)
 
 
+eps = sample_noise(rng)
 sim = unroll_transform_with_state(gym_loop_newton)
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
 
-pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
+pd.Series(-gym.reward).expanding().mean().plot()#ylim=(MIN_ERR, MAX_ERR))
+
+
+# -
+
+
+# # Setting 2
+
+# let's build an environment corresponding to "setting 2" in [1]
+
+# +
+from wax.modules import Counter
+
+
+def build_env_setting_2():
+    def env(action, obs):
+        y_pred, eps = action, obs
+        t = Counter()()
+        ar_coefs_1 = jnp.array([-0.4, -0.5, 0.4, 0.4, 0.1])
+        ar_coefs_2 = jnp.array([0.6, -0.4, 0.4, -0.5, 0.5])
+        ar_coefs = ar_coefs_1 * t / T + ar_coefs_2 * (1 - t / T)
+
+        ma_coefs = jnp.array([0.32, -0.2])
+
+        y = ARMA(ar_coefs, ma_coefs)(eps)
+        # prediction used on a fresh y observation.
+        rw = -((y - y_pred) ** 2)
+
+        env_info = {"y": y, "y_pred": y_pred}
+        obs = y
+        return rw, obs, env_info
+
+    return env
+
+
+def sample_noise(rng):
+    eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
+    return eps
+
+
+T = int(2.0e4)
+MIN_ERR = 0.0833
+MAX_ERR = 0.15
+# -
+
+env = build_env_setting_2()
+
+
+BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
+
+CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
+
+BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
+
+CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
+
+plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
+
+# ## Sensibility to hyper parameters
+#
+# If we choose the wrong hyper-parameters, we see that the agent can failed to capture the changing dynamic.
+
+# +
+# %%time
+
+
+@add_batch
+def gym_loop_newton(eps):
+    return GymFeedback(build_agent(opt=newton(0.2, eps=0.3)), env)(eps)
+
+
+eps = sample_noise(rng)
+sim = unroll_transform_with_state(gym_loop_newton)
+params, state = sim.init(rng, eps)
+(gym, info), state = sim.apply(params, state, rng, eps)
+
+pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, MAX_ERR))
 
 
 # -
@@ -909,8 +1142,6 @@ pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
 
 # +
 from wax.modules import Counter
-
-T = int(1.0e4)
 
 
 def build_env_setting_3():
@@ -936,57 +1167,29 @@ def build_env_setting_3():
     return env
 
 
-# -
+def sample_noise(rng):
+    eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
+    return eps
 
-# ## sample noise
 
-# +
-env = build_env_setting_3()
-rng = jax.random.PRNGKey(42)
+T = int(2.0e4)
 
-eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
 MIN_ERR = 0.0833
+MAX_ERR = 0.15
 # -
+
+env = build_env_setting_3()
 
 
 BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
 
-(STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM = scan_hparams_newton()
+CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
 
-# +
-for name, gym in BEST_GYM.items():
-    pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.1)
-    )
+BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
 
-gym = BEST_NEWTON_GYM
-ax = (
-    pd.Series(-gym.reward)
-    .rolling(5000, min_periods=5000)
-    .mean()
-    .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
-    )
-)
-ax.legend(bbox_to_anchor=(1.0, 1.0))
-plt.title("Rolling mean of loss (5000) time-steps")
-# -
+CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 
-for name, gym in BEST_GYM.items():
-    pd.Series(-gym.reward).expanding().mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(MIN_ERR, 0.15)
-    )
-gym = BEST_NEWTON_GYM
-ax = (
-    pd.Series(-gym.reward)
-    .expanding()
-    .mean()
-    .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
-    )
-)
-ax.legend(bbox_to_anchor=(1.0, 1.0))
-
+plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 
 # ## Sensibility to hyper parameters
 #
@@ -998,14 +1201,15 @@ ax.legend(bbox_to_anchor=(1.0, 1.0))
 
 @add_batch
 def gym_loop_newton(eps):
-    return GymFeedback(build_agent(opt=newton(0.1, eps=0.3)), env)(eps)
+    return GymFeedback(build_agent(opt=newton(1.1, eps=0.3)), env)(eps)
 
 
+eps = sample_noise(rng)
 sim = unroll_transform_with_state(gym_loop_newton)
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
 
-pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
+pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, MAX_ERR))
 
 
 # -
@@ -1021,7 +1225,7 @@ from wax.modules import Counter
 T = int(1.0e4)
 
 
-def build_env_setting_3():
+def build_env_setting_4():
     def env(action, obs):
         y_pred, eps = action, obs
         t = Counter()()
@@ -1047,61 +1251,29 @@ def build_env_setting_3():
     return env
 
 
-# -
+def sample_noise(rng):
+    eps = jax.random.normal(rng, (T, 20)) * 0.3
+    return eps
 
-#
-# ## sample noise
 
-# +
-env = build_env_setting_3()
-rng = jax.random.PRNGKey(42)
-
-eps = jax.random.normal(rng, (T, 20)) * 0.3
-MIN_ERR = 0.3 ** 2
+MIN_ERR = 0.09
 MAX_ERR = 0.22
 # -
+
+env = build_env_setting_4()
 
 
 BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
 
-(STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM = scan_hparams_newton()
+BEST_STEP_SIZE
 
-# +
-for name, gym in BEST_GYM.items():
-    pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
-        ylim=(MIN_ERR, MAX_ERR),
-    )
+CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
 
-gym = BEST_NEWTON_GYM
-ax = (
-    pd.Series(-gym.reward)
-    .rolling(5000, min_periods=5000)
-    .mean()
-    .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
-    )
-)
-ax.legend(bbox_to_anchor=(1.0, 1.0))
-plt.title("Rolling mean of loss (5000) time-steps")
-# -
+BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
 
-for name, gym in BEST_GYM.items():
-    pd.Series(-gym.reward).expanding().mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
-        ylim=(MIN_ERR, MAX_ERR),
-    )
-gym = BEST_NEWTON_GYM
-ax = (
-    pd.Series(-gym.reward)
-    .expanding()
-    .mean()
-    .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
-    )
-)
-ax.legend(bbox_to_anchor=(1.0, 1.0))
+CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 
+plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 
 # As noted in [1], the newton algorithm seems to be the only one to achieve an average error rate that converges to the variance of the noise (0.09).
 #
@@ -1121,9 +1293,9 @@ def gym_loop_newton(eps):
     return GymFeedback(build_agent(opt=newton(0.18, eps=0.3)), env)(eps)
 
 
+eps = sample_noise(rng)
 sim = unroll_transform_with_state(gym_loop_newton)
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
 
-pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, 0.12))
-
+pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, MAX_ERR))

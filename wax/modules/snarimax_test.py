@@ -114,7 +114,8 @@ def add_batch(fun, take_mean=True):
 
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
-        time_series_model = lambda y, X: SNARIMAX(10)(y, X)
+        def time_series_model(y, X):
+            return SNARIMAX(10)(y, X)
 
     if opt is None:
         opt = newton(0.3, 0.3)

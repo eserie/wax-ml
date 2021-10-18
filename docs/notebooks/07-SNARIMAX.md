@@ -769,7 +769,7 @@ In addition, we note that
 
 We will now wrapup the study of an environment + agent in few analysis functions.
 
-We will then use them to perform the sam analysis on the non-stationnary setting proposed in [1], namely
+We will then use them to perform the sam analysis in the non-stationnary setting proposed in [1], namely
 - setting 2 : slowly varaying parameters.
 - setting 3 : brutal variation of parameters.
 - setting 4 : non-stationnary (random walk) noise.
@@ -778,7 +778,8 @@ We will then use them to perform the sam analysis on the non-stationnary setting
 ## Analysis functions
 
 
-For each solver, we will select the best hyper parameters (step size $\eta$, $epsilon$) by mesuring the averaged loss over the 5000 first time steps.
+For each solver, we will select the best hyper parameters (step size $\eta$, $\epsilon$)
+by measuring the average loss between the 5000 and 10000 steps.
 
 ```python
 LEARN_TIME_SLICE = slice(5000, 10000)
@@ -1055,7 +1056,7 @@ let's wrapup the results for the "setting 1" in [1]
 from wax.modules import Counter
 
 
-def build_env_setting_1():
+def build_env():
     def env(action, obs):
         y_pred, eps = action, obs
 
@@ -1083,8 +1084,8 @@ T = int(2.0e4)
 
 MIN_ERR = 0.09
 MAX_ERR = 0.15
-
-env = build_env_setting_1()
+LEARN_TIME_SLICE = slice(5000, 10000)
+env = build_env()
 ```
 
 ```python
@@ -1106,6 +1107,12 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 ```python
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
+
+### Conclusions
+
+- The NEWTON and ADAGRAD optimizers are the faster to converge.
+- The SGD and ADAM optimizers have the worst performance.
+
 
 ## Fixed setting
 
@@ -1136,7 +1143,7 @@ let's build an environment corresponding to "setting 2" in [1]
 from wax.modules import Counter
 
 
-def build_env_setting_2():
+def build_env():
     def env(action, obs):
         y_pred, eps = action, obs
         t = Counter()()
@@ -1165,12 +1172,9 @@ def sample_noise(rng):
 T = int(2.0e4)
 MIN_ERR = 0.0833
 MAX_ERR = 0.15
+LEARN_TIME_SLICE = slice(5000, 10000)
+env = build_env()
 ```
-
-```python
-env = build_env_setting_2()
-```
-
 
 ```python
 BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
@@ -1191,6 +1195,12 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 ```python
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
+
+### Conclusions
+
+- The NEWTON and ADAGRAD optimizers are more efficient to adapt to slowly changing environments.
+- The SGD and ADAM optimizers seem to have the worst performance.
+
 
 ## Fixed setting
 
@@ -1221,7 +1231,7 @@ let's build an environment corresponding to "setting 3" in [1]
 from wax.modules import Counter
 
 
-def build_env_setting_3():
+def build_env():
     def env(action, obs):
         y_pred, eps = action, obs
         t = Counter()()
@@ -1252,13 +1262,10 @@ def sample_noise(rng):
 T = int(2.0e4)
 
 MIN_ERR = 0.0833
-MAX_ERR = 0.15
+MAX_ERR = 0.12
+LEARN_TIME_SLICE = slice(5000, 10000)
+env = build_env()
 ```
-
-```python
-env = build_env_setting_3()
-```
-
 
 ```python
 BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
@@ -1279,6 +1286,49 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 ```python
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
+
+### Choosing hyper parameters on the whole period
+
+<!-- #region -->
+It seems that Newton solver is more prone to overfitting (recall that we chose its hyper parameters to optimize the average loss between steps 5000 and 1000, thus only in the first regime).
+
+
+However, as stated in [1], Newton algorithm can have better performances if we choose its hyper parameters in order to obtain the best performances for both regimes.
+
+Let us check this:
+<!-- #endregion -->
+
+```python
+LEARN_TIME_SLICE = slice(5000, None)
+env = build_env()
+```
+
+```python
+BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
+```
+
+```python
+CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
+```
+
+```python
+BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
+```
+
+```python
+CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
+```
+
+```python
+plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
+```
+
+### Conclusion
+
+- The ADAGRAD optimizers seems to be best suited for abrupt regime switching.
+- The SGD and NEWTON optimizers seem to behave similarly if their parameters are correctly chosen.
+- The ADAM optimizer seems to have the worst performance.
+
 
 ## Fixed setting
 
@@ -1311,7 +1361,7 @@ from wax.modules import Counter
 T = int(1.0e4)
 
 
-def build_env_setting_4():
+def build_env():
     def env(action, obs):
         y_pred, eps = action, obs
         t = Counter()()
@@ -1343,11 +1393,9 @@ def sample_noise(rng):
 
 
 MIN_ERR = 0.09
-MAX_ERR = 0.22
-```
-
-```python
-env = build_env_setting_4()
+MAX_ERR = 0.3
+LEARN_TIME_SLICE = slice(5000, 10000)
+env = build_env()
 ```
 
 
@@ -1379,6 +1427,14 @@ As noted in [1], the newton algorithm seems to be the only one to achieve an ave
 
 
 
+### Conclusion
+
+In this environment with noise auto-correlations:
+- The NEWTON optimizer achieve to realize the minimum theoretical average loss
+- The other optimizers struggle to converge to the minimum theoretical loss and thus seems to suffer a linear regret.
+- The SGD optimizer is the worst in this setting.
+
+
 ## Fixed setting
 
 ```python
@@ -1395,5 +1451,5 @@ sim = unroll_transform_with_state(gym_loop_newton)
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
 
-pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, MAX_ERR))
+pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, None))
 ```

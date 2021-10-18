@@ -55,7 +55,9 @@ jobs:
         - name: Run mypy
           run: make mypy
         - name: Check license
-          run: make check-license
+          run: |
+            git clean -fd
+            make check-license
         - name: Check format
           run: |
             git clean -d -f -f

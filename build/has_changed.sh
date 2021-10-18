@@ -3,7 +3,7 @@
 if [ $(git status --porcelain | wc -l) -eq "0" ]; then
   echo "  🟢 Git repo is clean."
 else
-  echo "  🔴 Git repo dirty. Quit.
+  echo "  🔴 Git repo dirty. Quit."
   git status
   exit 1
 fi

@@ -93,7 +93,6 @@ eps = jax.random.normal(rng, (1000,))
 sim = unroll_transform_with_state(lambda eps: ARMA(alpha, beta)(eps))
 params, state = sim.init(rng, eps)
 y, state = sim.apply(params, state, rng, eps)
-y.shape
 ```
 
 # SNARIMAX

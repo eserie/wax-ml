@@ -68,6 +68,11 @@ from wax.modules import (
 from wax.optim import newton
 from wax.unroll import unroll_transform_with_state
 
+# + tags=["parameters"]
+N_STEP_SIZE = 10
+N_EPS = 5
+N_BATCH = 40
+T = 10000
 # -
 
 # # ARMA
@@ -334,7 +339,7 @@ def gym_loop(eps):
 
 
 rng = jax.random.PRNGKey(42)
-eps = jax.random.normal(rng, (10000,))
+eps = jax.random.normal(rng, (T,))
 sim = unroll_transform_with_state(gym_loop)
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
@@ -361,9 +366,9 @@ rng = jax.random.PRNGKey(42)
 sim = unroll_transform_with_state(gym_loop)
 
 res = {}
-for i in tqdm(onp.arange(20)):
+for i in tqdm(onp.arange(N_BATCH)):
     rng, _ = jax.random.split(rng)
-    eps = jax.random.normal(rng, (10000,)) * 0.3
+    eps = jax.random.normal(rng, (T,)) * 0.3
     params, state = sim.init(rng, eps)
     (gym_output, gym_info), final_state = sim.apply(params, state, rng, eps)
     res[i] = gym_info
@@ -381,10 +386,10 @@ pd.DataFrame({k: pd.Series(v.agent.optim.loss) for k, v in res.items()}).mean(
 # +
 # %%time
 rng = jax.random.PRNGKey(42)
-eps = jax.random.normal(rng, (20, 10000)) * 0.3
+eps = jax.random.normal(rng, (N_BATCH, T)) * 0.3
 
 rng = jax.random.PRNGKey(42)
-rng = jax.random.split(rng, num=20)
+rng = jax.random.split(rng, num=N_BATCH)
 sim = unroll_transform_with_state(gym_loop)
 params, state = jax.vmap(sim.init)(rng, eps)
 (gym_output, gym_info), final_state = jax.vmap(sim.apply)(params, state, rng, eps)
@@ -432,7 +437,7 @@ w.iloc[-1][::-1].plot(kind="bar")
 # +
 # %%time
 rng = jax.random.PRNGKey(42)
-eps = jax.random.normal(rng, (10000, 20)) * 0.3
+eps = jax.random.normal(rng, (T, N_BATCH)) * 0.3
 
 
 def batched_gym_loop(eps):
@@ -500,7 +505,7 @@ gym_loop_batch = add_batch(gym_loop)
 sim = unroll_transform_with_state(gym_loop_batch)
 
 rng = jax.random.PRNGKey(42)
-eps = jax.random.normal(rng, (10000, 20)) * 0.3
+eps = jax.random.normal(rng, (T, N_BATCH)) * 0.3
 
 params, state = sim.init(rng, eps)
 (gym_output, gym_info), final_state = sim.apply(params, state, rng, eps)
@@ -556,7 +561,7 @@ for optimizer in tqdm(OPTIMIZERS):
 
     sim = unroll_transform_with_state(add_batch(gym_loop_scan_hparams))
     rng = jax.random.PRNGKey(42)
-    eps = jax.random.normal(rng, (10000, 40)) * 0.3
+    eps = jax.random.normal(rng, (T, N_BATCH)) * 0.3
 
     params, state = sim.init(rng, eps)
     _res, state = sim.apply(params, state, rng, eps)
@@ -596,7 +601,7 @@ pd.Series(BEST_STEP_SIZE).plot(kind="bar", logy=True)
 
 # Now let's consider the newton algorithm.
 
-# First let's test it with one set of parameter with average over 20 batches.
+# First let's test it with one set of parameter with average over N_BATCH batches.
 
 # +
 # %%time
@@ -609,7 +614,7 @@ def gym_loop_newton(eps):
 
 sim = unroll_transform_with_state(gym_loop_newton)
 rng = jax.random.PRNGKey(42)
-eps = jax.random.normal(rng, (10000, 20)) * 0.3
+eps = jax.random.normal(rng, (T, N_BATCH)) * 0.3
 
 params, state = sim.init(rng, eps)
 (gym, info), state = sim.apply(params, state, rng, eps)
@@ -642,7 +647,7 @@ def gym_loop_scan_hparams(eps):
 
 sim = unroll_transform_with_state(gym_loop_scan_hparams)
 rng = jax.random.PRNGKey(42)
-eps = jax.random.normal(rng, (10000, 40)) * 0.3
+eps = jax.random.normal(rng, (T, N_BATCH)) * 0.3
 
 params, state = sim.init(rng, eps)
 res_newton, state = sim.apply(params, state, rng, eps)
@@ -714,622 +719,3 @@ ax.legend(bbox_to_anchor=(1.0, 1.0))
 # In addition, we note that
 # - adam does not perform well in this online setting.
 # - adagrad performormance is between newton and sgd.
-
-# # Non-stationnary environments
-
-
-# We will now wrapup the study of an environment + agent in few analysis functions.
-#
-# We will then use them to perform the sam analysis in the non-stationnary setting proposed in [1], namely
-# - setting 2 : slowly varaying parameters.
-# - setting 3 : brutal variation of parameters.
-# - setting 4 : non-stationnary (random walk) noise.
-
-# ## Analysis functions
-
-# For each solver, we will select the best hyper parameters (step size $\eta$, $\epsilon$)
-# by measuring the average loss between the 5000 and 10000 steps.
-
-LEARN_TIME_SLICE = slice(5000, 10000)
-
-
-# ### First order solvers
-
-
-def scan_hparams_first_order():
-
-    STEP_SIZE_idx = pd.Index(onp.logspace(-4, 1, 30), name="step_size")
-    STEP_SIZE = jax.device_put(STEP_SIZE_idx.values)
-    OPTIMIZERS = [optax.sgd, optax.adam, optax.adagrad]
-
-    rng = jax.random.PRNGKey(42)
-    eps = sample_noise(rng)
-
-    res = {}
-    for optimizer in tqdm(OPTIMIZERS):
-
-        def gym_loop_scan_hparams(eps):
-            def scan_params(step_size):
-                return GymFeedback(build_agent(opt=optimizer(step_size)), env)(eps)
-
-            res = VMap(scan_params)(STEP_SIZE)
-            return res
-
-        sim = unroll_transform_with_state(add_batch(gym_loop_scan_hparams))
-
-        params, state = sim.init(rng, eps)
-        _res, state = sim.apply(params, state, rng, eps)
-        res[optimizer.__name__] = _res
-
-    ax = None
-    BEST_STEP_SIZE = {}
-    BEST_GYM = {}
-
-    for name, (gym, info) in res.items():
-
-        loss = (
-            pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[LEARN_TIME_SLICE].mean()
-        )
-
-        BEST_STEP_SIZE[name] = loss.idxmin()
-
-        best_idx = jnp.argmax(gym.reward[LEARN_TIME_SLICE].mean(axis=0))
-        BEST_GYM[name] = jax.tree_map(lambda x: x[:, best_idx], gym)
-
-        ax = loss.plot(
-            logx=True, logy=False, ax=ax, label=name, ylim=(MIN_ERR, MAX_ERR)
-        )
-    plt.legend()
-
-    return BEST_STEP_SIZE, BEST_GYM
-
-
-# We will "cross-validate" the result by running the agent on new samples.
-
-CROSS_VAL_RNG = jax.random.PRNGKey(44)
-
-COLORS = sns.color_palette("hls")
-
-
-def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
-    plt.figure()
-    eps = sample_noise(CROSS_VAL_RNG)
-    CROSS_VAL_GYM = {}
-    ax = None
-
-    def measure(reward):
-        return pd.Series(-reward).rolling(5000, min_periods=5000).mean()
-
-    def measure(reward):
-        return pd.Series(-reward).expanding().mean()
-
-    for i, (name, gym) in enumerate(BEST_GYM.items()):
-        ax = measure(gym.reward).plot(
-            ax=ax,
-            color=COLORS[i],
-            label=(f"(TRAIN) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"),
-            style="--",
-        )
-    for i, optimizer in enumerate(tqdm(OPTIMIZERS)):
-
-        name = optimizer.__name__
-
-        def gym_loop(eps):
-            return GymFeedback(build_agent(opt=optimizer(BEST_STEP_SIZE[name])), env)(
-                eps
-            )
-
-        sim = unroll_transform_with_state(add_batch(gym_loop))
-
-        params, state = sim.init(rng, eps)
-        (gym, info), state = sim.apply(params, state, rng, eps)
-        CROSS_VAL_GYM[name] = gym
-
-        ax = measure(gym.reward).plot(
-            ax=ax,
-            color=COLORS[i],
-            ylim=(MIN_ERR, MAX_ERR),
-            label=(
-                f"(VALIDATE) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"
-            ),
-        )
-    plt.legend()
-
-    return CROSS_VAL_GYM
-
-
-# ### Newton solver
-
-
-def scan_hparams_newton():
-    STEP_SIZE = pd.Index(onp.logspace(-2, 3, 10), name="step_size")
-    EPS = pd.Index(onp.logspace(-4, 3, 5), name="eps")
-
-    HPARAMS_idx = pd.MultiIndex.from_product([STEP_SIZE, EPS])
-    HPARAMS = jnp.stack(list(map(onp.array, HPARAMS_idx)))
-
-    @add_batch
-    def gym_loop_scan_hparams(eps):
-        def scan_params(hparams):
-            step_size, newton_eps = hparams
-            agent = build_agent(opt=newton(step_size, eps=newton_eps))
-            return GymFeedback(agent, env)(eps)
-
-        return VMap(scan_params)(HPARAMS)
-
-    sim = unroll_transform_with_state(gym_loop_scan_hparams)
-
-    rng = jax.random.PRNGKey(42)
-    eps = sample_noise(rng)
-
-    params, state = sim.init(rng, eps)
-    res_newton, state = sim.apply(params, state, rng, eps)
-
-    gym_newton, info_newton = res_newton
-
-    loss_newton = pd.DataFrame(-gym_newton.reward, columns=HPARAMS_idx).mean().unstack()
-
-    loss_newton = (
-        pd.DataFrame(-gym_newton.reward, columns=HPARAMS_idx)
-        .iloc[LEARN_TIME_SLICE]
-        .mean()
-        .unstack()
-    )
-
-    sns.heatmap(loss_newton[loss_newton < 0.4], annot=True, cmap="YlGnBu")
-
-    STEP_SIZE, NEWTON_EPS = loss_newton.stack().idxmin()
-
-    x = -gym_newton.reward[LEARN_TIME_SLICE].mean(axis=0)
-    x = jax.ops.index_update(x, jnp.isnan(x), jnp.inf)
-    I_BEST_PARAM = jnp.argmin(x)
-
-    BEST_NEWTON_GYM = jax.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
-    print("Best newton parameters: ", STEP_SIZE, NEWTON_EPS)
-    return (STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM
-
-
-# +
-
-
-def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
-    (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
-    plt.figure()
-
-    eps = sample_noise(CROSS_VAL_RNG)
-    CROSS_VAL_GYM = {}
-    ax = None
-
-    def measure(reward):
-        return pd.Series(-reward).rolling(5000, min_periods=5000).mean()
-
-    def measure(reward):
-        return pd.Series(-reward).expanding().mean()
-
-    @add_batch
-    def gym_loop(eps):
-        agent = build_agent(opt=newton(STEP_SIZE, eps=NEWTON_EPS))
-        return GymFeedback(agent, env)(eps)
-
-    sim = unroll_transform_with_state(gym_loop)
-
-    rng = jax.random.PRNGKey(44)
-    eps = sample_noise(rng)
-    params, state = sim.init(rng, eps)
-    (gym, info), state = sim.apply(params, state, rng, eps)
-
-    ax = None
-    name = "Newton"
-    i = 3
-    ax = measure(BEST_NEWTON_GYM.reward).plot(
-        ax=ax,
-        color=COLORS[i],
-        label=f"(TRAIN) -  Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
-        ylim=(MIN_ERR, MAX_ERR),
-        style="--",
-    )
-
-    ax = measure(gym.reward).plot(
-        ax=ax,
-        color=COLORS[i],
-        ylim=(MIN_ERR, MAX_ERR),
-        label=f"(VALIDATE) - Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
-    )
-
-    plt.legend()
-
-    return gym
-
-
-# -
-
-
-# ### Plot everithing
-
-
-def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
-
-    rng = jax.random.PRNGKey(43)
-    eps = sample_noise(rng)
-
-    MESURES = []
-
-    def measure(reward):
-        return pd.Series(-reward).rolling(5000, min_periods=5000).mean()
-
-    MESURES.append(("Rolling mean of loss (5000) time-steps", measure))
-
-    def measure(reward):
-        return pd.Series(-reward).expanding().mean()
-
-    MESURES.append(("Expanding means", measure))
-
-    for MEASURE_NAME, MEASUR_FUNC in MESURES:
-
-        plt.figure()
-
-        for i, (name, gym) in enumerate(BEST_GYM.items()):
-            MEASUR_FUNC(gym.reward).plot(
-                label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
-                ylim=(MIN_ERR, MAX_ERR),
-                color=COLORS[i],
-            )
-
-        i = 3
-        (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
-        gym = BEST_NEWTON_GYM
-        ax = MEASUR_FUNC(gym.reward).plot(
-            label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
-            ylim=(MIN_ERR, MAX_ERR),
-            color=COLORS[i],
-        )
-        ax.legend(bbox_to_anchor=(1.0, 1.0))
-        plt.title(MEASURE_NAME)
-
-
-# # Setting 1
-
-# let's wrapup the results for the "setting 1" in [1]
-
-# +
-from wax.modules import Counter
-
-
-def build_env():
-    def env(action, obs):
-        y_pred, eps = action, obs
-
-        ar_coefs = jnp.array([0.6, -0.5, 0.4, -0.4, 0.3])
-        ma_coefs = jnp.array([0.3, -0.2])
-
-        y = ARMA(ar_coefs, ma_coefs)(eps)
-
-        rw = -((y - y_pred) ** 2)
-
-        env_info = {"y": y, "y_pred": y_pred}
-        obs = y
-        return rw, obs, env_info
-
-    return env
-
-
-def sample_noise(rng):
-    eps = jax.random.normal(rng, (T, 20)) * 0.3
-    return eps
-
-
-T = int(2.0e4)
-
-
-MIN_ERR = 0.09
-MAX_ERR = 0.15
-LEARN_TIME_SLICE = slice(5000, 10000)
-env = build_env()
-# -
-
-BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
-
-CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
-
-BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
-
-CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
-
-plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
-
-# ### Conclusions
-#
-# - The NEWTON and ADAGRAD optimizers are the faster to converge.
-# - The SGD and ADAM optimizers have the worst performance.
-
-# ## Fixed setting
-
-# +
-# %%time
-
-
-@add_batch
-def gym_loop_newton(eps):
-    return GymFeedback(build_agent(opt=newton(0.1, eps=0.3)), env)(eps)
-
-
-eps = sample_noise(rng)
-sim = unroll_transform_with_state(gym_loop_newton)
-params, state = sim.init(rng, eps)
-(gym, info), state = sim.apply(params, state, rng, eps)
-
-pd.Series(-gym.reward).expanding().mean().plot()  # ylim=(MIN_ERR, MAX_ERR))
-
-
-# -
-
-
-# # Setting 2
-
-# let's build an environment corresponding to "setting 2" in [1]
-
-# +
-from wax.modules import Counter
-
-
-def build_env():
-    def env(action, obs):
-        y_pred, eps = action, obs
-        t = Counter()()
-        ar_coefs_1 = jnp.array([-0.4, -0.5, 0.4, 0.4, 0.1])
-        ar_coefs_2 = jnp.array([0.6, -0.4, 0.4, -0.5, 0.5])
-        ar_coefs = ar_coefs_1 * t / T + ar_coefs_2 * (1 - t / T)
-
-        ma_coefs = jnp.array([0.32, -0.2])
-
-        y = ARMA(ar_coefs, ma_coefs)(eps)
-        # prediction used on a fresh y observation.
-        rw = -((y - y_pred) ** 2)
-
-        env_info = {"y": y, "y_pred": y_pred}
-        obs = y
-        return rw, obs, env_info
-
-    return env
-
-
-def sample_noise(rng):
-    eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
-    return eps
-
-
-T = int(2.0e4)
-MIN_ERR = 0.0833
-MAX_ERR = 0.15
-LEARN_TIME_SLICE = slice(5000, 10000)
-env = build_env()
-# -
-
-BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
-
-CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
-
-BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
-
-CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
-
-plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
-
-# ### Conclusions
-#
-# - The NEWTON and ADAGRAD optimizers are more efficient to adapt to slowly changing environments.
-# - The SGD and ADAM optimizers seem to have the worst performance.
-
-# ## Fixed setting
-
-# +
-# %%time
-
-
-@add_batch
-def gym_loop_newton(eps):
-    return GymFeedback(build_agent(opt=newton(0.2, eps=0.3)), env)(eps)
-
-
-eps = sample_noise(rng)
-sim = unroll_transform_with_state(gym_loop_newton)
-params, state = sim.init(rng, eps)
-(gym, info), state = sim.apply(params, state, rng, eps)
-
-pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, MAX_ERR))
-
-
-# -
-
-
-# # Setting 3
-
-# let's build an environment corresponding to "setting 3" in [1]
-
-# +
-from wax.modules import Counter
-
-
-def build_env():
-    def env(action, obs):
-        y_pred, eps = action, obs
-        t = Counter()()
-        ar_coefs_1 = jnp.array([0.6, -0.5, 0.4, -0.4, 0.3])
-        ar_coefs_2 = jnp.array([-0.4, -0.5, 0.4, 0.4, 0.1])
-
-        ar_coefs = jnp.where(t < T / 2, ar_coefs_1, ar_coefs_2)
-        ma_coefs_1 = jnp.array([0.3, -0.2])
-        ma_coefs_2 = jnp.array([-0.3, 0.2])
-        ma_coefs = jnp.where(t < T / 2, ma_coefs_1, ma_coefs_2)
-
-        y = ARMA(ar_coefs, ma_coefs)(eps)
-        # prediction used on a fresh y observation.
-        rw = -((y - y_pred) ** 2)
-
-        env_info = {"y": y, "y_pred": y_pred}
-        obs = y
-        return rw, obs, env_info
-
-    return env
-
-
-def sample_noise(rng):
-    eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
-    return eps
-
-
-T = int(2.0e4)
-
-MIN_ERR = 0.0833
-MAX_ERR = 0.12
-LEARN_TIME_SLICE = slice(5000, 10000)
-env = build_env()
-# -
-
-BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
-
-CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
-
-BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
-
-CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
-
-plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
-
-# ### Choosing hyper parameters on the whole period
-
-# It seems that Newton solver is more prone to overfitting (recall that we chose its hyper parameters to optimize the average loss between steps 5000 and 1000, thus only in the first regime).
-#
-#
-# However, as stated in [1], Newton algorithm can have better performances if we choose its hyper parameters in order to obtain the best performances for both regimes.
-#
-# Let us check this:
-
-LEARN_TIME_SLICE = slice(5000, None)
-env = build_env()
-
-BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
-
-CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
-
-BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
-
-CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
-
-plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
-
-# ### Conclusion
-#
-# - The ADAGRAD optimizers seems to be best suited for abrupt regime switching.
-# - The SGD and NEWTON optimizers seem to behave similarly if their parameters are correctly chosen.
-# - The ADAM optimizer seems to have the worst performance.
-
-# ## Fixed setting
-
-# +
-# %%time
-
-
-@add_batch
-def gym_loop_newton(eps):
-    return GymFeedback(build_agent(opt=newton(1.1, eps=0.3)), env)(eps)
-
-
-eps = sample_noise(rng)
-sim = unroll_transform_with_state(gym_loop_newton)
-params, state = sim.init(rng, eps)
-(gym, info), state = sim.apply(params, state, rng, eps)
-
-pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, MAX_ERR))
-
-
-# -
-
-
-# # Setting 4
-
-# let's build an environment corresponding to "setting 4" in [1]
-
-# +
-from wax.modules import Counter
-
-T = int(1.0e4)
-
-
-def build_env():
-    def env(action, obs):
-        y_pred, eps = action, obs
-        t = Counter()()
-        ar_coefs = jnp.array([0.11, -0.5])
-
-        ma_coefs = jnp.array([0.41, -0.39, -0.685, 0.1])
-
-        rng = hk.next_rng_key()
-
-        prev_eps = hk.get_state("prev_eps", (1,), init=lambda *_: jnp.zeros_like(eps))
-        eps = prev_eps + eps  # jax.random.normal(rng, (1, 20))
-
-        hk.set_state("prev_eps", eps)
-
-        y = ARMA(ar_coefs, ma_coefs)(eps)
-        # prediction used on a fresh y observation.
-        rw = -((y - y_pred) ** 2)
-
-        env_info = {"y": y, "y_pred": y_pred}
-        obs = y
-        return rw, obs, env_info
-
-    return env
-
-
-def sample_noise(rng):
-    eps = jax.random.normal(rng, (T, 20)) * 0.3
-    return eps
-
-
-MIN_ERR = 0.09
-MAX_ERR = 0.3
-LEARN_TIME_SLICE = slice(5000, 10000)
-env = build_env()
-# -
-
-
-BEST_STEP_SIZE, BEST_GYM = scan_hparams_first_order()
-
-BEST_STEP_SIZE
-
-CROSS_VAL_GYM = cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM)
-
-BEST_HPARAMS, BEST_NEWTON_GYM = scan_hparams_newton()
-
-CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
-
-plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
-
-# As noted in [1], the newton algorithm seems to be the only one to achieve an average error rate that converges to the variance of the noise (0.09).
-#
-
-# ### Conclusion
-#
-# In this environment with noise auto-correlations:
-# - The NEWTON optimizer achieve to realize the minimum theoretical average loss
-# - The other optimizers struggle to converge to the minimum theoretical loss and thus seems to suffer a linear regret.
-# - The SGD optimizer is the worst in this setting.
-
-# ## Fixed setting
-
-# +
-# %%time
-
-
-@add_batch
-def gym_loop_newton(eps):
-    return GymFeedback(build_agent(opt=newton(0.18, eps=0.3)), env)(eps)
-
-
-eps = sample_noise(rng)
-sim = unroll_transform_with_state(gym_loop_newton)
-params, state = sim.init(rng, eps)
-(gym, info), state = sim.apply(params, state, rng, eps)
-
-pd.Series(-gym.reward).expanding().mean().plot(ylim=(MIN_ERR, None))

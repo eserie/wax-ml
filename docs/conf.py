@@ -201,7 +201,7 @@ execution_excludepatterns = [
     'notebooks/04_The_three_steps_workflow.*',
     'notebooks/05_reconstructing_the_light_curve_of_stars.*'
     'notebooks/07_Online_Time_Series_Prediction.*'
-    'notebooks/08_Online_learning_in_non_stationary_environments.*''
+    'notebooks/08_Online_learning_in_non_stationary_environments.*'
 ]
 
 # -- Options for HTMLHelp output ---------------------------------------------

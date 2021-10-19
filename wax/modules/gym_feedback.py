@@ -65,6 +65,7 @@ class GymFeedback(hk.Module):
         env,
         return_obs=False,
         return_action=False,
+        init_action=None,
         name=None,
     ):
         """Initialize module.
@@ -82,6 +83,7 @@ class GymFeedback(hk.Module):
         self.env = env
         self.return_obs = return_obs
         self.return_action = return_action
+        self.init_action = init_action
 
         self.GymOutput = GymOutput(self.return_obs, self.return_action)
 
@@ -96,9 +98,14 @@ class GymFeedback(hk.Module):
                 Use return_action=True to aslo return agent actions.
         """
 
-        action = hk.get_state(
-            "action", shape=[], init=lambda *_: self.GymState(self.agent(raw_obs)[0])
-        )
+        def init_action(shape, dtype):
+            if self.init_action is not None:
+                return self.GymState(self.init_action)
+            else:
+                # call
+                return self.GymState(self.agent(raw_obs)[0])
+
+        action = hk.get_state("action", shape=[], init=init_action)
 
         rw, obs, info_env = self.env(action.action, raw_obs)
         action, info_agent = self.agent(obs)

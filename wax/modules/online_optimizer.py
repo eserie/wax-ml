@@ -41,11 +41,7 @@ class OptimizerOutput(NamedTuple):
 
 
 class OnlineOptimizer(hk.Module):
-    """Optimizer module.
-
-    Wraps a function or module which compute a loss and use an optimizer (following optax API) to
-    perform one update step.
-    """
+    """Wraps a model with loss and and optimizer to perform one online learning update."""
 
     def __init__(
         self,

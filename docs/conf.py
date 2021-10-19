@@ -200,6 +200,7 @@ execution_excludepatterns = [
     # Slow notebook: execution on big dataframes
     'notebooks/04_The_three_steps_workflow.*',
     'notebooks/05_reconstructing_the_light_curve_of_stars.*'
+    'notebooks/07_Online_Time_Series_Prediction.*'
 ]
 
 # -- Options for HTMLHelp output ---------------------------------------------

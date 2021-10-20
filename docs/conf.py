@@ -196,13 +196,8 @@ execution_timeout = 100
 
 # List of patterns, relative to source directory, that match notebook
 # files that will not be executed.
-execution_excludepatterns = [
-    # Slow notebook: execution on big dataframes
-    'notebooks/04_The_three_steps_workflow.*',
-    'notebooks/05_reconstructing_the_light_curve_of_stars.*'
-    'notebooks/07_Online_Time_Series_Prediction.*'
-    'notebooks/08_Online_learning_in_non_stationary_environments.*'
-]
+import glob
+execution_excludepatterns = list(glob.glob("notebooks/*"))
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

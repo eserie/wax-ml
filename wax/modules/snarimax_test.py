@@ -35,15 +35,9 @@ import numpy as onp
 import pandas as pd
 from optax._src.base import OptState
 
-from wax.modules import (
-    ARMA,
-    SNARIMAX,
-    GymFeedback,
-    Lag,
-    OnlineOptimizer,
-    UpdateParams,
-    VMap,
-)
+from wax.modules import ARMA, SNARIMAX, GymFeedback, OnlineOptimizer, UpdateParams, VMap
+from wax.modules.lag import tree_lag
+from wax.modules.vmap import add_batch
 from wax.optim.newton import newton
 from wax.unroll import unroll_transform_with_state
 
@@ -91,27 +85,6 @@ def build_env():
     return env
 
 
-def lag(shift=1):
-    """Helper function to lag observations"""
-
-    def __call__(y, X=None):
-        yp = Lag(shift)(y)
-        Xp = Lag(shift)(X) if X is not None else None
-        return yp, Xp
-
-    return __call__
-
-
-def add_batch(fun, take_mean=True):
-    def fun_batch(*args, **kwargs):
-        res = VMap(fun)(*args, **kwargs)
-        if take_mean:
-            res = jax.tree_map(lambda x: x.mean(axis=0), res)
-        return res
-
-    return fun_batch
-
-
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
 
@@ -141,7 +114,7 @@ def build_agent(time_series_model=None, opt=None):
 
         def model_with_loss(y, X=None):
             # predict with lagged data
-            y_pred, pred_info = time_series_model(*lag(1)(y, X))
+            y_pred, pred_info = time_series_model(*tree_lag(1)(y, X))
 
             # evaluate loss with actual data
             loss, loss_info = evaluate(y_pred, y)
@@ -165,7 +138,7 @@ def build_agent(time_series_model=None, opt=None):
                 opt,
                 project_params=project_params,
                 split_params=split_params,
-            )(*lag(1)(y, X))
+            )(*tree_lag(1)(y, X))
 
             predict_params = optim_res.updated_params
 

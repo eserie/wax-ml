@@ -11,16 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable, Union
+
 import haiku as hk
 import jax
+from haiku import TransformedWithState
 
 
 class VMap(hk.Module):
-    def __init__(self, fun, name=None):
+    def __init__(self, fun: Union[Callable, TransformedWithState], name=None):
         super().__init__(name=name)
         self.fun = (
             fun
-            if isinstance(fun, hk.TransformedWithState)
+            if isinstance(fun, TransformedWithState)
             else hk.transform_with_state(fun)
         )
 
@@ -37,3 +40,19 @@ class VMap(hk.Module):
         hk.set_state("params_state", (params, state))
 
         return res
+
+
+# Helper functions
+
+
+def add_batch(fun: Union[Callable, TransformedWithState], take_mean=True):
+    """Wrap a function with VMap module.
+    It should be used inside a transformed function."""
+
+    def fun_batch(*args, **kwargs):
+        res = VMap(fun)(*args, **kwargs)
+        if take_mean:
+            res = jax.tree_map(lambda x: x.mean(axis=0), res)
+        return res
+
+    return fun_batch

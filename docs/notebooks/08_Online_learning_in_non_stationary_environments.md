@@ -138,16 +138,18 @@ def build_agent(time_series_model=None, opt=None):
     return agent
 ```
 
-## Non-stationnary environments
+## Non-stationary environments
 
 
 
 We will now wrapup the study of an environment + agent in few analysis functions.
 
-We will then use them to perform the sam analysis in the non-stationnary setting proposed in [1], namely:
-  - setting 2 : slowly varaying parameters.
-  - setting 3 : brutal variation of parameters.
-  - setting 4 : non-stationnary (random walk) noise.
+We will then use them to perform the same analysis in the non-stationary setting proposed in [1], namely:
+
+  * setting 1 : sanity check (stationary ARMA environment).
+  * setting 2 : slowly varying parameters.
+  * setting 3 : brutal variation of parameters.
+  * setting 4 : non-stationary (random walk) noise.
 
 
 ## Analysis functions
@@ -158,6 +160,8 @@ by measuring the average loss between the 5000 and 10000 steps.
 
 
 ### First order solvers
+
+
 
 
 
@@ -275,6 +279,8 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
 
 
 
+
+
 ```python
 def scan_hparams_newton():
     STEP_SIZE = pd.Index(onp.logspace(-2, 3, N_STEP_SIZE_NEWTON), name="step_size")
@@ -371,6 +377,8 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
 ```
 
 ### Plot everithing
+
+
 
 
 

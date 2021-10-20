@@ -33,12 +33,12 @@ We first focus in the reproduction of the "setting 1" for sanity checks and show
 We then study the behavior the method with different optimizers in the non-stationary environements proposed in [1] (settings 2, 3, and 4).
 
 We use the following modules from WAX-ML:
-- ARMA : to generate a modeled time-series
-- SNARIMAX : to adaptively learn to predict the generated time-series.
-- GymFeedback: To setup a training loop.
-- VMap: to add batch dimensions to the training loop
-- optim.newton: a newton algorithm as used in [1] and developped in [2]. It extends `optax` optimizers.
-- OnlineOptimizer: A wrapper for a model with loss and and optimizer for online learning.
+  * ARMA : to generate a modeled time-series
+  * SNARIMAX : to adaptively learn to predict the generated time-series.
+  * GymFeedback: To setup a training loop.
+  * VMap: to add batch dimensions to the training loop
+  * optim.newton: a newton algorithm as used in [1] and developped in [2]. It extends `optax` optimizers.
+  * OnlineOptimizer: A wrapper for a model with loss and and optimizer for online learning.
 
 ## References
 
@@ -182,6 +182,8 @@ To learn the model parameters we will use the `OnlineOptimizer` of WAX-ML.
 We can setup a projection for the parameters:
 
 
+
+
 ```python
 def project_params(params, opt_state=None):
     w = params["snarimax/~/linear"]["w"]
@@ -222,6 +224,8 @@ jax.tree_map(lambda x: x[-1], optim_res.updated_params)
 
 
 ## Learn and Forecast
+
+
 
 
 
@@ -266,6 +270,8 @@ Now let's wrapup the training loop in a gym feedback loop.
 
 
 Let's build an environment corresponding to "setting 1" in [1]
+
+
 
 
 ```python
@@ -375,6 +381,8 @@ agent = build_agent()
 
 
 ### Gym loop
+
+
 
 
 

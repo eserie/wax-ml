@@ -32,12 +32,12 @@
 # We then study the behavior the method with different optimizers in the non-stationary environements proposed in [1] (settings 2, 3, and 4).
 #
 # We use the following modules from WAX-ML:
-# - ARMA : to generate a modeled time-series
-# - SNARIMAX : to adaptively learn to predict the generated time-series.
-# - GymFeedback: To setup a training loop.
-# - VMap: to add batch dimensions to the training loop
-# - optim.newton: a newton algorithm as used in [1] and developped in [2]. It extends `optax` optimizers.
-# - OnlineOptimizer: A wrapper for a model with loss and and optimizer for online learning.
+#   * ARMA : to generate a modeled time-series
+#   * SNARIMAX : to adaptively learn to predict the generated time-series.
+#   * GymFeedback: To setup a training loop.
+#   * VMap: to add batch dimensions to the training loop
+#   * optim.newton: a newton algorithm as used in [1] and developped in [2]. It extends `optax` optimizers.
+#   * OnlineOptimizer: A wrapper for a model with loss and and optimizer for online learning.
 #
 # ## References
 #
@@ -169,6 +169,8 @@ params
 # ### Setup projection
 
 # We can setup a projection for the parameters:
+#
+#
 
 
 def project_params(params, opt_state=None):
@@ -207,6 +209,8 @@ jax.tree_map(lambda x: x[-1], optim_res.updated_params)
 
 # ## Learn and Forecast
 #
+#
+#
 
 
 class ForecastInfo(NamedTuple):
@@ -244,9 +248,11 @@ pd.Series(info.optim.loss).expanding().mean().plot()
 #
 
 # ### Environment
-
 #
+
 # Let's build an environment corresponding to "setting 1" in [1]
+#
+#
 
 
 def build_env():
@@ -350,6 +356,8 @@ agent = build_agent()
 
 
 # ### Gym loop
+#
+#
 #
 
 

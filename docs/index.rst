@@ -17,6 +17,7 @@ For an introduction to WAX-ML, start at the
    notebooks/05_reconstructing_the_light_curve_of_stars
    notebooks/06_Online_Linear_Regression
    notebooks/07_Online_Time_Series_Prediction
+   notebooks/08_Online_learning_in_non_stationary_environments
 
 .. toctree::
    :maxdepth: 1

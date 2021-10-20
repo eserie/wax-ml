@@ -14,7 +14,7 @@ jupyter:
     name: python3
 ---
 
-## Online learning in non-stationary environments 🔄
+# 🔄 Online learning in non-stationary environments 🔄
 
 We reproduce the empirical results of [1].
 
@@ -44,15 +44,9 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
 
-from wax.modules import (
-    ARMA,
-    SNARIMAX,
-    GymFeedback,
-    Lag,
-    OnlineOptimizer,
-    UpdateParams,
-    VMap,
-)
+from wax.modules import ARMA, SNARIMAX, GymFeedback, OnlineOptimizer, UpdateParams, VMap
+from wax.modules.lag import tree_lag
+from wax.modules.vmap import add_batch
 from wax.optim import newton
 from wax.unroll import unroll_transform_with_state
 ```
@@ -67,32 +61,6 @@ N_EPS = 5
 
 
 ## Agent
-
-```python
-
-
-def add_batch(fun, take_mean=True):
-    def fun_batch(*args, **kwargs):
-        res = VMap(fun)(*args, **kwargs)
-        if take_mean:
-            res = jax.tree_map(lambda x: x.mean(axis=0), res)
-        return res
-
-    return fun_batch
-```
-
-
-```python
-
-
-def lag(shift=1):
-    def __call__(y, X=None):
-        yp = Lag(shift)(y)
-        Xp = Lag(shift)(X) if X is not None else None
-        return yp, Xp
-
-    return __call__
-```
 
 ```python
 OPTIMIZERS = [optax.sgd, optax.adagrad, optax.rmsprop, optax.adam]
@@ -130,7 +98,7 @@ def build_agent(time_series_model=None, opt=None):
 
         def model_with_loss(y, X=None):
             # predict with lagged data
-            y_pred, pred_info = time_series_model(*lag(1)(y, X))
+            y_pred, pred_info = time_series_model(*tree_lag(1)(y, X))
 
             # evaluate loss with actual data
             loss, loss_info = evaluate(y_pred, y)
@@ -155,7 +123,7 @@ def build_agent(time_series_model=None, opt=None):
                 opt,
                 project_params=project_params,
                 split_params=split_params,
-            )(*lag(1)(y, X))
+            )(*tree_lag(1)(y, X))
 
             # use updated params to forecast with actual data
             predict_params = optim_res.updated_params
@@ -170,16 +138,16 @@ def build_agent(time_series_model=None, opt=None):
     return agent
 ```
 
-# Non-stationnary environments
+## Non-stationnary environments
 
 
 
 We will now wrapup the study of an environment + agent in few analysis functions.
 
-We will then use them to perform the sam analysis in the non-stationnary setting proposed in [1], namely
-- setting 2 : slowly varaying parameters.
-- setting 3 : brutal variation of parameters.
-- setting 4 : non-stationnary (random walk) noise.
+We will then use them to perform the sam analysis in the non-stationnary setting proposed in [1], namely:
+  - setting 2 : slowly varaying parameters.
+  - setting 3 : brutal variation of parameters.
+  - setting 4 : non-stationnary (random walk) noise.
 
 
 ## Analysis functions
@@ -190,6 +158,8 @@ by measuring the average loss between the 5000 and 10000 steps.
 
 
 ### First order solvers
+
+
 
 
 ```python
@@ -303,6 +273,8 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
 ### Newton solver
 
 
+
+
 ```python
 def scan_hparams_newton():
     STEP_SIZE = pd.Index(onp.logspace(-2, 3, N_STEP_SIZE_NEWTON), name="step_size")
@@ -401,6 +373,8 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
 ### Plot everithing
 
 
+
+
 ```python
 def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
     MESURES = []
@@ -438,7 +412,10 @@ def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
         plt.title(MEASURE_NAME)
 ```
 
-# Setting 1
+## Setting 1
+
+
+### Environment
 
 
 let's wrapup the results for the "setting 1" in [1]
@@ -502,7 +479,7 @@ plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 - The SGD and ADAM optimizers have the worst performance.
 
 
-## Fixed setting
+### Fixed setting
 
 ```python
 @add_batch
@@ -527,7 +504,10 @@ run_fixed_setting()
 ```
 
 
-# Setting 2
+## Setting 2
+
+
+### Environment
 
 
 let's build an environment corresponding to "setting 2" in [1]
@@ -594,7 +574,7 @@ plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 - The SGD and ADAM optimizers seem to have the worst performance.
 
 
-## Fixed setting
+### Fixed setting
 
 ```python
 %%time
@@ -602,7 +582,10 @@ run_fixed_setting()
 ```
 
 
-# Setting 3
+## Setting 3
+
+
+### Environment
 
 
 Let us build an environment corresponding to the "setting 3" of [1].
@@ -713,7 +696,7 @@ plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 - The ADAM optimizer seems to have the worst performance.
 
 
-## Fixed setting
+### Fixed setting
 
 ```python
 %%time
@@ -721,7 +704,10 @@ run_fixed_setting()
 ```
 
 
-# Setting 4
+## Setting 4
+
+
+### Environment
 
 
 let's build an environment corresponding to "setting 4" in [1]
@@ -804,7 +790,7 @@ In this environment with noise auto-correlations:
 - The SGD optimizer is the worst in this setting.
 
 
-## Fixed setting
+### Fixed setting
 
 ```python
 %%time

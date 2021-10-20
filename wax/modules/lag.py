@@ -13,6 +13,7 @@
 # limitations under the License.
 """Delay operator."""
 import jax.numpy as jnp
+from jax import tree_map
 
 from wax.modules.buffer import Buffer
 
@@ -29,3 +30,16 @@ class Lag(Buffer):
     def __call__(self, x):
         buffer = super().__call__(x)
         return buffer[0]
+
+
+# Helper functions
+
+
+def tree_lag(shift=1):
+    """Define a function which apply Lag module to a PyTree.
+    This should be used inside a transformed function."""
+
+    def apply_fn(*pytree):
+        return tree_map(lambda x: Lag(shift)(x) if x is not None else None, pytree)
+
+    return apply_fn

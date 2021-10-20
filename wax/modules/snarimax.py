@@ -86,6 +86,10 @@ class SNARIMAX(hk.Module):
         self.sd = sd
         self.sq = sq
         self.regressor = regressor if regressor is not None else hk.Linear(1)
+        if d != 0 or sp != 0 or sd != 0 or sq != 0:
+            raise NotImplementedError(
+                f"Options 'd', 'sp', 'sd', 'sq' are not yet implemented."
+            )
 
     def __call__(self, y, X=None):
         yp = Buffer(self.p + 1, name="y_trues")(y)[1:]

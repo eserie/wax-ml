@@ -33,6 +33,7 @@ import jax
 import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
+import pytest
 from optax._src.base import OptState
 
 from wax.modules import ARMA, SNARIMAX, GymFeedback, OnlineOptimizer, UpdateParams, VMap
@@ -52,6 +53,15 @@ def generate_arma():
     params, state = sim.init(rng, eps)
     y, state = sim.apply(params, state, rng, eps)
     return y
+
+
+def test_snarimax_not_implemented():
+    sim = hk.transform_with_state(lambda y: SNARIMAX(1, 1, 0)(y))
+    rng = jax.random.PRNGKey(42)
+
+    y = jax.random.normal(rng, (1,))
+    with pytest.raises(NotImplementedError):
+        sim.init(rng, y)
 
 
 def test_snarimax():

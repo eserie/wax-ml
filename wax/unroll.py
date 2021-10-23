@@ -34,6 +34,12 @@ class UnrollTransformedWithState(NamedTuple):
     apply: Callable
 
 
+class ScanState(NamedTuple):
+    params: Any
+    fun_state: Any
+    rng: jnp.ndarray
+
+
 def unroll_transform_with_state(
     fun: Callable, skip_first: bool = False, dynamic: bool = True, pbar: bool = False
 ):
@@ -48,8 +54,15 @@ def unroll_transform_with_state(
     """
     if callable(fun):
         fun = hk.transform_with_state(fun)
-
     fun = cast(TransformedWithState, fun)
+
+    def scan_f(scan_state, inputs):
+        params, state, rng = scan_state
+        args_step, kwargs_step = inputs
+        if rng is not None:
+            (rng,) = jax.random.split(rng, 1)
+        outputs, state = fun.apply(params, state, rng, *args_step, **kwargs_step)
+        return ScanState(params, state, rng), outputs
 
     def init(rng: jnp.ndarray, *args, **kwargs):
         xs = (args, kwargs)
@@ -57,42 +70,23 @@ def unroll_transform_with_state(
         params, state = fun.init(rng, *args_0, **kwargs_0)
         return params, state
 
-    def dynamic_apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
+    def apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
         xs = (args, kwargs)
 
         if skip_first:
             xs = tree_map(lambda x: x[1:], xs)
 
-        def scan_f(prev_state, inputs):
-            args_step, kwargs_step = inputs
-            outputs, next_state = fun.apply(
-                params, prev_state, rng, *args_step, **kwargs_step
-            )
-            return next_state, outputs
-
-        final_state, output_sequence = jax.lax.scan(scan_f, init=state, xs=xs)
+        if dynamic:
+            scan = jax.lax.scan
+        else:
+            scan = static_scan
+        scan_state, output_sequence = scan(
+            scan_f, init=ScanState(params, state, rng), xs=xs
+        )
+        _, final_state, _ = scan_state
         return output_sequence, final_state
 
-    def static_apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
-        xs = (args, kwargs)
-
-        if skip_first:
-            xs = tree_map(lambda x: x[1:], xs)
-
-        def scan_f(prev_state, inputs):
-            args_step, kwargs_step = inputs
-            outputs, next_state = fun.apply(
-                params, prev_state, rng, *args_step, **kwargs_step
-            )
-            return next_state, outputs
-
-        final_state, output_sequence = static_scan(scan_f, init=state, xs=xs, pbar=pbar)
-        return output_sequence, final_state
-
-    if dynamic:
-        return UnrollTransformedWithState(init, dynamic_apply_fn)
-    else:
-        return UnrollTransformedWithState(init, static_apply_fn)
+    return UnrollTransformedWithState(init, apply_fn)
 
 
 def unroll(

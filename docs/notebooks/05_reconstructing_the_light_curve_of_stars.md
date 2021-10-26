@@ -100,6 +100,8 @@ SEQ_LEN = 64
 BATCH_SIZE = 8
 TRAIN_SIZE = 2 ** 16
 NUM_EPOCHS = 10
+NUM_STARS = None
+RECORD_FREQ = 100
 TOTAL_LEN = None
 TRAIN_DATE = "2016"
 CACHE_DIR = Path("./cached_data/")
@@ -158,6 +160,13 @@ dataframe.columns.names = ["star"]
 dataframe.shape
 ```
 
+```python
+if NUM_STARS:
+    columns = dataframe.columns.tolist()
+    columns.remove(STAR)
+    dataframe = dataframe[[STAR] + columns[: NUM_STARS - 1]]
+```
+
 ## Rolling mean
 
 
@@ -211,8 +220,7 @@ dataframe_mean, _ = dataframe.wax.stream().apply(
 ```
 
 ```python
-dataframe.loc[:, "008241079"].plot()
-dataframe_mean.loc[:, "008241079"].plot()
+dataframe.iloc[:, :2].plot()
 ```
 
 ## Forecasting with Machine Learning
@@ -364,7 +372,7 @@ def split_feature_target(
     # round Batch size to a power of to
     B = x.shape[0]
     B_round = int(2 ** jnp.floor(jnp.log2(B)))
-    print(f"{B} batches rounded {B_round} batches.")
+    print(f"{B} batches rounded to {B_round} batches.")
     x = x[:B_round]
     y = y[:B_round]
 
@@ -534,6 +542,7 @@ def train_model(
     valid_ds: Dataset,
     max_iterations: int = -1,
     rng=None,
+    record_freq=100,
 ) -> hk.Params:
     """Initializes and trains a model on train_ds, returning the final params."""
     opt = optax.adam(1e-3)
@@ -570,15 +579,13 @@ def train_model(
                 return train_state, _format_results(records)
 
             train_state = update(train_state, x, y)
-            if train_state.step % 100 == 0:
+            if train_state.step % record_freq == 0:
                 x, y = next(valid_ds)
                 if rng is not None:
                     (rng,) = jax.random.split(rng, 1)
                 valid_loss = model_with_loss.apply(train_state.params, rng, x, y)
-                # print("Step {}: valid loss {}".format(step, valid_loss))
                 records["step"].append(train_state.step)
                 records["valid_loss"].append(valid_loss)
-                # print("Step {}: train loss {}".format(step, train_loss))
                 records["train_loss"].append(train_state.loss)
 
             pbar.update()
@@ -599,6 +606,7 @@ train_state, records = train_model(
     valid_ds,
     len(train.x) // BATCH_SIZE * NUM_EPOCHS,
     rng=jax.random.PRNGKey(42),
+    record_freq=RECORD_FREQ,
 )
 ```
 
@@ -710,7 +718,7 @@ sample_y.shape, predicted.shape
 ```python colab={} colab_type="code" id="Cg8oQ75Ulvld"
 plot = plot_samples(sample_y, predicted)
 plot += gg.geom_vline(xintercept=context.shape[1], linetype="dashed")
-plot.draw()
+_ = plot.draw()
 ```
 
 <!-- #region colab_type="text" id="qGkr2gf2oALo" -->
@@ -817,14 +825,14 @@ _ = plot.draw()
 
 
 ```python
-def split_train_validation_date(dataframe, stars, date, look_back) -> TrainSplit:
+def split_train_validation_date(dataframe, date, look_back) -> TrainSplit:
     train_size = len(dataframe.loc[:date])
-    return split_train_validation(dataframe[stars], train_size, look_back)
+    return split_train_validation(dataframe, train_size, look_back)
 ```
 
 ```python
 %%time
-train, valid = split_train_validation_date(dataframe_normed, stars, TRAIN_DATE, SEQ_LEN)
+train, valid = split_train_validation_date(dataframe_normed, TRAIN_DATE, SEQ_LEN)
 print(f"effective train size = {train[0].shape[1]}")
 ```
 
@@ -846,6 +854,7 @@ train_state, records = train_model(
     valid_ds,
     len(train.x) // BATCH_SIZE * 1,
     jax.random.PRNGKey(42),
+    record_freq=RECORD_FREQ,
 )
 ```
 
@@ -875,7 +884,7 @@ sample_y = sample_y[:1]  # Shrink to batch-size 1.
 predicted, _ = model.apply(train_state.params, None, sample_x)
 
 plot = plot_samples(sample_y, predicted)
-plot.draw()
+_ = plot.draw()
 ```
 
 ### Run autoregressively

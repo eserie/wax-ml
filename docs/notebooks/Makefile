@@ -21,7 +21,7 @@ run: sync
 	papermill 02_*.ipynb _tmp/run_02.ipynb
 	papermill 03_*.ipynb _tmp/run_03.ipynb
 	papermill 04_*.ipynb _tmp/run_04.ipynb -p T 100 -p N 10
-	papermill 05_*.ipynb _tmp/run_05.ipynb -p TRAIN_STEPS 512 -p TOTAL_LEN 1000 -p TRAIN_SIZE 512 -p BATCH_SIZE 2 -p SEQ_LEN 32 -p TRAIN_DATE "2009-03-07"
+	papermill 05_*.ipynb _tmp/run_05.ipynb  -p RECORD_FREQ 1 -p TOTAL_LEN 1024 -p TRAIN_SIZE 156 -p BATCH_SIZE 2 -p SEQ_LEN 16 -p TRAIN_DATE "2009-03-07" -p NUM_STARS 3
 	papermill 06_*.ipynb _tmp/run_06.ipynb
 	papermill 07_*.ipynb _tmp/run_07.ipynb -p N_STEP_SIZE 2 -p N_EPS 2 -p N_BATCH 2  -p T 100
 	$(MAKE) sync

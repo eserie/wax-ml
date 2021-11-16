@@ -13,7 +13,7 @@
 # limitations under the License.
 """Online optimizer module."""
 from collections import namedtuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Union
 
 import haiku as hk

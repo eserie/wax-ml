@@ -143,19 +143,20 @@ def build_agent(time_series_model=None, opt=None):
             return hk.data_structures.partition(filter_params, params)
 
         def learn_and_forecast(y, X=None):
-            optim_res = OnlineOptimizer(
+            opt_info = OnlineOptimizer(
                 model_with_loss,
                 opt,
                 project_params=project_params,
                 split_params=split_params,
+                return_params=True,
             )(*tree_lag(1)(y, X))
 
-            predict_params = optim_res.updated_params
+            predict_params = opt_info.params
 
             y_pred, forecast_info = UpdateParams(time_series_model)(
                 predict_params, y, X
             )
-            return y_pred, AgentInfo(optim_res, forecast_info)
+            return y_pred, AgentInfo(opt_info, forecast_info)
 
         return learn_and_forecast(y, X)
 

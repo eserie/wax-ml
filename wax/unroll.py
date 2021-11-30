@@ -15,6 +15,7 @@
 import logging
 import warnings
 from collections import namedtuple
+from functools import partial
 from typing import Any, Callable, NamedTuple, Union, cast
 
 import haiku as hk
@@ -79,7 +80,7 @@ def unroll_transform_with_state(
         if dynamic:
             scan = jax.lax.scan
         else:
-            scan = static_scan
+            scan = partial(static_scan, pbar=pbar)
         scan_state, output_sequence = scan(
             scan_f, init=ScanState(params, state, rng), xs=xs
         )

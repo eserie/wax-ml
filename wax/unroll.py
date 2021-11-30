@@ -16,7 +16,7 @@ import logging
 import warnings
 from collections import namedtuple
 from functools import partial
-from typing import Any, Callable, NamedTuple, Union, cast
+from typing import Any, Callable, NamedTuple, Union
 
 import haiku as hk
 import jax
@@ -42,7 +42,10 @@ class ScanState(NamedTuple):
 
 
 def unroll_transform_with_state(
-    fun: Callable, skip_first: bool = False, dynamic: bool = True, pbar: bool = False
+    fun: Union[Callable, TransformedWithState, UnrollTransformedWithState],
+    skip_first: bool = False,
+    dynamic: bool = True,
+    pbar: bool = False,
 ):
     """Transforms a function using Haiku modules into a pair of pure functions.
         which is unrolled on input arguments.
@@ -54,21 +57,23 @@ def unroll_transform_with_state(
         pbar: if true, activate progress bar. Currently, it only works when dynamic=False.
     """
     if callable(fun):
-        fun = hk.transform_with_state(fun)
-    fun = cast(TransformedWithState, fun)
+        tfunc = hk.transform_with_state(fun)
+    else:
+        tfunc = fun
+    del fun
 
     def scan_f(scan_state, inputs):
         params, state, rng = scan_state
         args_step, kwargs_step = inputs
         if rng is not None:
             (rng,) = jax.random.split(rng, 1)
-        outputs, state = fun.apply(params, state, rng, *args_step, **kwargs_step)
+        outputs, state = tfunc.apply(params, state, rng, *args_step, **kwargs_step)
         return ScanState(params, state, rng), outputs
 
     def init(rng: jnp.ndarray, *args, **kwargs):
         xs = (args, kwargs)
         args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-        params, state = fun.init(rng, *args_0, **kwargs_0)
+        params, state = tfunc.init(rng, *args_0, **kwargs_0)
         return params, state
 
     def apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
@@ -91,7 +96,7 @@ def unroll_transform_with_state(
 
 
 def unroll(
-    fun: Union[Callable, hk.TransformedWithState, UnrollTransformedWithState],
+    fun: Union[Callable, TransformedWithState, UnrollTransformedWithState],
     skip_first: bool = False,
     dynamic: bool = True,
     pbar: bool = False,

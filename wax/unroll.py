@@ -16,7 +16,7 @@ import logging
 import warnings
 from collections import namedtuple
 from functools import partial
-from typing import Any, Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple, Union, cast
 
 import haiku as hk
 import jax
@@ -59,7 +59,7 @@ def unroll_transform_with_state(
     if callable(fun):
         tfunc = hk.transform_with_state(fun)
     else:
-        tfunc = fun
+        tfunc = cast(TransformedWithState, fun)
     del fun
 
     def scan_f(scan_state, inputs):

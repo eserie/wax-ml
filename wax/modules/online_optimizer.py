@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Online optimizer module."""
+from collections import namedtuple
+from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Union
 
 import haiku as hk
@@ -28,16 +30,33 @@ class ParamsState(NamedTuple):
     state: Any
 
 
-class OptimizerOutput(NamedTuple):
-    loss: Any
-    model_info: Any
-    grads: Any
-    updated_grads: Any
-    trainable_params: Any
-    updated_trainable_params: Any
-    params: Any
-    updated_params: Any
-    opt_state: Any
+@dataclass
+class OptInfo:
+    """Dynamically define OptimizerInfo namedtuple structure.
+
+    Args:
+        return_params: if true, add 'params' field to output structure.
+    """
+
+    return_params: bool = False
+
+    def __post_init__(self):
+        outputs = ["loss", "model_info", "opt_loss"]
+        if self.return_params:
+            outputs += ["params"]
+        self.opt_info_struct_ = namedtuple("OptInfo", outputs)
+
+    def __call__(
+        self,
+        loss: float,
+        model_info: Any,
+        opt_loss: float,
+        params: Any = None,
+    ):
+        outputs = [loss, model_info, opt_loss]
+        if self.return_params:
+            outputs += [params]
+        return self.opt_info_struct_(*outputs)
 
 
 class OnlineOptimizer(hk.Module):
@@ -50,6 +69,7 @@ class OnlineOptimizer(hk.Module):
         project_params: Callable = None,
         regularize_loss: Callable = None,
         split_params: Callable = None,
+        return_params=False,
         name: str = None,
     ):
         """Initialize module.
@@ -77,6 +97,7 @@ class OnlineOptimizer(hk.Module):
             if split_params is not None
             else lambda params: (params, type(params)())
         )
+        self.OptInfo = OptInfo(return_params)
 
     def __call__(self, *args, **kwargs):
         """Update learner.
@@ -117,7 +138,7 @@ class OnlineOptimizer(hk.Module):
             return loss
 
         # compute loss and gradients
-        l, grads = jax.value_and_grad(_loss)(
+        opt_loss, grads = jax.value_and_grad(_loss)(
             trainable_params, non_trainable_params, state, *args, **kwargs
         )
 
@@ -139,9 +160,9 @@ class OnlineOptimizer(hk.Module):
                 updated_trainable_params, opt_state
             )
 
-        updated_params = hk.data_structures.merge(
-            updated_trainable_params, non_trainable_params
-        )
+        # updated_params = hk.data_structures.merge(
+        #      updated_trainable_params, non_trainable_params
+        # )
         step += 1
         hk.set_state("step", step)
         hk.set_state(
@@ -149,14 +170,10 @@ class OnlineOptimizer(hk.Module):
             ParamsState(updated_trainable_params, non_trainable_params, state),
         )
         hk.set_state("opt_state", opt_state)
-        return OptimizerOutput(
+        opt_info = self.OptInfo(
             loss,
             model_info,
-            grads,
-            updated_grads,
-            trainable_params,
-            updated_trainable_params,
+            opt_loss,
             params,
-            updated_params,
-            opt_state=opt_state,
         )
+        return opt_info

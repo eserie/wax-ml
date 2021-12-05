@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.0
+      jupytext_version: 1.13.3
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -198,10 +198,13 @@ project_params(hk.data_structures.to_mutable_dict(params))
 
 ```python
 def learn(y, X=None):
-    optim_res = OnlineOptimizer(
-        predict_and_evaluate, optax.sgd(1.0e-2), project_params=project_params
+    opt_info = OnlineOptimizer(
+        predict_and_evaluate,
+        optax.sgd(1.0e-2),
+        project_params=project_params,
+        return_params=True,
     )(y, X)
-    return optim_res
+    return opt_info
 ```
 
 Let's train:
@@ -210,16 +213,18 @@ Let's train:
 sim = unroll_transform_with_state(learn)
 rng = jax.random.PRNGKey(42)
 eps = jax.random.normal(rng, (1000,))
-params, state = sim.init(rng, eps)
-optim_res, state = sim.apply(params, state, rng, eps)
 
-pd.Series(optim_res.loss).expanding().mean().plot()
+params, state = sim.init(rng, eps)
+(opt_info), state = sim.apply(params, state, rng, eps)
+
+pd.Series(opt_info.loss).expanding().mean().plot()
+pd.Series(opt_info.opt_loss).expanding().mean().plot()
 ```
 
 Let's look at the latest weights:
 
 ```python
-jax.tree_map(lambda x: x[-1], optim_res.updated_params)
+jax.tree_map(lambda x: x[-1], opt_info.params)
 ```
 
 
@@ -237,14 +242,15 @@ class ForecastInfo(NamedTuple):
 
 ```python
 def learn_and_forecast(y, X=None):
-    optim_res = OnlineOptimizer(
-        predict_and_evaluate, optax.sgd(1.0e-3), project_params=project_params
+    opt_info = OnlineOptimizer(
+        predict_and_evaluate,
+        optax.sgd(1.0e-3),
+        project_params=project_params,
+        return_params=True,
     )(*lag(1)(y, X))
 
-    predict_params = optim_res.updated_params
-
-    forecast, forecast_info = UpdateParams(predict)(predict_params, y, X)
-    return forecast, ForecastInfo(optim_res, forecast_info)
+    forecast, forecast_info = UpdateParams(predict)(opt_info.params, y, X)
+    return forecast, ForecastInfo(opt_info, forecast_info)
 ```
 
 ```python
@@ -307,8 +313,6 @@ from optax._src.base import OptState
 ```
 
 ```python tags=[]
-
-
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
         time_series_model = lambda y, X: SNARIMAX(10)(y, X)
@@ -355,19 +359,18 @@ def build_agent(time_series_model=None, opt=None):
             return hk.data_structures.partition(filter_params, params)
 
         def learn_and_forecast(y, X=None):
-            optim_res = OnlineOptimizer(
+            opt_info = OnlineOptimizer(
                 model_with_loss,
                 opt,
                 project_params=project_params,
                 split_params=split_params,
+                return_params=True,
             )(*lag(1)(y, X))
 
-            predict_params = optim_res.updated_params
-
             y_pred, forecast_info = UpdateParams(time_series_model)(
-                predict_params, y, X
+                opt_info.params, y, X
             )
-            return y_pred, AgentInfo(optim_res, forecast_info)
+            return y_pred, AgentInfo(opt_info, forecast_info)
 
         return learn_and_forecast(y, X)
 
@@ -467,7 +470,7 @@ pd.DataFrame(gym_info.agent.optim.loss).mean().expanding().mean().plot(
 
 ```python
 i_batch = 0
-w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"][i_batch, :, :, 0]
+w = gym_info.agent.optim.params["snarimax/~/linear"]["w"][i_batch, :, :, 0]
 w = pd.DataFrame(w)
 
 ax = w.plot(title=f"weights on batch {i_batch}")
@@ -481,7 +484,7 @@ w.iloc[-1][::-1].plot(kind="bar")
 ```
 
 ```python
-w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"].mean(axis=0)[:, :, 0]
+w = gym_info.agent.optim.params["snarimax/~/linear"]["w"].mean(axis=0)[:, :, 0]
 w = pd.DataFrame(w)
 ax = w.plot(title="averaged weights (over batches)")
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -529,7 +532,7 @@ pd.DataFrame(gym_info.agent.optim.loss).mean(1).expanding().mean().plot(
 
 ```python
 i_batch = 0
-w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"][:, i_batch, :, 0]
+w = gym_info.agent.optim.params["snarimax/~/linear"]["w"][:, i_batch, :, 0]
 w = pd.DataFrame(w)
 
 ax = w.plot(title=f"weights on batch {i_batch}")
@@ -543,7 +546,7 @@ w.iloc[-1][::-1].plot(kind="bar")
 ```
 
 ```python
-w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"].mean(axis=1)[:, :, 0]
+w = gym_info.agent.optim.params["snarimax/~/linear"]["w"].mean(axis=1)[:, :, 0]
 w = pd.DataFrame(w)
 ax = w.plot(title="averaged weights (over batches)")
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -585,7 +588,7 @@ pd.Series(-gym_output.reward).expanding().mean().plot(ylim=(0.09, 0.15))
 ```
 
 ```python
-w = gym_info.agent.optim.updated_params["snarimax/~/linear"]["w"][:, :, 0]
+w = gym_info.agent.optim.params["snarimax/~/linear"]["w"][:, :, 0]
 w = pd.DataFrame(w)
 ax = w.plot(title="averaged weights (over batches)")
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -638,7 +641,6 @@ for optimizer in tqdm(OPTIMIZERS):
     params, state = sim.init(rng, eps)
     _res, state = sim.apply(params, state, rng, eps)
     res[optimizer.__name__] = _res
-
 ```
 
 ```python

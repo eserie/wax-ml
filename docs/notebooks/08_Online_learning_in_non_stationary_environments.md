@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.0
+      jupytext_version: 1.13.3
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -118,20 +118,21 @@ def build_agent(time_series_model=None, opt=None):
 
         def learn_and_forecast(y, X=None):
             # use lagged data for the optimizer
-            optim_res = OnlineOptimizer(
+            opt_info = OnlineOptimizer(
                 model_with_loss,
                 opt,
                 project_params=project_params,
                 split_params=split_params,
+                return_params=True,
             )(*tree_lag(1)(y, X))
 
             # use updated params to forecast with actual data
-            predict_params = optim_res.updated_params
+            predict_params = opt_info.params
 
             y_pred, forecast_info = UpdateParams(time_series_model)(
                 predict_params, y, X
             )
-            return y_pred, AgentInfo(optim_res, forecast_info)
+            return y_pred, AgentInfo(opt_info, forecast_info)
 
         return learn_and_forecast(y, X)
 
@@ -160,6 +161,7 @@ by measuring the average loss between the 5000 and 10000 steps.
 
 
 ### First order solvers
+
 
 
 
@@ -209,7 +211,7 @@ def scan_hparams_first_order():
         ax = loss.plot(
             logx=True, logy=False, ax=ax, label=name, ylim=(MIN_ERR, MAX_ERR)
         )
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.0, 1.0))
 
     return BEST_STEP_SIZE, BEST_GYM
 ```
@@ -244,6 +246,7 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
             label=(f"(TRAIN) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"),
             style="--",
         )
+
     for i, optimizer in enumerate(tqdm(OPTIMIZERS)):
 
         name = optimizer.__name__
@@ -268,13 +271,14 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
                 f"(VALIDATE) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"
             ),
         )
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.0, 1.0))
 
     return CROSS_VAL_GYM
 ```
 
 
 ### Newton solver
+
 
 
 
@@ -324,14 +328,13 @@ def scan_hparams_newton():
     I_BEST_PARAM = jnp.argmin(x)
 
     BEST_NEWTON_GYM = jax.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
+
     print("Best newton parameters: ", STEP_SIZE, NEWTON_EPS)
+
     return (STEP_SIZE, NEWTON_EPS), BEST_NEWTON_GYM
 ```
 
-
 ```python
-
-
 def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
     (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
     plt.figure()
@@ -370,13 +373,14 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
         ylim=(MIN_ERR, MAX_ERR),
         label=f"(VALIDATE) - Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
     )
-
-    plt.legend()
-
+    ax.legend(bbox_to_anchor=(1.0, 1.0))
+    ax.plot()
     return gym
 ```
 
+
 ### Plot everithing
+
 
 
 
@@ -411,12 +415,12 @@ def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
         i = 4
         (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
         gym = BEST_NEWTON_GYM
-        ax = MEASUR_FUNC(gym.reward).plot(
+        MEASUR_FUNC(gym.reward).plot(
             label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
             ylim=(MIN_ERR, MAX_ERR),
             color=COLORS[i],
         )
-        ax.legend(bbox_to_anchor=(1.0, 1.0))
+        plt.legend(bbox_to_anchor=(1.0, 1.0))
         plt.title(MEASURE_NAME)
 ```
 

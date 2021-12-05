@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The online newton optimizer. It extends optax optimizers."""
+from typing import NamedTuple
+
 import jax
 import jax.numpy as jnp
 from optax._src import base, combine
@@ -46,7 +48,7 @@ def newton(
     )
 
 
-class ScaleByNewtonState(base.OptState):
+class ScaleByNewtonState(NamedTuple):
     """State holding the sum of gradient squares to date."""
 
     hessian_inv: base.Updates

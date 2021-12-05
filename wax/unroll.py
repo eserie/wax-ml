@@ -223,16 +223,14 @@ def static_unroll(
         2,
     )
 
-    if callable(fun):
-        fun = hk.transform_with_state(fun)
+    tfun = unroll_transform_with_state(fun, skip_first, dynamic=False, pbar=pbar)
+    del fun
 
-    fun = unroll_transform_with_state(fun, skip_first, dynamic=False, pbar=pbar)
-
-    fun_init_params, fun_init_state = fun.init(rng, *args, **kwargs)
+    fun_init_params, fun_init_state = tfun.init(rng, *args, **kwargs)
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
 
-    return fun.apply(params, state, rng, *args, **kwargs)
+    return tfun.apply(params, state, rng, *args, **kwargs)
 
 
 def iter_first_axis(xs, pbar=False):

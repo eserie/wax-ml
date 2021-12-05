@@ -69,7 +69,7 @@ class OnlineSupervisedLearner(hk.Module):
             y: target
         """
 
-        step = hk.get_state("step", [], init=lambda *_: 0)
+        step = hk.get_state("step", [], init=lambda *_: jnp.array(0))
         params, state = hk.get_state(
             "model_params_state",
             [],

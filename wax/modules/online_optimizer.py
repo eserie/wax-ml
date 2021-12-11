@@ -160,9 +160,9 @@ class OnlineOptimizer(hk.Module):
                 updated_trainable_params, opt_state
             )
 
-        # updated_params = hk.data_structures.merge(
-        #      updated_trainable_params, non_trainable_params
-        # )
+        updated_params = hk.data_structures.merge(
+            updated_trainable_params, non_trainable_params
+        )
         step += 1
         hk.set_state("step", step)
         hk.set_state(
@@ -174,6 +174,6 @@ class OnlineOptimizer(hk.Module):
             loss,
             model_info,
             opt_loss,
-            params,
+            updated_params,
         )
         return opt_info

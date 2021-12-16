@@ -9,12 +9,32 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.3.0 (December 16 2021)
+
+* [VMap] VMap module works in contexts without PRNG key
+* [online optimizer] ; refactor
+  * refactor OnlineOptimizer outputs: only return loss, model_info, opt_loss by default.
+    New option 'return_params' to return params in outputs
+  * OnlineOptimizer returns updated params if return_params is set to True
+* [newton optimizer]: use NamedTuple instead of base.OptState
+* [unroll] propagate pbar argument to static_scan
+* [unroll] Renew the PRNG key in the unroll operations
+
+* refactor usage of OnlineOptimizer in notebooks
+
+* format with laster version of black
+* require jax<=0.2.21
+* add graphviz to optional dependencies
+* upgrade jupytext to 1.13.3
+* use python 3.8 in CI and documentation
+
+
 ## wax 0.2.0 (October 20 2021)
 
 * Documentation:
   * New notebook : 07_Online_Time_Series_Prediction
   * New notebook : 08_Online_learning_in_non_stationary_environments
-  
+
 * API modifications:
     * refactor accessors and stream
     * GymFeedback now assumes that agent and env return info object

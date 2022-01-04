@@ -9,6 +9,10 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.3.1 (January 4 2022)
+
+* [unroll] split rng in two rng keys.
+
 ## wax 0.3.0 (December 16 2021)
 
 * [VMap] VMap module works in contexts without PRNG key

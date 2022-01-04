@@ -1,11 +1,3 @@
-import functools
-import itertools
-from typing import Any, Callable, Dict, Optional, Tuple, Union, cast
-
-import numpy as np
-import pytest
-import tensorflow as tf
-
 # Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +11,13 @@ import tensorflow as tf
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
+import itertools
+from typing import Any, Callable, Dict, Optional, Tuple, Union, cast
+
+import numpy as np
+import pytest
+import tensorflow as tf
 from packaging import version
 
 import wax.external.eagerpy as ep

@@ -66,8 +66,10 @@ def unroll_transform_with_state(
         params, state, rng = scan_state
         args_step, kwargs_step = inputs
         if rng is not None:
-            (rng,) = jax.random.split(rng, 1)
-        outputs, state = tfunc.apply(params, state, rng, *args_step, **kwargs_step)
+            (rng, sub_rng) = jax.random.split(rng)
+        else:
+            sub_rng = None
+        outputs, state = tfunc.apply(params, state, sub_rng, *args_step, **kwargs_step)
         return ScanState(params, state, rng), outputs
 
     def init(rng: jnp.ndarray, *args, **kwargs):

@@ -29,8 +29,8 @@ def test_unroll_rng():
     params = fun.init(rng, 1)
     ref = []
     for i in range(5):
-        (rng,) = jax.random.split(rng, 1)
-        ref.append(fun.apply(params, rng, 1))
+        (rng, sub_rng) = jax.random.split(rng)
+        ref.append(fun.apply(params, sub_rng, 1))
     ref = jnp.array(ref)
 
     rng = jax.random.PRNGKey(42)

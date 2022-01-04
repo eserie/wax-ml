@@ -312,7 +312,7 @@ class NumPyTensor(BaseTensor):
         self: TensorType, *tensors: TensorType, indexing: str = "xy"
     ) -> Tuple[TensorType, ...]:
         tensors = unwrap_(*tensors)
-        outputs = np.meshgrid(self.raw, *tensors, indexing=indexing)
+        outputs = np.meshgrid(self.raw, *tensors, indexing=indexing)  # type: ignore
         return tuple(type(self)(out) for out in outputs)
 
     def pad(
@@ -337,10 +337,10 @@ class NumPyTensor(BaseTensor):
                 raise NotImplementedError  # pragma: no cover
         if mode == "constant":
             return type(self)(
-                np.pad(self.raw, paddings, mode=mode, constant_values=value)
+                np.pad(self.raw, paddings, mode=mode, constant_values=value)  # type: ignore
             )
         else:
-            return type(self)(np.pad(self.raw, paddings, mode=mode))
+            return type(self)(np.pad(self.raw, paddings, mode=mode))  # type: ignore
 
     def isnan(self: TensorType) -> TensorType:
         return type(self)(np.isnan(self.raw))
@@ -412,7 +412,7 @@ class NumPyTensor(BaseTensor):
 
     def where(self: TensorType, x: TensorOrScalar, y: TensorOrScalar) -> TensorType:
         x, y = unwrap_(x, y)
-        return type(self)(np.where(self.raw, x, y))
+        return type(self)(np.where(self.raw, x, y))  # type: ignore
 
     def __lt__(self: TensorType, other: TensorOrScalar) -> TensorType:
         return type(self)(self.raw.__lt__(unwrap1(other)))

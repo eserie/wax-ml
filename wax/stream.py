@@ -343,7 +343,7 @@ def unroll_stream(
     return tree_unflatten(treedef, outputs)
 
 
-def dataset_to_numpy(dataset):
+def dataset_to_numpy(dataset) -> Dict[str, jnp.ndarray]:
     """Convert a xarray Dataset into a dict of numpy arrays."""
     dataset_numpy = {dim: var.values for dim, var in dataset.items()}
     return dataset_numpy
@@ -595,7 +595,7 @@ class Stream:
         np_index = dataset_to_numpy(dataset_index)
 
         # prepare steps
-        xs = onp.arange(len(time_dataset_index[local_time]))
+        xs = jnp.arange(len(time_dataset_index[local_time]))
 
         return np_data, np_index, xs
 

@@ -84,7 +84,7 @@ register_wax_accessors()
 STAR = "007609553"
 SEQ_LEN = 64
 BATCH_SIZE = 8
-TRAIN_SIZE = 2 ** 16
+TRAIN_SIZE = 2**16
 NUM_EPOCHS = 10
 NUM_STARS = None
 RECORD_FREQ = 100

@@ -30,7 +30,7 @@ def test_sherman_morrisson():
 
 
 def loss(w, x):
-    return -(w * x).sum() + (w ** 2).sum()
+    return -(w * x).sum() + (w**2).sum()
 
 
 # from optax import sgd, adagrad

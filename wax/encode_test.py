@@ -42,9 +42,9 @@ def test_encode_float(seed):
 @pytest.mark.parametrize(
     "seed",
     [
-        2 ** 63 - 1,
-        2 ** 50 - 46,
-        2 ** 34,
+        2**63 - 1,
+        2**50 - 46,
+        2**34,
         onp.int32(10),
         onp.uint32(10),
         onp.int64(10),
@@ -100,9 +100,9 @@ def test_encode_datetime64_simple(dtype):
 
 TEST_INT_LIST = [
     (1, 2),
-    (10, 2 ** 33),
-    (2 ** 32, 2 ** 32 + 1),
-    (2 ** 32 - 1, 2 ** 32),
+    (10, 2**33),
+    (2**32, 2**32 + 1),
+    (2**32 - 1, 2**32),
 ]
 
 # inverse order of t1, t2

@@ -61,7 +61,7 @@ class MaskStd(hk.Module):
             diff = ApplyMask()(mask, diff)
 
             eps = jnp.finfo(x.dtype).resolution ** 2
-            var = (diff ** 2).sum(axis=self.axis) / count
+            var = (diff**2).sum(axis=self.axis) / count
             std = jnp.where(var > 0.0, jnp.sqrt(eps + var), 0.0)
             return std
 

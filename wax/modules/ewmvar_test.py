@@ -50,7 +50,7 @@ class EWMVar_v2(hk.Module):
         mean_square = EWMA(
             self.alpha, self.adjust, initial_value=jnp.nan, name="mean_square"
         )(x * x)
-        var = mean_square - mean ** 2
+        var = mean_square - mean**2
         var = jnp.where(var < 0, 0.0, var)
         return var
 

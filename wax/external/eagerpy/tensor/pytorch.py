@@ -98,7 +98,7 @@ class PyTorchTensor(BaseTensor):
         return type(self)(self.raw.clamp(min_, max_))
 
     def square(self: TensorType) -> TensorType:
-        return type(self)(self.raw ** 2)
+        return type(self)(self.raw**2)
 
     def arctanh(self: TensorType) -> TensorType:
         """

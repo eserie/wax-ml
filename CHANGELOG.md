@@ -9,6 +9,10 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.3.2 (February 25 2022)
+
+* [modules] faster EWMA in adjust=True mode.
+
 ## wax 0.3.1 (January 4 2022)
 
 * [unroll] split rng in two rng keys.

@@ -85,13 +85,17 @@ class EWMA(hk.Module):
             tscale = jnp.where(count < tscale, count, tscale)
             alpha = jnp.where(tscale > 0, 1.0 / tscale, jnp.nan)
         elif self.adjust:
-            # exponential scheme (as in pandas)
-            eps = jnp.finfo(x.dtype).resolution
-            alpha = jnp.where(
-                count > 0, alpha / (eps + 1.0 - (1.0 - alpha) ** (count)), 1.0
+            rho_pow = hk.get_state(
+                "rho_pow",
+                shape=x.shape,
+                dtype=x.dtype,
+                init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
             )
-            # alpha = alpha / (1.0 - (1.0 - alpha) ** (count))
-
+            # exponential scheme (as in pandas)
+            rho_pow = jnp.where(isnan_x, rho_pow, rho_pow * (1 - self.alpha))
+            eps = jnp.finfo(x.dtype).resolution
+            alpha = jnp.where(count > 0, alpha / (eps + 1.0 - rho_pow), 1.0)
+            hk.set_state("rho_pow", rho_pow)
         # update mean  if x is not nan
         mean = jnp.where(isnan_x, mean, (1.0 - alpha) * mean + alpha * x)
 

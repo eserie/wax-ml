@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentioal moving average."""
+
 import haiku as hk
-import jax.numpy as jnp
+from jax import numpy as jnp
 
 
 class EWMA(hk.Module):
@@ -48,19 +49,6 @@ class EWMA(hk.Module):
             dtype=x.dtype,
             init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
         )
-        is_initialized = hk.get_state(
-            "is_initialized",
-            shape=x.shape,
-            dtype=bool,
-            init=lambda shape, dtype: jnp.full(shape, False, dtype),
-        )
-        count = hk.get_state(
-            "count",
-            shape=x.shape,
-            dtype=x.dtype,
-            init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
-        )
-
         alpha = hk.get_parameter(
             "alpha",
             shape=[],
@@ -69,21 +57,28 @@ class EWMA(hk.Module):
         )
 
         # initialization on first non-nan value
-        mean = jnp.where(is_initialized, mean, x)
-        is_initialized = jnp.where(jnp.isnan(x), is_initialized, True)
-        hk.set_state("is_initialized", is_initialized)
-
+        mean = jnp.where(jnp.isnan(mean), x, mean)
         isnan_x = jnp.isnan(x)
+        isnan_mean = jnp.isnan(mean)
+
+        # fillna by zero to avoid nans in gradient computations
         x = jnp.nan_to_num(x)
         mean = jnp.nan_to_num(mean)
 
-        count = jnp.where(isnan_x, count, count + 1)
-
         # alpha adjustement scheme
         if self.adjust == "linear":
+            count = hk.get_state(
+                "count",
+                shape=x.shape,
+                dtype=x.dtype,
+                init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
+            )
+            count = jnp.where(isnan_x, count, count + 1)
+            hk.set_state("count", count)
+
             tscale = 1.0 / alpha
             tscale = jnp.where(count < tscale, count, tscale)
-            alpha = jnp.where(tscale > 0, 1.0 / tscale, jnp.nan)
+            alpha_eff = jnp.where(tscale > 0, 1.0 / tscale, jnp.nan)
         elif self.adjust:
             rho_pow = hk.get_state(
                 "rho_pow",
@@ -92,14 +87,18 @@ class EWMA(hk.Module):
                 init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
             )
             # exponential scheme (as in pandas)
-            rho_pow = jnp.where(isnan_x, rho_pow, rho_pow * (1 - self.alpha))
             eps = jnp.finfo(x.dtype).resolution
-            alpha = jnp.where(count > 0, alpha / (eps + 1.0 - rho_pow), 1.0)
+            rho_pow = jnp.where(isnan_x, rho_pow, rho_pow * (1 - alpha))
+            alpha_eff = jnp.where(isnan_x, alpha, alpha / (eps + 1.0 - rho_pow))
             hk.set_state("rho_pow", rho_pow)
-        # update mean  if x is not nan
-        mean = jnp.where(isnan_x, mean, (1.0 - alpha) * mean + alpha * x)
+        else:
+            alpha_eff = alpha
 
-        mean = jnp.where(is_initialized, mean, self.initial_value)
+        # update mean  if x is not nan
+        mean = jnp.where(isnan_x, mean, (1.0 - alpha_eff) * mean + alpha_eff * x)
+
+        # restore nan
+        mean = jnp.where(jnp.logical_and(isnan_x, isnan_mean), jnp.nan, mean)
+
         hk.set_state("mean", mean)
-        hk.set_state("count", count)
         return mean

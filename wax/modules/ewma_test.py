@@ -11,16 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import partial
+
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import numpy as onp
 import pandas as pd
 import pytest
 from jax.config import config
 
 from wax.compile import jit_init_apply
 from wax.modules.ewma import EWMA
-from wax.unroll import dynamic_unroll_fori_loop, unroll
+from wax.unroll import dynamic_unroll_fori_loop, unroll, unroll_transform_with_state
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
@@ -143,33 +146,53 @@ def test_run_ema_vs_pandas_adjust_finite():
 
 @pytest.mark.parametrize("adjust", [False, True, "linear"])
 def test_grad_ewma(adjust):
-    from functools import partial
-
-    import jax
-    import jax.numpy as jnp
-
-    from wax.unroll import unroll_transform_with_state
 
     rng = jax.random.PRNGKey(42)
     x = jax.random.normal(rng, (10, 3))
-    _, rng = jax.random.split(rng)
-    params = {"w": jax.random.normal(rng, (10,))}
-
     # put some nan values
-    x = jax.ops.index_update(x, 0, jnp.nan)
+    x = x.at[0].set(jnp.nan)
+
+    _, rng = jax.random.split(rng)
 
     @partial(unroll_transform_with_state, dynamic=False)
     def fun(x):
         return EWMA(1 / 10, adjust=adjust)(x)
 
-    # print("init")
     params, state = fun.init(rng, x)
-
-    # print("apply")
     res, final_state = fun.apply(params, state, rng, x)
-    # print(res)
 
-    # print("gradient")
+    @jax.value_and_grad
+    def batch(params):
+        res, final_state = fun.apply(params, state, rng, x)
+        return res.mean()
+
+    score, grad = batch(params)
+    assert not jnp.isnan(grad["ewma"]["alpha"])
+
+
+@pytest.mark.parametrize("adjust", [False, True])
+def test_nan_at_beginning(adjust):
+    config.update("jax_enable_x64", True)
+
+    T = 20
+    x = jnp.full((T,), jnp.nan).at[2].set(1).at[10].set(-1)
+
+    @partial(unroll_transform_with_state, dynamic=True)
+    def fun(x):
+        return EWMA(1 / 10, adjust=adjust)(x)
+
+    rng = jax.random.PRNGKey(42)
+    params, state = fun.init(rng, x)
+    res, final_state = fun.apply(params, state, rng, x)
+    res = pd.DataFrame(onp.array(res))
+
+    ref_res = (
+        pd.DataFrame(onp.array(x))
+        .ewm(alpha=1 / 10, adjust=adjust, ignore_na=True)
+        .mean()
+    )
+    pd.testing.assert_frame_equal(res, ref_res, atol=1.0e-6)
+
     @jax.value_and_grad
     def batch(params):
         res, final_state = fun.apply(params, state, rng, x)

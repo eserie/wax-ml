@@ -26,6 +26,7 @@ class EWMA(hk.Module):
         adjust: bool = True,
         initial_value=jnp.nan,
         ignore_na: bool = False,
+        min_periods=None,
         return_info: bool = False,
         name: str = None,
     ):
@@ -43,6 +44,7 @@ class EWMA(hk.Module):
         self.adjust = adjust
         self.ignore_na = ignore_na
         self.initial_value = initial_value
+        self.min_periods = min_periods
         self.return_info = return_info
 
     def __call__(self, x):
@@ -78,7 +80,7 @@ class EWMA(hk.Module):
         x = jnp.nan_to_num(x)
         mean = jnp.nan_to_num(mean)
 
-        if not self.ignore_na:
+        if not self.ignore_na or self.min_periods:
             is_initialized = hk.get_state(
                 "is_initialized",
                 shape=x.shape,
@@ -92,6 +94,21 @@ class EWMA(hk.Module):
             if self.return_info:
                 info["is_initialized"] = is_initialized
             hk.set_state("is_initialized", is_initialized)
+
+        if self.min_periods:
+            count = hk.get_state(
+                "count",
+                shape=x.shape,
+                dtype=x.dtype,
+                init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
+            )
+            if self.return_info:
+                info["count"] = count
+            if self.ignore_na:
+                count = jnp.where(isnan_x, count, count + 1)
+            else:
+                count = jnp.where(is_initialized, count + 1, count)
+            hk.set_state("count", count)
 
         if self.adjust:
             # adjustement scheme
@@ -173,6 +190,9 @@ class EWMA(hk.Module):
             # update only if
             last_mean = jnp.where(isnan_x, last_mean, mean / norm)
             hk.set_state("last_mean", last_mean)
+
+        if self.min_periods:
+            last_mean = jnp.where(count< self.min_periods, jnp.nan, last_mean)
 
         if self.return_info:
             return last_mean, info

@@ -89,8 +89,9 @@ class EWMA(hk.Module):
             info["is_initialized"] = is_initialized
             hk.set_state("is_initialized", is_initialized)
 
-        com = 1. / alpha - 1.
         if self.adjust:
+            # adjustement scheme
+            com = 1. / alpha - 1.
             com_eff = hk.get_state(
                 "com_eff",
                 shape=x.shape,
@@ -100,7 +101,6 @@ class EWMA(hk.Module):
             alpha_eff = 1. / (1. + com_eff)
             info["com_eff"] = com_eff
 
-            # adjustement scheme
             if self.adjust == "linear":
                 if self.ignore_na:
                     com_eff = jnp.where(isnan_x, com_eff, com_eff + 1)

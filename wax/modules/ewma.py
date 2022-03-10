@@ -21,7 +21,12 @@ class EWMA(hk.Module):
     """Compute exponentioal moving average."""
 
     def __init__(
-        self, alpha: float, adjust: bool = True, initial_value=jnp.nan, name: str = None
+            self, alpha: float,
+            adjust: bool = True,
+            initial_value=jnp.nan,
+            ignore_na: bool = False,
+            return_info: bool = False,
+            name: str = None,
     ):
         """Initialize module.
 
@@ -35,7 +40,9 @@ class EWMA(hk.Module):
         super().__init__(name=name)
         self.alpha = alpha
         self.adjust = adjust
+        self.ignore_na = ignore_na
         self.initial_value = initial_value
+        self.return_info = return_info
 
     def __call__(self, x):
         """Compute EWMA.
@@ -43,12 +50,8 @@ class EWMA(hk.Module):
         Args:
             x: input data.
         """
-        mean = hk.get_state(
-            "mean",
-            shape=x.shape,
-            dtype=x.dtype,
-            init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
-        )
+        info = {}
+
         alpha = hk.get_parameter(
             "alpha",
             shape=[],
@@ -56,14 +59,35 @@ class EWMA(hk.Module):
             init=lambda *_: jnp.array(self.alpha),
         )
 
-        # initialization on first non-nan value
+        mean = hk.get_state(
+            "mean",
+            shape=x.shape,
+            dtype=x.dtype,
+            init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
+        )
+
+        # initialization on first non-nan value if initial_value is nan
         mean = jnp.where(jnp.isnan(mean), x, mean)
+
+        # get status
         isnan_x = jnp.isnan(x)
         isnan_mean = jnp.isnan(mean)
 
         # fillna by zero to avoid nans in gradient computations
         x = jnp.nan_to_num(x)
         mean = jnp.nan_to_num(mean)
+
+        if not self.ignore_na:
+            is_initialized = hk.get_state(
+                "is_initialized",
+                shape=x.shape,
+                dtype=bool,
+                init=lambda shape, dtype: jnp.full(shape, False, dtype),
+            )
+
+            is_initialized = jnp.where(is_initialized, is_initialized, jnp.logical_not(isnan_x))
+            info["is_initialized"] = is_initialized
+            hk.set_state("is_initialized", is_initialized)
 
         # alpha adjustement scheme
         if self.adjust == "linear":
@@ -73,7 +97,10 @@ class EWMA(hk.Module):
                 dtype=x.dtype,
                 init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
             )
-            count = jnp.where(isnan_x, count, count + 1)
+            if self.ignore_na:
+                count = jnp.where(isnan_x, count, count + 1)
+            else:
+                count = count + 1
             hk.set_state("count", count)
 
             tscale = 1.0 / alpha
@@ -88,17 +115,56 @@ class EWMA(hk.Module):
             )
             # exponential scheme (as in pandas)
             eps = jnp.finfo(x.dtype).resolution
-            rho_pow = jnp.where(isnan_x, rho_pow, rho_pow * (1 - alpha))
-            alpha_eff = jnp.where(isnan_x, alpha, alpha / (eps + 1.0 - rho_pow))
+            if self.ignore_na:
+                rho_pow = jnp.where(isnan_x, rho_pow, rho_pow * (1 - alpha))
+                alpha_eff = jnp.where(isnan_x, alpha, alpha / (eps + 1.0 - rho_pow))
+            else:
+                rho_pow = jnp.where(is_initialized, rho_pow * (1 - alpha), rho_pow)
+                alpha_eff = jnp.where(is_initialized, alpha / (eps + 1.0 - rho_pow), 1.)
             hk.set_state("rho_pow", rho_pow)
         else:
             alpha_eff = alpha
 
         # update mean  if x is not nan
-        mean = jnp.where(isnan_x, mean, (1.0 - alpha_eff) * mean + alpha_eff * x)
+        if self.ignore_na:
+            mean = jnp.where(isnan_x, mean, (1.0 - alpha_eff) * mean + alpha_eff * x)
+        else:
+            norm = hk.get_state(
+                "norm",
+                shape=x.shape,
+                dtype=x.dtype,
+                init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
+            )
 
+            mean = jnp.where(is_initialized, (1.0 - alpha_eff) * mean + alpha_eff * x, mean)
+            norm = jnp.where(is_initialized, (1.0 - alpha_eff) * norm + alpha_eff * jnp.logical_not(isnan_x), norm)
+            hk.set_state("norm", norm)
         # restore nan
         mean = jnp.where(jnp.logical_and(isnan_x, isnan_mean), jnp.nan, mean)
 
         hk.set_state("mean", mean)
-        return mean
+
+        if self.ignore_na:
+            last_mean = mean
+        else:
+            last_mean = hk.get_state(
+                "last_mean",
+                shape=x.shape,
+                dtype=x.dtype,
+                init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
+            )
+
+            # update only if
+            last_mean = jnp.where(isnan_x, last_mean, mean / norm)
+            hk.set_state("last_mean", last_mean)
+            info["mean"] = mean
+            info["x"] = x
+
+            info["alpha_eff"] = alpha_eff
+
+            info["norm"] = norm
+
+        if self.return_info:
+            return last_mean, info
+        else:
+            return last_mean

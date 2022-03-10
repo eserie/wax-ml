@@ -170,8 +170,8 @@ def test_grad_ewma(adjust):
     assert not jnp.isnan(grad["ewma"]["alpha"])
 
 
-@pytest.mark.parametrize("adjust", [False, True])
-def test_nan_at_beginning(adjust):
+@pytest.mark.parametrize("adjust, ignore_na", [(False, False), (True, False), (True, True)])
+def test_nan_at_beginning(adjust, ignore_na):
     config.update("jax_enable_x64", True)
 
     T = 20
@@ -179,23 +179,23 @@ def test_nan_at_beginning(adjust):
 
     @partial(unroll_transform_with_state, dynamic=True)
     def fun(x):
-        return EWMA(1 / 10, adjust=adjust)(x)
+        return EWMA(1 / 10, adjust=adjust, ignore_na=ignore_na, return_info=True,)(x)
 
     rng = jax.random.PRNGKey(42)
     params, state = fun.init(rng, x)
-    res, final_state = fun.apply(params, state, rng, x)
+    (res, info), final_state = fun.apply(params, state, rng, x)
     res = pd.DataFrame(onp.array(res))
 
     ref_res = (
         pd.DataFrame(onp.array(x))
-        .ewm(alpha=1 / 10, adjust=adjust, ignore_na=True)
+        .ewm(alpha=1 / 10, adjust=adjust, ignore_na=ignore_na)
         .mean()
     )
     pd.testing.assert_frame_equal(res, ref_res, atol=1.0e-6)
 
     @jax.value_and_grad
     def batch(params):
-        res, final_state = fun.apply(params, state, rng, x)
+        (res, info), final_state = fun.apply(params, state, rng, x)
         return res.mean()
 
     score, grad = batch(params)

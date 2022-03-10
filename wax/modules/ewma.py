@@ -89,39 +89,31 @@ class EWMA(hk.Module):
             info["is_initialized"] = is_initialized
             hk.set_state("is_initialized", is_initialized)
 
-        # alpha adjustement scheme
-        if self.adjust == "linear":
-            count = hk.get_state(
-                "count",
+        com = 1. / alpha - 1.
+        if self.adjust:
+            com_eff = hk.get_state(
+                "com_eff",
                 shape=x.shape,
                 dtype=x.dtype,
                 init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
             )
-            if self.ignore_na:
-                count = jnp.where(isnan_x, count, count + 1)
-            else:
-                count = count + 1
-            hk.set_state("count", count)
+            alpha_eff = 1. / (1. + com_eff)
+            info["com_eff"] = com_eff
 
-            tscale = 1.0 / alpha
-            tscale = jnp.where(count < tscale, count, tscale)
-            alpha_eff = jnp.where(tscale > 0, 1.0 / tscale, jnp.nan)
-        elif self.adjust:
-            rho_pow = hk.get_state(
-                "rho_pow",
-                shape=x.shape,
-                dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
-            )
-            # exponential scheme (as in pandas)
-            eps = jnp.finfo(x.dtype).resolution
-            if self.ignore_na:
-                rho_pow = jnp.where(isnan_x, rho_pow, rho_pow * (1 - alpha))
-                alpha_eff = jnp.where(isnan_x, alpha, alpha / (eps + 1.0 - rho_pow))
+            # adjustement scheme
+            if self.adjust == "linear":
+                if self.ignore_na:
+                    com_eff = jnp.where(isnan_x, com_eff, com_eff + 1)
+                else:
+                    com_eff = jnp.where(is_initialized, com_eff + 1, com_eff)
+                com_eff = jnp.minimum(com_eff, com)
             else:
-                rho_pow = jnp.where(is_initialized, rho_pow * (1 - alpha), rho_pow)
-                alpha_eff = jnp.where(is_initialized, alpha / (eps + 1.0 - rho_pow), 1.)
-            hk.set_state("rho_pow", rho_pow)
+                # exponential scheme (as in pandas)
+                if self.ignore_na:
+                    com_eff = jnp.where(isnan_x, com_eff, alpha * com + (1 - alpha) * com_eff)
+                else:
+                    com_eff = jnp.where(is_initialized, alpha * com + (1 - alpha) * com_eff, com_eff)
+            hk.set_state("com_eff", com_eff)
         else:
             alpha_eff = alpha
 

@@ -170,7 +170,9 @@ def test_grad_ewma(adjust):
     assert not jnp.isnan(grad["ewma"]["alpha"])
 
 
-@pytest.mark.parametrize("adjust, ignore_na", [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize(
+    "adjust, ignore_na", [(False, False), (True, False), (True, True)]
+)
 def test_nan_at_beginning(adjust, ignore_na):
     config.update("jax_enable_x64", True)
 
@@ -179,7 +181,12 @@ def test_nan_at_beginning(adjust, ignore_na):
 
     @partial(unroll_transform_with_state, dynamic=True)
     def fun(x):
-        return EWMA(1 / 10, adjust=adjust, ignore_na=ignore_na, return_info=True,)(x)
+        return EWMA(
+            1 / 10,
+            adjust=adjust,
+            ignore_na=ignore_na,
+            return_info=True,
+        )(x)
 
     rng = jax.random.PRNGKey(42)
     params, state = fun.init(rng, x)

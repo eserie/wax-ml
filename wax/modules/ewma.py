@@ -21,12 +21,13 @@ class EWMA(hk.Module):
     """Compute exponentioal moving average."""
 
     def __init__(
-            self, alpha: float,
-            adjust: bool = True,
-            initial_value=jnp.nan,
-            ignore_na: bool = False,
-            return_info: bool = False,
-            name: str = None,
+        self,
+        alpha: float,
+        adjust: bool = True,
+        initial_value=jnp.nan,
+        ignore_na: bool = False,
+        return_info: bool = False,
+        name: str = None,
     ):
         """Initialize module.
 
@@ -85,21 +86,25 @@ class EWMA(hk.Module):
                 init=lambda shape, dtype: jnp.full(shape, False, dtype),
             )
 
-            is_initialized = jnp.where(is_initialized, is_initialized, jnp.logical_not(isnan_x))
-            info["is_initialized"] = is_initialized
+            is_initialized = jnp.where(
+                is_initialized, is_initialized, jnp.logical_not(isnan_x)
+            )
+            if self.return_info:
+                info["is_initialized"] = is_initialized
             hk.set_state("is_initialized", is_initialized)
 
         if self.adjust:
             # adjustement scheme
-            com = 1. / alpha - 1.
+            com = 1.0 / alpha - 1.0
             com_eff = hk.get_state(
                 "com_eff",
                 shape=x.shape,
                 dtype=x.dtype,
                 init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
             )
-            alpha_eff = 1. / (1. + com_eff)
-            info["com_eff"] = com_eff
+            if self.return_info:
+                info["com_eff"] = com_eff
+            alpha_eff = 1.0 / (1.0 + com_eff)
 
             if self.adjust == "linear":
                 if self.ignore_na:
@@ -110,12 +115,19 @@ class EWMA(hk.Module):
             else:
                 # exponential scheme (as in pandas)
                 if self.ignore_na:
-                    com_eff = jnp.where(isnan_x, com_eff, alpha * com + (1 - alpha) * com_eff)
+                    com_eff = jnp.where(
+                        isnan_x, com_eff, alpha * com + (1 - alpha) * com_eff
+                    )
                 else:
-                    com_eff = jnp.where(is_initialized, alpha * com + (1 - alpha) * com_eff, com_eff)
+                    com_eff = jnp.where(
+                        is_initialized, alpha * com + (1 - alpha) * com_eff, com_eff
+                    )
             hk.set_state("com_eff", com_eff)
         else:
             alpha_eff = alpha
+
+        if self.return_info:
+            info["alpha_eff"] = alpha_eff
 
         # update mean  if x is not nan
         if self.ignore_na:
@@ -128,9 +140,21 @@ class EWMA(hk.Module):
                 init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
             )
 
-            mean = jnp.where(is_initialized, (1.0 - alpha_eff) * mean + alpha_eff * x, mean)
-            norm = jnp.where(is_initialized, (1.0 - alpha_eff) * norm + alpha_eff * jnp.logical_not(isnan_x), norm)
+            mean = jnp.where(
+                is_initialized, (1.0 - alpha_eff) * mean + alpha_eff * x, mean
+            )
+            norm = jnp.where(
+                is_initialized,
+                (1.0 - alpha_eff) * norm + alpha_eff * jnp.logical_not(isnan_x),
+                norm,
+            )
+
+            if self.return_info:
+                info["mean"] = mean
+                info["norm"] = norm
+
             hk.set_state("norm", norm)
+
         # restore nan
         mean = jnp.where(jnp.logical_and(isnan_x, isnan_mean), jnp.nan, mean)
 
@@ -149,12 +173,6 @@ class EWMA(hk.Module):
             # update only if
             last_mean = jnp.where(isnan_x, last_mean, mean / norm)
             hk.set_state("last_mean", last_mean)
-            info["mean"] = mean
-            info["x"] = x
-
-            info["alpha_eff"] = alpha_eff
-
-            info["norm"] = norm
 
         if self.return_info:
             return last_mean, info

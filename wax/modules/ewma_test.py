@@ -167,7 +167,7 @@ def test_grad_ewma(adjust):
         return res.mean()
 
     score, grad = batch(params)
-    assert not jnp.isnan(grad["ewma"]["com"])
+    assert not jnp.isnan(grad["ewma"]["logcom"])
 
 
 @pytest.mark.parametrize(
@@ -203,7 +203,63 @@ def test_nan_at_beginning(adjust, ignore_na):
     @jax.value_and_grad
     def batch(params):
         (res, info), final_state = fun.apply(params, state, rng, x)
-        return res.mean()
+        return jnp.nanmean(res)
 
     score, grad = batch(params)
-    assert not jnp.isnan(grad["ewma"]["com"])
+    assert not jnp.isnan(grad["ewma"]["logcom"])
+
+
+def test_train_ewma():
+    import optax
+    from tqdm.auto import tqdm
+
+    COM_INIT = 100
+    COM_TARGET = 10
+    T = 1000
+    n_epochs = 100
+
+    def train():
+        def model(x):
+            return EWMA(1 / COM_INIT, adjust=False, ignore_na=True)(x)
+
+        @jax.jit
+        def loss(y, y_ref):
+            return jnp.nanmean((y - y_ref) ** 2)
+
+        @jax.jit
+        def loss_p(params, state, x, y_ref):
+            y_pred, state = model.apply(params, state, rng, x)
+            return loss(y_pred, y_ref)
+
+        rng = jax.random.PRNGKey(42)
+        x = jax.random.normal(rng, (T,))
+
+        y_ref = unroll(lambda x: EWMA(1 / COM_TARGET, adjust=False, ignore_na=True)(x))(
+            x
+        )
+
+        model = unroll_transform_with_state(model)
+        params, state = model.init(rng, x)
+
+        y_pred, _ = model.apply(params, state, rng, x)
+
+        opt = optax.adagrad(1.0e-1)
+        opt_state = opt.init(params)
+        for e in tqdm(range(n_epochs)):
+            # params, state = model.init(rng, x)
+            _, state = model.init(rng, x)
+            y_pred, state = model.apply(params, state, rng, x)
+            l_ = loss(y_pred, y_ref)
+            grad = jax.grad(loss_p)(params, state, x, y_ref)
+            logcom = params["ewma"]["logcom"]
+            if e % 100 == 0:
+                print(
+                    f"e={e}, logcom={logcom}, com={jnp.exp(logcom)}, grad={grad['ewma']['logcom']}, loss = {l_}"
+                )
+            updates, opt_state = opt.update(grad, opt_state)
+            params = optax.apply_updates(params, updates)
+        print(
+            f"logcom={logcom}, com={jnp.exp(logcom)}, grad={grad['ewma']['logcom']}, loss = {l_}"
+        )
+
+    train()

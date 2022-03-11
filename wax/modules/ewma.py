@@ -24,7 +24,7 @@ class EWMA(hk.Module):
         self,
         alpha: float = None,
         com: float = None,
-        min_periods : int = 0,
+        min_periods: int = 0,
         adjust: bool = True,
         ignore_na: bool = False,
         initial_value=jnp.nan,
@@ -89,7 +89,7 @@ class EWMA(hk.Module):
             assert alpha is None
         elif alpha is not None:
             assert com is None
-            com = 1. / alpha - 1.
+            com = 1.0 / alpha - 1.0
         assert com > 0
 
         self.com = com
@@ -107,12 +107,13 @@ class EWMA(hk.Module):
         """
         info = {}
 
-        com = hk.get_parameter(
-            "com",
+        logcom = hk.get_parameter(
+            "logcom",
             shape=[],
             dtype=x.dtype,
-            init=lambda shape, dtype: jnp.array(self.com, dtype),
+            init=lambda shape, dtype: jnp.array(jnp.log(self.com), dtype),
         )
+        com = jnp.exp(logcom)
 
         mean = hk.get_state(
             "mean",
@@ -132,7 +133,7 @@ class EWMA(hk.Module):
         x = jnp.nan_to_num(x)
         mean = jnp.nan_to_num(mean)
 
-        alpha = 1.0 / (1.0  + com)
+        alpha = 1.0 / (1.0 + com)
 
         if not self.ignore_na or self.min_periods:
             is_initialized = hk.get_state(
@@ -245,7 +246,7 @@ class EWMA(hk.Module):
             hk.set_state("last_mean", last_mean)
 
         if self.min_periods:
-            last_mean = jnp.where(count< self.min_periods, jnp.nan, last_mean)
+            last_mean = jnp.where(count < self.min_periods, jnp.nan, last_mean)
 
         if self.return_info:
             return last_mean, info

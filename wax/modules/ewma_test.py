@@ -220,7 +220,7 @@ def test_train_ewma():
 
     def train():
         def model(x):
-            return EWMA(1 / COM_INIT, adjust=False, ignore_na=True)(x)
+            return EWMA(1 / COM_INIT, adjust=True, ignore_na=False)(x)
 
         @jax.jit
         def loss(y, y_ref):
@@ -232,9 +232,9 @@ def test_train_ewma():
             return loss(y_pred, y_ref)
 
         rng = jax.random.PRNGKey(42)
-        x = jax.random.normal(rng, (T,))
+        x = jax.random.normal(rng, (T,)).at[T // 2].set(jnp.nan)
 
-        y_ref = unroll(lambda x: EWMA(1 / COM_TARGET, adjust=False, ignore_na=True)(x))(
+        y_ref = unroll(lambda x: EWMA(1 / COM_TARGET, adjust=True, ignore_na=False)(x))(
             x
         )
 
@@ -245,6 +245,7 @@ def test_train_ewma():
 
         opt = optax.adagrad(1.0e-1)
         opt_state = opt.init(params)
+        losses = []
         for e in tqdm(range(n_epochs)):
             # params, state = model.init(rng, x)
             _, state = model.init(rng, x)
@@ -258,8 +259,8 @@ def test_train_ewma():
                 )
             updates, opt_state = opt.update(grad, opt_state)
             params = optax.apply_updates(params, updates)
-        print(
-            f"logcom={logcom}, com={jnp.exp(logcom)}, grad={grad['ewma']['logcom']}, loss = {l_}"
-        )
+            losses.append(l_)
+        return jnp.array(losses)
 
-    train()
+    losses = train()
+    assert losses[-1] < losses[0]

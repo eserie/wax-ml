@@ -22,29 +22,81 @@ class EWMA(hk.Module):
 
     def __init__(
         self,
-        alpha: float,
+        alpha: float = None,
+        com: float = None,
+        min_periods : int = 0,
         adjust: bool = True,
-        initial_value=jnp.nan,
         ignore_na: bool = False,
-        min_periods=None,
+        initial_value=jnp.nan,
         return_info: bool = False,
         name: str = None,
     ):
         """Initialize module.
 
         Args:
-            alpha: alpha parameter of the exponential moving average.
-            adjust: if true, implement a non-stationary filter with exponential initialization
-                scheme. If "linear", implement a non-stationary filter with linear initialization.
-            initial_value: initial value for the state.
+            alpha:  Specify smoothing factor :math:`\alpha` directly
+                :math:`0 < \alpha \leq 1`.
+            com : Specify decay in terms of center of mass
+                :math:`\alpha = 1 / (1 + com)`, for :math:`com \geq 0`.
+
+            min_periods : Minimum number of observations in window required to have a value;
+                otherwise, result is ``np.nan``.
+
+
+            adjust : Divide by decaying adjustment factor in beginning periods to account
+                for imbalance in relative weightings (viewing EWMA as a moving average).
+                - When ``adjust=True`` (default), the EW function is calculated using weights
+                  :math:`w_i = (1 - \alpha)^i`. For example, the EW moving average of the series
+                  [:math:`x_0, x_1, ..., x_t`] would be:
+                .. math::
+                    y_t = \frac{x_t + (1 - \alpha)x_{t-1} + (1 - \alpha)^2 x_{t-2} + ... + (1 -
+                    \alpha)^t x_0}{1 + (1 - \alpha) + (1 - \alpha)^2 + ... + (1 - \alpha)^t}
+                - When ``adjust=False``, the exponentially weighted function is calculated
+                  recursively:
+                .. math::
+                    \begin{split}
+                        y_0 &= x_0\\
+                        y_t &= (1 - \alpha) y_{t-1} + \alpha x_t,
+                    \end{split}
+                The effective  center of mass (com) interpolate exponentially between 0 and the
+                nominal center of mass.
+
+                - When ``adjust='linear'`` the effective  center of mass (com) interpolate linearly
+                between 0 and the nominal center of mass.
+
+            ignore_na : Ignore missing values when calculating weights.
+                - When ``ignore_na=False`` (default), weights are based on absolute positions.
+                  For example, the weights of :math:`x_0` and :math:`x_2` used in calculating
+                  the final weighted average of [:math:`x_0`, None, :math:`x_2`] are
+                  :math:`(1-\alpha)^2` and :math:`1` if ``adjust=True``, and
+                  :math:`(1-\alpha)^2` and :math:`\alpha` if ``adjust=False``.
+                - When ``ignore_na=True``, weights are based
+                  on relative positions. For example, the weights of :math:`x_0` and :math:`x_2`
+                  used in calculating the final weighted average of
+                  [:math:`x_0`, None, :math:`x_2`] are :math:`1-\alpha` and :math:`1` if
+                  ``adjust=True``, and :math:`1-\alpha` and :math:`\alpha` if ``adjust=False``.
+
+
+            initial_value : initial value for the state.
+
+            return_info : if true, a dictionary is returned in addition to the module output which
+                contains additional variables.
+
             name : name of the module instance.
         """
         super().__init__(name=name)
-        self.alpha = alpha
+        if com is not None:
+            assert alpha is None
+        elif alpha is not None:
+            assert com is None
+            com = 1. / alpha - 1.
+        assert com > 0
+
+        self.com = com
+        self.min_periods = min_periods
         self.adjust = adjust
         self.ignore_na = ignore_na
         self.initial_value = initial_value
-        self.min_periods = min_periods
         self.return_info = return_info
 
     def __call__(self, x):
@@ -55,11 +107,11 @@ class EWMA(hk.Module):
         """
         info = {}
 
-        alpha = hk.get_parameter(
+        com = hk.get_parameter(
             "alpha",
             shape=[],
             dtype=x.dtype,
-            init=lambda *_: jnp.array(self.alpha),
+            init=lambda *_: jnp.array(self.com),
         )
 
         mean = hk.get_state(
@@ -79,6 +131,8 @@ class EWMA(hk.Module):
         # fillna by zero to avoid nans in gradient computations
         x = jnp.nan_to_num(x)
         mean = jnp.nan_to_num(mean)
+
+        alpha = 1.0 / (1.0  + com)
 
         if not self.ignore_na or self.min_periods:
             is_initialized = hk.get_state(
@@ -112,7 +166,6 @@ class EWMA(hk.Module):
 
         if self.adjust:
             # adjustement scheme
-            com = 1.0 / alpha - 1.0
             com_eff = hk.get_state(
                 "com_eff",
                 shape=x.shape,

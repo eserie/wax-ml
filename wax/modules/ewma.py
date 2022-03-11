@@ -108,10 +108,10 @@ class EWMA(hk.Module):
         info = {}
 
         com = hk.get_parameter(
-            "alpha",
+            "com",
             shape=[],
             dtype=x.dtype,
-            init=lambda *_: jnp.array(self.com),
+            init=lambda shape, dtype: jnp.array(self.com, dtype),
         )
 
         mean = hk.get_state(

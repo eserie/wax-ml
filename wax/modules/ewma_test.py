@@ -40,7 +40,7 @@ def test_init_and_first_step_ema(dtype):
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust=True)(x)
+        return EWMA(alpha=0.1, adjust=True)(x)
 
     params, state = model.init(next(seq), x)
     ema, state = model.apply(params, state, next(seq), x)
@@ -57,7 +57,7 @@ def test_run_ema_vs_pandas_not_adjust():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust=False)(x)
+        return EWMA(alpha=0.1, adjust=False)(x)
 
     ema, state = unroll(model, dynamic=False, return_final_state=True)(x)
 
@@ -76,7 +76,7 @@ def test_dynamic_unroll_fori_loop():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust=True)(x)
+        return EWMA(alpha=0.1, adjust=True)(x)
 
     ema, state = unroll(model, dynamic=False, return_final_state=True)(x)
 
@@ -95,7 +95,7 @@ def test_dynamic_unroll():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust=True)(x)
+        return EWMA(alpha=0.1, adjust=True)(x)
 
     ema, state = unroll(model, dynamic=False, return_final_state=True)(x)
 
@@ -115,7 +115,7 @@ def test_run_ema_vs_pandas_adjust():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust=True)(x)
+        return EWMA(alpha=0.1, adjust=True)(x)
 
     ema, state = unroll(model, return_final_state=True)(x)
 
@@ -133,7 +133,7 @@ def test_run_ema_vs_pandas_adjust_finite():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust="linear")(x)
+        return EWMA(alpha=0.1, adjust="linear")(x)
 
     ema, state = unroll(model, return_final_state=True)(x)
     pandas_ema_adjust = pd.DataFrame(x).ewm(alpha=0.1, adjust=True).mean()
@@ -167,7 +167,7 @@ def test_grad_ewma(adjust):
         return res.mean()
 
     score, grad = batch(params)
-    assert not jnp.isnan(grad["ewma"]["alpha"])
+    assert not jnp.isnan(grad["ewma"]["com"])
 
 
 @pytest.mark.parametrize(
@@ -182,7 +182,7 @@ def test_nan_at_beginning(adjust, ignore_na):
     @partial(unroll_transform_with_state, dynamic=True)
     def fun(x):
         return EWMA(
-            1 / 10,
+            com=10,
             adjust=adjust,
             ignore_na=ignore_na,
             return_info=True,
@@ -195,7 +195,7 @@ def test_nan_at_beginning(adjust, ignore_na):
 
     ref_res = (
         pd.DataFrame(onp.array(x))
-        .ewm(alpha=1 / 10, adjust=adjust, ignore_na=ignore_na)
+        .ewm(com=10, adjust=adjust, ignore_na=ignore_na)
         .mean()
     )
     pd.testing.assert_frame_equal(res, ref_res, atol=1.0e-6)
@@ -206,4 +206,4 @@ def test_nan_at_beginning(adjust, ignore_na):
         return res.mean()
 
     score, grad = batch(params)
-    assert not jnp.isnan(grad["ewma"]["alpha"])
+    assert not jnp.isnan(grad["ewma"]["com"])

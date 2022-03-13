@@ -86,6 +86,9 @@ class EWMA(hk.Module):
             name : name of the module instance.
         """
         super().__init__(name=name)
+        assert (
+            com is not None or alpha is not None
+        ), "com or alpha parameters must be specified."
         if com is not None:
             assert alpha is None
         elif alpha is not None:
@@ -134,7 +137,7 @@ class EWMA(hk.Module):
         mean = jnp.where(jnp.isnan(mean), x, mean)
 
         # get status
-        isnan_x = jnp.isnan(x)
+        is_observation = ~jnp.isnan(x)
         isnan_mean = jnp.isnan(mean)
 
         # fillna by zero to avoid nans in gradient computations
@@ -151,9 +154,7 @@ class EWMA(hk.Module):
                 init=lambda shape, dtype: jnp.full(shape, False, dtype),
             )
 
-            is_initialized = jnp.where(
-                is_initialized, is_initialized, jnp.logical_not(isnan_x)
-            )
+            is_initialized = jnp.where(is_initialized, is_initialized, is_observation)
             if self.return_info:
                 info["is_initialized"] = is_initialized
             hk.set_state("is_initialized", is_initialized)
@@ -168,7 +169,7 @@ class EWMA(hk.Module):
             if self.return_info:
                 info["count"] = count
             if self.ignore_na:
-                count = jnp.where(isnan_x, count, count + 1)
+                count = jnp.where(is_observation, count + 1, count)
             else:
                 count = jnp.where(is_initialized, count + 1, count)
             hk.set_state("count", count)
@@ -187,7 +188,7 @@ class EWMA(hk.Module):
 
             if self.adjust == "linear":
                 if self.ignore_na:
-                    com_eff = jnp.where(isnan_x, com_eff, com_eff + 1)
+                    com_eff = jnp.where(is_observation, com_eff + 1, com_eff)
                 else:
                     com_eff = jnp.where(is_initialized, com_eff + 1, com_eff)
                 com_eff = jnp.minimum(com_eff, com)
@@ -195,7 +196,7 @@ class EWMA(hk.Module):
                 # exponential scheme (as in pandas)
                 if self.ignore_na:
                     com_eff = jnp.where(
-                        isnan_x, com_eff, alpha * com + (1 - alpha) * com_eff
+                        is_observation, alpha * com + (1 - alpha) * com_eff, com_eff
                     )
                 else:
                     com_eff = jnp.where(
@@ -210,7 +211,9 @@ class EWMA(hk.Module):
 
         # update mean  if x is not nan
         if self.ignore_na:
-            mean = jnp.where(isnan_x, mean, (1.0 - alpha_eff) * mean + alpha_eff * x)
+            mean = jnp.where(
+                is_observation, (1.0 - alpha_eff) * mean + alpha_eff * x, mean
+            )
         else:
             norm = hk.get_state(
                 "norm",
@@ -224,7 +227,7 @@ class EWMA(hk.Module):
             )
             norm = jnp.where(
                 is_initialized,
-                (1.0 - alpha_eff) * norm + alpha_eff * jnp.logical_not(isnan_x),
+                (1.0 - alpha_eff) * norm + alpha_eff * is_observation,
                 norm,
             )
 
@@ -235,7 +238,7 @@ class EWMA(hk.Module):
             hk.set_state("norm", norm)
 
         # restore nan
-        mean = jnp.where(jnp.logical_and(isnan_x, isnan_mean), jnp.nan, mean)
+        mean = jnp.where(jnp.logical_and(~is_observation, isnan_mean), jnp.nan, mean)
 
         hk.set_state("mean", mean)
 
@@ -250,7 +253,7 @@ class EWMA(hk.Module):
             )
 
             # update only if
-            last_mean = jnp.where(isnan_x, last_mean, mean / norm)
+            last_mean = jnp.where(is_observation, mean / norm, last_mean)
             hk.set_state("last_mean", last_mean)
 
         if self.min_periods:

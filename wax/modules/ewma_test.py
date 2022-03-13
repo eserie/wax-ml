@@ -171,7 +171,7 @@ def test_grad_ewma(adjust):
 
 
 @pytest.mark.parametrize(
-    "adjust, ignore_na", [(False, False), (True, False), (True, True)]
+    "adjust, ignore_na", [(False, True), (True, False), (True, True)]  # (False, False),
 )
 def test_nan_at_beginning(adjust, ignore_na):
     config.update("jax_enable_x64", True)
@@ -179,25 +179,43 @@ def test_nan_at_beginning(adjust, ignore_na):
     T = 20
     x = jnp.full((T,), jnp.nan).at[2].set(1).at[10].set(-1)
 
+    compare_nan_at_beginning(x, com=10, adjust=adjust, ignore_na=ignore_na)
+
+    # check min_periods option with random variable
+    rng = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng, (5,))
+    compare_nan_at_beginning(
+        x,
+        com=10,
+        adjust=adjust,
+        ignore_na=ignore_na,
+        min_periods=2,
+    )
+
+    # check random variable with nans
+    rng = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng, (6,)).at[3].set(jnp.nan)
+    x = jnp.ones((6,), "float64").at[0].set(-1).at[3].set(jnp.nan)
+
+    compare_nan_at_beginning(
+        x,
+        com=10,
+        adjust=adjust,
+        ignore_na=ignore_na,
+    )
+
+
+def compare_nan_at_beginning(x, **ewma_kwargs):
     @partial(unroll_transform_with_state, dynamic=True)
     def fun(x):
-        return EWMA(
-            com=10,
-            adjust=adjust,
-            ignore_na=ignore_na,
-            return_info=True,
-        )(x)
+        return EWMA(return_info=True, **ewma_kwargs)(x)
 
     rng = jax.random.PRNGKey(42)
     params, state = fun.init(rng, x)
     (res, info), final_state = fun.apply(params, state, rng, x)
     res = pd.DataFrame(onp.array(res))
 
-    ref_res = (
-        pd.DataFrame(onp.array(x))
-        .ewm(com=10, adjust=adjust, ignore_na=ignore_na)
-        .mean()
-    )
+    ref_res = pd.DataFrame(onp.array(x)).ewm(**ewma_kwargs).mean()
     pd.testing.assert_frame_equal(res, ref_res, atol=1.0e-6)
 
     @jax.value_and_grad

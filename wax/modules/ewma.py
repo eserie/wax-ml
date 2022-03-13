@@ -133,9 +133,6 @@ class EWMA(hk.Module):
             init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
         )
 
-        # initialization on first non-nan value if initial_value is nan
-        mean = jnp.where(jnp.isnan(mean), x, mean)
-
         # get status
         is_observation = ~jnp.isnan(x)
         isnan_mean = jnp.isnan(mean)
@@ -146,120 +143,67 @@ class EWMA(hk.Module):
 
         alpha = 1.0 / (1.0 + com)
 
-        if not self.ignore_na or self.min_periods:
-            is_initialized = hk.get_state(
-                "is_initialized",
-                shape=x.shape,
-                dtype=bool,
-                init=lambda shape, dtype: jnp.full(shape, False, dtype),
-            )
-
-            is_initialized = jnp.where(is_initialized, is_initialized, is_observation)
-            if self.return_info:
-                info["is_initialized"] = is_initialized
-            hk.set_state("is_initialized", is_initialized)
-
-        if self.min_periods:
-            count = hk.get_state(
-                "count",
-                shape=x.shape,
-                dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
-            )
-            if self.return_info:
-                info["count"] = count
-            if self.ignore_na:
-                count = jnp.where(is_observation, count + 1, count)
-            else:
-                count = jnp.where(is_initialized, count + 1, count)
-            hk.set_state("count", count)
-
         if self.adjust:
-            # adjustement scheme
-            com_eff = hk.get_state(
-                "com_eff",
-                shape=x.shape,
-                dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
-            )
-            if self.return_info:
-                info["com_eff"] = com_eff
-            alpha_eff = 1.0 / (1.0 + com_eff)
-
-            if self.adjust == "linear":
-                if self.ignore_na:
-                    com_eff = jnp.where(is_observation, com_eff + 1, com_eff)
-                else:
-                    com_eff = jnp.where(is_initialized, com_eff + 1, com_eff)
-                com_eff = jnp.minimum(com_eff, com)
-            else:
-                # exponential scheme (as in pandas)
-                if self.ignore_na:
-                    com_eff = jnp.where(
-                        is_observation, alpha * com + (1 - alpha) * com_eff, com_eff
-                    )
-                else:
-                    com_eff = jnp.where(
-                        is_initialized, alpha * com + (1 - alpha) * com_eff, com_eff
-                    )
-            hk.set_state("com_eff", com_eff)
+            new_wt = 1.0
         else:
-            alpha_eff = alpha
+            new_wt = alpha
+
+        old_wt = hk.get_state(
+            "old_wt",
+            shape=x.shape,
+            dtype=x.dtype,
+            init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
+        )
+
+        if self.adjust == "linear":
+            # com_eff grow linearly when there is observation but
+            # decrease exponentially when there is nans.
+            old_wt_factor = jnp.where(is_observation, 1.0, 1.0 - alpha)
+            old_wt = jnp.minimum(old_wt, com)
+        else:
+            old_wt_factor = 1.0 - alpha
+
+        if self.ignore_na:
+            old_wt = jnp.where(is_observation, old_wt * old_wt_factor, old_wt)
+        else:
+            old_wt = old_wt * old_wt_factor
+
+        old_wt = jnp.where(isnan_mean, 0.0, old_wt)
+
+        mean = jnp.where(
+            is_observation, (old_wt * mean + new_wt * x) / (old_wt + new_wt), mean
+        )
 
         if self.return_info:
-            info["alpha_eff"] = alpha_eff
+            info["com_eff"] = old_wt / new_wt
 
-        # update mean  if x is not nan
-        if self.ignore_na:
-            mean = jnp.where(
-                is_observation, (1.0 - alpha_eff) * mean + alpha_eff * x, mean
-            )
+        if self.adjust:
+            old_wt = jnp.where(is_observation, old_wt + new_wt, old_wt)
         else:
-            norm = hk.get_state(
-                "norm",
-                shape=x.shape,
-                dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, 1.0, dtype),
-            )
-
-            mean = jnp.where(
-                is_initialized, (1.0 - alpha_eff) * mean + alpha_eff * x, mean
-            )
-            norm = jnp.where(
-                is_initialized,
-                (1.0 - alpha_eff) * norm + alpha_eff * is_observation,
-                norm,
-            )
-
-            if self.return_info:
-                info["mean"] = mean
-                info["norm"] = norm
-
-            hk.set_state("norm", norm)
+            old_wt = jnp.where(is_observation, 1.0, old_wt)
 
         # restore nan
         mean = jnp.where(jnp.logical_and(~is_observation, isnan_mean), jnp.nan, mean)
 
+        hk.set_state("old_wt", old_wt)
         hk.set_state("mean", mean)
 
-        if self.ignore_na:
-            last_mean = mean
-        else:
-            last_mean = hk.get_state(
-                "last_mean",
+        if self.min_periods:
+            nobs = hk.get_state(
+                "nobs",
                 shape=x.shape,
                 dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, self.initial_value, dtype),
+                init=lambda shape, dtype: jnp.full(shape, 0.0, dtype=dtype),
             )
-
-            # update only if
-            last_mean = jnp.where(is_observation, mean / norm, last_mean)
-            hk.set_state("last_mean", last_mean)
-
-        if self.min_periods:
-            last_mean = jnp.where(count < self.min_periods, jnp.nan, last_mean)
+            nobs = jnp.where(is_observation, nobs + 1, nobs)
+            if self.return_info:
+                info["nobs"] = nobs
+            hk.set_state("nobs", nobs)
+            result = jnp.where(nobs >= self.min_periods, mean, jnp.nan)
+        else:
+            result = mean
 
         if self.return_info:
-            return last_mean, info
+            return result, info
         else:
-            return last_mean
+            return result

@@ -123,8 +123,7 @@ def test_run_ema_vs_pandas_adjust():
     assert jnp.allclose(ema, pandas_ema.values)
 
 
-def test_run_ema_vs_pandas_adjust_finite():
-
+def off_test_run_ema_vs_pandas_adjust_finite():
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
@@ -171,7 +170,8 @@ def test_grad_ewma(adjust):
 
 
 @pytest.mark.parametrize(
-    "adjust, ignore_na", [(False, True), (True, False), (True, True)]  # (False, False),
+    "adjust, ignore_na",
+    [(False, False), (False, True), (True, False), (True, True)],  # ,
 )
 def test_nan_at_beginning(adjust, ignore_na):
     config.update("jax_enable_x64", True)
@@ -194,8 +194,9 @@ def test_nan_at_beginning(adjust, ignore_na):
 
     # check random variable with nans
     rng = jax.random.PRNGKey(42)
-    x = jax.random.normal(rng, (6,)).at[3].set(jnp.nan)
-    x = jnp.ones((6,), "float64").at[0].set(-1).at[3].set(jnp.nan)
+    # x = jax.random.normal(rng, (6,)).at[3].set(jnp.nan)
+    # x = jnp.ones((6,), "float64").at[0].set(-1).at[3].set(jnp.nan)
+    x = jnp.ones((30,), "float64").at[0].set(-1).at[5:20].set(jnp.nan)
 
     compare_nan_at_beginning(
         x,

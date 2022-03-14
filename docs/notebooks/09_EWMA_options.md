@@ -37,6 +37,7 @@ from jax.config import config
 
 from wax.modules.ewma import EWMA
 from wax.unroll import unroll_transform_with_state
+
 ```
 
 ```python
@@ -292,7 +293,7 @@ res.plot()
 ```
 
 
-# Exponential adjustement 
+# Exponential adjustement
 
 ```python
 @partial(unroll_transform_with_state, dynamic=True)
@@ -312,7 +313,7 @@ c1 = pd.DataFrame(info["com_eff"])
 c1.plot()
 ```
 
-# More checks 
+# More checks
 
 ```python
 adjust = False
@@ -410,10 +411,10 @@ df = run()
 df.plot()
 ```
 
-# Numba implementation 
+# Numba implementation
 
 ```python
-from wax.modules.ewma_numba import ewma, init
+from wax.modules.ewma_numba import ewma
 ```
 
 ```python
@@ -424,14 +425,25 @@ x[1] = -1
 
 x[5:20] = onp.nan
 x = x.reshape(-1, 1)
-state = init(x)
 
 
-res, state = ewma(com=10, adjust="linear")(x, state)
+res, state = ewma(com=10, adjust="linear")(x)
 pd.DataFrame(res).plot()
 ```
 
-# Online pandas ewm 
+```python
+ewma_apply = ewma(com=10, adjust="linear", min_periods=3)
+res_full, _ = ewma_apply(x)
+
+T = 10
+res1, state = ewma_apply(x[:T])
+res2, _ = ewma_apply(x[T:], state)
+res12 = np.concatenate([res1, res2])
+assert np.allclose(res_full, res12, equal_nan=True)
+pd.concat([pd.DataFrame(res_full), pd.DataFrame(res12)], axis=1, keys=["full", "12"])
+```
+
+# Online pandas ewm
 
 ```python
 online_ewm = pd.DataFrame(x).ewm(10).online()
@@ -448,7 +460,5 @@ df = pd.concat([res_tot, res1, res2], keys=["tot", "res1", "res2"], axis=1)
 df.plot()
 df
 ```
-```python
 
-```
 

@@ -193,7 +193,7 @@ def test_nan_at_beginning(adjust, ignore_na):
     )
 
     # check random variable with nans
-    rng = jax.random.PRNGKey(42)
+    # rng = jax.random.PRNGKey(42)
     # x = jax.random.normal(rng, (6,)).at[3].set(jnp.nan)
     # x = jnp.ones((6,), "float64").at[0].set(-1).at[3].set(jnp.nan)
     x = jnp.ones((30,), "float64").at[0].set(-1).at[5:20].set(jnp.nan)
@@ -226,6 +226,27 @@ def compare_nan_at_beginning(x, **ewma_kwargs):
 
     score, grad = batch(params)
     assert not jnp.isnan(grad["ewma"]["logcom"])
+
+
+def test_init_value():
+    x = (
+        jnp.ones((30,), "float64")
+        .at[0]
+        .set(jnp.nan)
+        .at[1]
+        .set(-1)
+        .at[5:20]
+        .set(jnp.nan)
+    )
+
+    res = unroll(lambda x: EWMA(com=10, adjust=False, ignore_na=False)(x))(x)
+    res_init0 = unroll(
+        lambda x: EWMA(com=10, adjust=False, ignore_na=False, initial_value=0.0)(x)
+    )(x)
+
+    assert res_init0[0] == 0
+    assert jnp.isnan(res[0])
+    assert jnp.linalg.norm(res_init0) < jnp.linalg.norm(jnp.nan_to_num(res))
 
 
 def test_train_ewma():

@@ -45,8 +45,6 @@ def ewma(
     adjust: bool = True,
     ignore_na: bool = False,
     initial_value=np.nan,
-    return_info: bool = False,
-    name: str = None,
 ):
     """Compute exponentioal moving average.
 
@@ -95,11 +93,6 @@ def ewma(
 
 
         initial_value : initial value for the state.
-
-        return_info : if true, a dictionary is returned in addition to the module output which
-            contains additional variables.
-
-        name : name of the module instance.
     """
     assert (
         com is not None or alpha is not None
@@ -112,13 +105,23 @@ def ewma(
     assert cast(float, com) > 0.0
     alpha = 1.0 / (1.0 + com)
 
-    def apply(values, state):
+    def apply(values: np.ndarray, state: State = None):
+        is_1d = False
+        if values.ndim == 1:
+            values = values.reshape(-1, 1)
+            is_1d = True
+
+        if state is None:
+            state = init(values)
         mean = state.mean
         old_wt = state.old_wt
         nobs = state.nobs
 
         res, mean, old_wt, nobs = numba_apply(values, mean, old_wt, nobs)
         state = State(mean, old_wt, nobs)
+
+        if is_1d:
+            res = res.reshape(values.shape[0])
         return res, state
 
     @numba.jit(nopython=True, nogil=True, parallel=False)
@@ -138,9 +141,12 @@ def ewma(
             new_wt = alpha
 
         # deltas = np.ones(values.shape)
-
         result = np.empty(values.shape)
-        weighted_avg = values[0].copy()
+        if np.isnan(initial_value):
+            weighted_avg = values[0].copy()
+        else:
+            weighted_avg = np.full_like(values[0], initial_value)
+
         nobs = (~np.isnan(weighted_avg)).astype(np.int64)
         result[0] = np.where(nobs >= minimum_periods, weighted_avg, np.nan)
 

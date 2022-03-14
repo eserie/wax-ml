@@ -50,7 +50,14 @@ def test_nan_at_beginning(adjust, ignore_na):
     x[1] = -1
     x[5:20] = np.nan
 
-    compare_nan_at_beginning(
+    res = compare_nan_at_beginning(
+        x,
+        com=10,
+        adjust=adjust,
+        ignore_na=ignore_na,
+    )
+
+    res = compare_nan_at_beginning(
         x,
         com=10,
         adjust=adjust,
@@ -59,10 +66,26 @@ def test_nan_at_beginning(adjust, ignore_na):
 
 
 def compare_nan_at_beginning(x, **ewma_kwargs):
-    x = x.reshape(-1, 1)
-    state = init(x)
-    res, state = ewma(**ewma_kwargs)(x, state)
+    res, state = ewma(**ewma_kwargs)(x, state=None)
     res = pd.DataFrame(np.array(res))
 
     ref_res = pd.DataFrame(x).ewm(**ewma_kwargs).mean()
     pd.testing.assert_frame_equal(res, ref_res, atol=1.0e-6)
+    return res
+
+
+def test_init_value():
+    # check random variable with nans
+    x = np.ones((30,), "float64")
+    x[0] = np.nan
+    x[1] = -1
+    x[5:20] = np.nan
+
+    x = x.reshape(-1, 1)
+    res, state = ewma(com=10, adjust=False, ignore_na=False)(x)
+
+    res_init0, state = ewma(com=10, adjust=False, ignore_na=False, initial_value=0)(x)
+
+    assert res_init0[0] == 0
+    assert np.isnan(res[0])
+    assert np.linalg.norm(res_init0) < np.linalg.norm(np.nan_to_num(res))

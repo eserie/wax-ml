@@ -101,7 +101,7 @@ def ewma(
         state = EWMAState(
             mean=np.full(shape, initial_value, dtype),
             old_wt=np.full(shape, 1.0, dtype),
-            nobs=np.full(shape, 0.0, dtype=dtype),
+            nobs=np.full(shape, 0.0, dtype=np.int64),
         )
         return state
 
@@ -145,7 +145,6 @@ def ewma(
         weighted_avg = mean
 
         # nobs = (~np.isnan(weighted_avg)).astype(np.int64)
-        result[0] = np.where(nobs >= minimum_periods, weighted_avg, np.nan)
 
         for i in range(len(values)):
             cur = values[i]
@@ -207,10 +206,11 @@ class EWMAAccessor:
         state=None,
     ):
         if state is not None:
-            state = state._replace(
-                mean=state.mean.values,
-                old_wt=state.old_wt.values,
-                nobs=state.nobs.values,
+            state = state.reindex(self._obj.columns)
+            state = EWMAState(
+                mean=state["mean"].values,
+                old_wt=state["old_wt"].values,
+                nobs=state["nobs"].values,
             )
 
         res, state = ewma(
@@ -229,6 +229,7 @@ class EWMAAccessor:
             old_wt=pd.Series(state.old_wt, self._obj.columns),
             nobs=pd.Series(state.nobs, self._obj.columns),
         )
+        state = pd.concat(state._asdict(), axis=1)
         return res, state
 
 

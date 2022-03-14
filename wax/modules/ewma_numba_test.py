@@ -122,9 +122,11 @@ def test_pandas_online():
     X = pd.DataFrame(x)
 
     register_online_ewma()
-    res_full, state = pd.DataFrame(X).online.ewma(com=10, state=None)
+    res_full, _ = pd.DataFrame(X).online.ewma(com=10, state=None)
     res1, state = pd.DataFrame(X).iloc[:10].online.ewma(com=10, state=None)
-    res2, state = pd.DataFrame(X).iloc[10:].online.ewma(com=10, state=state)
+    res2, _ = pd.DataFrame(X).iloc[10:].online.ewma(com=10, state=state)
 
     res12 = pd.concat([res1, res2])
     pd.testing.assert_frame_equal(res_full, res12)
+    assert  state.dtypes.tolist() == [np.float64, np.float64, np.int64]
+    

@@ -37,7 +37,6 @@ from jax.config import config
 
 from wax.modules.ewma import EWMA
 from wax.unroll import unroll_transform_with_state
-
 ```
 
 ```python

@@ -128,5 +128,3 @@ def test_pandas_online():
 
     res12 = pd.concat([res1, res2])
     pd.testing.assert_frame_equal(res_full, res12)
-
-    

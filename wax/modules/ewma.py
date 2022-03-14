@@ -157,8 +157,10 @@ class EWMA(hk.Module):
 
         if self.adjust == "linear":
             # com_eff grow linearly when there is observation but
-            # decrease exponentially when there is nans.
-            old_wt_factor = jnp.where(is_observation, 1.0, 1.0 - alpha)
+            # decrease linearly when there is nans.
+            old_wt_factor = jnp.where(
+                is_observation, 1.0, jnp.maximum(0.0, (old_wt - 1.0) / old_wt)
+            )
             old_wt = jnp.minimum(old_wt, com)
         else:
             old_wt_factor = 1.0 - alpha

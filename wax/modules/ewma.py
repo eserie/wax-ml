@@ -193,7 +193,7 @@ class EWMA(hk.Module):
                 "nobs",
                 shape=x.shape,
                 dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, 0.0, dtype=dtype),
+                init=lambda shape, dtype: jnp.full(shape, 0, dtype=int),
             )
             nobs = jnp.where(is_observation, nobs + 1, nobs)
             if self.return_info:

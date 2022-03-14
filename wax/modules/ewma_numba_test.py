@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from wax.modules.ewma_numba import ewma, init
+from wax.modules.ewma_numba import ewma
 
 
 def test_ewma_numba():
@@ -14,8 +14,7 @@ def test_ewma_numba():
 
     x[5:20] = np.nan
     x = x.reshape(-1, 1)
-    state = init(x)
-    res, state = ewma(com=10, adjust="linear")(x, state)
+    res, state = ewma(com=10, adjust="linear")(x)
     pd.DataFrame(res).plot()
 
 
@@ -89,3 +88,25 @@ def test_init_value():
     assert res_init0[0] == 0
     assert np.isnan(res[0])
     assert np.linalg.norm(res_init0) < np.linalg.norm(np.nan_to_num(res))
+
+
+def test_state():
+    x = np.ones((30,), "float64")
+    x[0] = np.nan
+    x[1] = -1
+    x[5:20] = np.nan
+
+    x = x.reshape(-1, 1)
+
+    ewma_apply = ewma(com=10, adjust="linear", min_periods=5)
+    res_full, _ = ewma_apply(x)
+
+    T = 10
+    res1, state = ewma_apply(x[:T])
+    res2, _ = ewma_apply(x[T:], state)
+    res12 = np.concatenate([res1, res2])
+    df = pd.concat(
+        [pd.DataFrame(res_full), pd.DataFrame(res12)], axis=1, keys=["full", "12"]
+    )
+
+    assert np.allclose(res_full, res12, equal_nan=True)

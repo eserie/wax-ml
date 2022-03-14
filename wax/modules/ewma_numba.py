@@ -18,24 +18,10 @@ import numba
 import numpy as np
 
 
-class State(NamedTuple):
+class EWMAState(NamedTuple):
     mean: Any
     old_wt: Any
     nobs: Any
-
-
-def init(x):
-    x = x[0]
-
-    dtype = x.dtype
-    shape = x.shape
-
-    state = State(
-        mean=np.full(shape, np.nan, dtype),
-        old_wt=np.full(shape, 1.0, dtype),
-        nobs=np.full(shape, 0.0, dtype=dtype),
-    )
-    return state
 
 
 def ewma(
@@ -105,20 +91,33 @@ def ewma(
     assert cast(float, com) > 0.0
     alpha = 1.0 / (1.0 + com)
 
-    def apply(values: np.ndarray, state: State = None):
+    def init_ewma_state(x):
+        x = x[0]
+
+        dtype = x.dtype
+        shape = x.shape
+
+        state = EWMAState(
+            mean=np.full(shape, initial_value, dtype),
+            old_wt=np.full(shape, 1.0, dtype),
+            nobs=np.full(shape, 0.0, dtype=dtype),
+        )
+        return state
+
+    def apply(values: np.ndarray, state: EWMAState = None):
         is_1d = False
         if values.ndim == 1:
             values = values.reshape(-1, 1)
             is_1d = True
 
         if state is None:
-            state = init(values)
+            state = init_ewma_state(values)
         mean = state.mean
         old_wt = state.old_wt
         nobs = state.nobs
 
         res, mean, old_wt, nobs = numba_apply(values, mean, old_wt, nobs)
-        state = State(mean, old_wt, nobs)
+        state = EWMAState(mean, old_wt, nobs)
 
         if is_1d:
             res = res.reshape(values.shape[0])
@@ -142,15 +141,12 @@ def ewma(
 
         # deltas = np.ones(values.shape)
         result = np.empty(values.shape)
-        if np.isnan(initial_value):
-            weighted_avg = values[0].copy()
-        else:
-            weighted_avg = np.full_like(values[0], initial_value)
+        weighted_avg = mean
 
-        nobs = (~np.isnan(weighted_avg)).astype(np.int64)
+        # nobs = (~np.isnan(weighted_avg)).astype(np.int64)
         result[0] = np.where(nobs >= minimum_periods, weighted_avg, np.nan)
 
-        for i in range(1, len(values)):
+        for i in range(len(values)):
             cur = values[i]
             is_observations = ~np.isnan(cur)
             nobs += is_observations.astype(np.int64)
@@ -189,7 +185,7 @@ def ewma(
                     weighted_avg[j] = cur[j]
 
             result[i] = np.where(nobs >= minimum_periods, weighted_avg, np.nan)
-
+            mean = weighted_avg
         return result, mean, old_wt, nobs
 
     return apply

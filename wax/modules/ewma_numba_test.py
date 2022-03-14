@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from wax.modules.ewma_numba import ewma
+from wax.modules.ewma_numba import ewma, register_online_ewma
 
 
 def test_ewma_numba():
@@ -110,3 +110,23 @@ def test_state():
     )
 
     assert np.allclose(res_full, res12, equal_nan=True)
+
+
+def test_pandas_online():
+    x = np.ones((30,), "float64")
+    x[0] = np.nan
+    x[1] = -1
+    x[5:20] = np.nan
+
+    x = x.reshape(-1, 1)
+    X = pd.DataFrame(x)
+
+    register_online_ewma()
+    res_full, state = pd.DataFrame(X).online.ewma(com=10, state=None)
+    res1, state = pd.DataFrame(X).iloc[:10].online.ewma(com=10, state=None)
+    res2, state = pd.DataFrame(X).iloc[10:].online.ewma(com=10, state=state)
+
+    res12 = pd.concat([res1, res2])
+    pd.testing.assert_frame_equal(res_full, res12)
+
+    

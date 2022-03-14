@@ -189,3 +189,46 @@ def ewma(
         return result, mean, old_wt, nobs
 
     return apply
+
+
+class EWMAAccessor:
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj
+
+    def ewma(self,
+             alpha: float = None,
+             com: float = None,
+             min_periods: int = 0,
+             adjust: bool = True,
+             ignore_na: bool = False,
+             initial_value=np.nan,
+             state=None,
+             ):
+        if state is not None:
+            state = state._replace(
+                mean=state.mean.values,
+                old_wt=state.old_wt.values,
+                nobs=state.nobs.values)
+
+        res, state = ewma(
+            alpha=alpha,
+            com=com,
+            min_periods=min_periods,
+            adjust=adjust,
+            ignore_na=ignore_na,
+            initial_value=initial_value)(self._obj.values, state)
+
+        res = pd.DataFrame(res, self._obj.index, self._obj.columns)
+
+        state = state._replace(
+            mean=pd.Series(state.mean, self._obj.columns),
+            old_wt=pd.Series(state.old_wt, self._obj.columns),
+            nobs=pd.Series(state.nobs, self._obj.columns),
+        )
+        return res, state
+
+def register_online_ewma():
+    pd.api.extensions.register_dataframe_accessor("online")(EWMAAccessor)
+
+import pandas as pd
+

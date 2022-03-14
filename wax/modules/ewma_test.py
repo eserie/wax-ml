@@ -123,7 +123,7 @@ def test_run_ema_vs_pandas_adjust():
     assert jnp.allclose(ema, pandas_ema.values)
 
 
-def off_test_run_ema_vs_pandas_adjust_finite():
+def test_run_ema_vs_pandas_adjust_finite():
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)

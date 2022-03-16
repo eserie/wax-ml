@@ -145,8 +145,6 @@ def ewma(
         result = np.empty(values.shape)
         weighted_avg = mean
 
-        # nobs = (~np.isnan(weighted_avg)).astype(np.int64)
-
         for i in range(len(values)):
             cur = values[i]
             is_observations = ~np.isnan(cur)

@@ -169,44 +169,7 @@ def test_grad_ewma(adjust):
     assert not jnp.isnan(grad["ewma"]["logcom"])
 
 
-@pytest.mark.parametrize(
-    "adjust, ignore_na",
-    [(False, False), (False, True), (True, False), (True, True)],  # ,
-)
-def test_nan_at_beginning(adjust, ignore_na):
-    config.update("jax_enable_x64", True)
-
-    T = 20
-    x = jnp.full((T,), jnp.nan).at[2].set(1).at[10].set(-1)
-
-    compare_nan_at_beginning(x, com=10, adjust=adjust, ignore_na=ignore_na)
-
-    # check min_periods option with random variable
-    rng = jax.random.PRNGKey(42)
-    x = jax.random.normal(rng, (5,))
-    compare_nan_at_beginning(
-        x,
-        com=10,
-        adjust=adjust,
-        ignore_na=ignore_na,
-        min_periods=2,
-    )
-
-    # check random variable with nans
-    # rng = jax.random.PRNGKey(42)
-    # x = jax.random.normal(rng, (6,)).at[3].set(jnp.nan)
-    # x = jnp.ones((6,), "float64").at[0].set(-1).at[3].set(jnp.nan)
-    x = jnp.ones((30,), "float64").at[0].set(-1).at[5:20].set(jnp.nan)
-
-    compare_nan_at_beginning(
-        x,
-        com=10,
-        adjust=adjust,
-        ignore_na=ignore_na,
-    )
-
-
-def compare_nan_at_beginning(x, **ewma_kwargs):
+def check_against_pandas_ewm(x, **ewma_kwargs):
     @partial(unroll_transform_with_state, dynamic=True)
     def fun(x):
         return EWMA(return_info=True, **ewma_kwargs)(x)
@@ -226,6 +189,41 @@ def compare_nan_at_beginning(x, **ewma_kwargs):
 
     score, grad = batch(params)
     assert not jnp.isnan(grad["ewma"]["logcom"])
+
+
+@pytest.mark.parametrize(
+    "adjust, ignore_na",
+    [(False, False), (False, True), (True, False), (True, True)],  # ,
+)
+def test_nan_at_beginning(adjust, ignore_na):
+    config.update("jax_enable_x64", True)
+
+    T = 20
+    x = jnp.full((T,), jnp.nan).at[2].set(1).at[10].set(-1)
+    check_against_pandas_ewm(x, com=10, adjust=adjust, ignore_na=ignore_na)
+
+    # check min_periods option with random variable
+    rng = jax.random.PRNGKey(42)
+    x = jax.random.normal(rng, (5,))
+    check_against_pandas_ewm(
+        x,
+        com=10,
+        adjust=adjust,
+        ignore_na=ignore_na,
+        min_periods=2,
+    )
+
+    # check random variable with nans
+    # rng = jax.random.PRNGKey(42)
+    # x = jax.random.normal(rng, (6,)).at[3].set(jnp.nan)
+    # x = jnp.ones((6,), "float64").at[0].set(-1).at[3].set(jnp.nan)
+    x = jnp.ones((30,), "float64").at[0].set(-1).at[5:20].set(jnp.nan)
+    check_against_pandas_ewm(
+        x,
+        com=10,
+        adjust=adjust,
+        ignore_na=ignore_na,
+    )
 
 
 def test_init_value():

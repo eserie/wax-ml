@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentioal moving average."""
-from typing import Dict, Tuple, Union, cast
+from typing import Dict, Tuple, Union
 
 import haiku as hk
 from jax import numpy as jnp
@@ -94,7 +94,6 @@ class EWMA(hk.Module):
         elif alpha is not None:
             assert com is None
             com = 1.0 / alpha - 1.0
-        assert cast(float, com) > 0.0
 
         self.com = com
         self.min_periods = min_periods

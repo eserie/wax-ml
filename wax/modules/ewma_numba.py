@@ -191,7 +191,7 @@ def ewma(
     return apply
 
 
-class EWMAAccessor:
+class EWMADataFrameAccessor:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
@@ -233,5 +233,27 @@ class EWMAAccessor:
         return res, state
 
 
+class EWMASeriesAccessor:
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj
+
+    def ewma(
+        self,
+        alpha: float = None,
+        com: float = None,
+        min_periods: int = 0,
+        adjust: bool = True,
+        ignore_na: bool = False,
+        initial_value=np.nan,
+        state=None,
+    ):
+        res, state = EWMADataFrameAccessor(self._obj.to_frame()).ewma(
+            alpha, com, min_periods, adjust, ignore_na, initial_value, state
+        )
+        res = res.iloc[:, 0]
+        return res, state
+
+
 def register_online_ewma():
-    pd.api.extensions.register_dataframe_accessor("online")(EWMAAccessor)
+    pd.api.extensions.register_dataframe_accessor("online")(EWMADataFrameAccessor)
+    pd.api.extensions.register_series_accessor("online")(EWMASeriesAccessor)

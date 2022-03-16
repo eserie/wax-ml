@@ -116,9 +116,9 @@ def test_pandas_online(obj_type):
         X = pd.Series(x)
 
     register_online_ewma()
-    res_full, _ = X.online.ewma(com=10, state=None)
-    res1, state = X.iloc[:10].online.ewma(com=10, state=None)
-    res2, _ = X.iloc[10:].online.ewma(com=10, state=state)
+    res_full, _ = X.wax.ewma(com=10, state=None)
+    res1, state = X.iloc[:10].wax.ewma(com=10, state=None)
+    res2, _ = X.iloc[10:].wax.ewma(com=10, state=state)
 
     res12 = pd.concat([res1, res2])
     if obj_type == "frame":

@@ -168,7 +168,6 @@ def ewma(
                         old_wt_factor = 1.0 - alpha
 
                     if is_observations[j] or not ignore_na:
-
                         # note that len(deltas) = len(vals) - 1 and deltas[i] is to be
                         # used in conjunction with vals[i+1]
                         old_wt[j] *= old_wt_factor  # ** deltas[j - 1]
@@ -256,5 +255,5 @@ class EWMASeriesAccessor:
 
 
 def register_online_ewma():
-    pd.api.extensions.register_dataframe_accessor("online")(EWMADataFrameAccessor)
-    pd.api.extensions.register_series_accessor("online")(EWMASeriesAccessor)
+    pd.api.extensions.register_dataframe_accessor("wax")(EWMADataFrameAccessor)
+    pd.api.extensions.register_series_accessor("wax")(EWMASeriesAccessor)

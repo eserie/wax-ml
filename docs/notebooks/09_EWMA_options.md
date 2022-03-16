@@ -413,7 +413,7 @@ df.plot()
 # Numba implementation
 
 ```python
-from wax.modules.ewma_numba import ewma
+from wax.numba.ewma_numba import ewma
 ```
 
 ```python

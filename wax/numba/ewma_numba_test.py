@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from wax.modules.ewma_numba import ewma, register_online_ewma
+from wax.numba.ewma_numba import ewma, register_online_ewma
 
 
 def test_ewma_numba():

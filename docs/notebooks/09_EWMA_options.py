@@ -383,7 +383,7 @@ df.plot()
 
 # # Numba implementation
 
-from wax.modules.ewma_numba import ewma
+from wax.numba.ewma_numba import ewma
 
 # +
 x = onp.ones((30,), "float64")

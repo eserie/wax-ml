@@ -89,7 +89,8 @@ def ewma(
     elif alpha is not None:
         assert com is None
         com = 1.0 / alpha - 1.0
-    assert cast(float, com) > 0.0
+    com = cast(float, com)
+    assert com > 0.0
     alpha = 1.0 / (1.0 + com)
 
     def init_ewma_state(x):

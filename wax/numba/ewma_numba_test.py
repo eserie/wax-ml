@@ -55,7 +55,7 @@ def test_nan_at_beginning(adjust, ignore_na):
     x[0] = np.nan
     x[1] = -1
     x[5:20] = np.nan
-    res = check_against_pandas_ewm(
+    check_against_pandas_ewm(
         x,
         com=10,
         adjust=adjust,
@@ -98,6 +98,7 @@ def test_ewma_state():
     df = pd.concat(
         [pd.DataFrame(res_full), pd.DataFrame(res12)], axis=1, keys=["full", "12"]
     )
+    assert len(df)
 
     assert np.allclose(res_full, res12, equal_nan=True)
 

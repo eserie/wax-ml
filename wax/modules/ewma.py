@@ -24,6 +24,7 @@ class EWMA(hk.Module):
     def __init__(
         self,
         alpha: float = None,
+        *,
         com: float = None,
         min_periods: int = 0,
         adjust: bool = True,
@@ -189,17 +190,18 @@ class EWMA(hk.Module):
         hk.set_state("old_wt", old_wt)
         hk.set_state("mean", mean)
 
+        nobs = hk.get_state(
+            "nobs",
+            shape=x.shape,
+            dtype=x.dtype,
+            init=lambda shape, dtype: jnp.full(shape, 0, dtype=int),
+        )
+        nobs = jnp.where(is_observation, nobs + 1, nobs)
+        if self.return_info:
+            info["nobs"] = nobs
+        hk.set_state("nobs", nobs)
+
         if self.min_periods:
-            nobs = hk.get_state(
-                "nobs",
-                shape=x.shape,
-                dtype=x.dtype,
-                init=lambda shape, dtype: jnp.full(shape, 0, dtype=int),
-            )
-            nobs = jnp.where(is_observation, nobs + 1, nobs)
-            if self.return_info:
-                info["nobs"] = nobs
-            hk.set_state("nobs", nobs)
             result = jnp.where(nobs >= self.min_periods, mean, jnp.nan)
         else:
             result = mean

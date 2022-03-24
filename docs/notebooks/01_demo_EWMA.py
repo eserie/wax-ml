@@ -9,7 +9,7 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.13.3
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -84,13 +84,21 @@ dataframe = dataset.air.to_series().unstack(["lon", "lat"])
 
 # ### EWMA with pandas
 
-air_temp_ewma = dataframe.ewm(alpha=1.0 / 10.0).mean()
-_ = air_temp_ewma.iloc[:, 0].plot()
+air_temp_ewma = dataframe.ewm(com=10).mean()
+_ = air_temp_ewma.mean(1).plot()
+
+# ## wax numba ewma 
+
+from wax.numba.ewma_numba import register_wax_numba
+register_wax_numba()
+
+air_temp_ewma= dataframe.wax_numba.ewm(com=10).mean()
+_ = air_temp_ewma.mean(1).plot()
 
 # ### EWMA with WAX-ML
 
-air_temp_ewma = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
-_ = air_temp_ewma.iloc[:, 0].plot()
+air_temp_ewma = dataframe.wax.ewm(com=10).mean()
+_ = air_temp_ewma.mean(1).plot()
 
 # On small data, WAX-ML's EWMA is slower than Pandas' because of the expensive data conversion steps.
 # WAX-ML's accessors are interesting to use on large data loads
@@ -106,8 +114,8 @@ from wax.modules import EWMA
 
 def my_custom_function(dataset):
     return {
-        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
-        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
+        "air_10": EWMA(com=10)(dataset["air"]),
+        "air_100": EWMA(com=100)(dataset["air"]),
     }
 
 
@@ -116,4 +124,7 @@ output, state = dataset.wax.stream().apply(
     my_custom_function, format_dims=dataset.air.dims
 )
 
-_ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
+_ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_dataframe().plot(figsize=(12, 8))
+# -
+
+

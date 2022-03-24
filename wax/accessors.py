@@ -315,22 +315,23 @@ class WaxAccessor:
 @dataclass(frozen=True)
 class ExponentialMovingWindow:
     accessor: WaxAccessor
-    alpha: float
+    com: float = None
+    alpha: float = None
+    min_periods: int = 0
     adjust: bool = True
+    ignore_na: bool = False
+    initial_value: float = jnp.nan
     return_state: bool = False
     format_outputs: bool = True
 
     def mean(self):
         from wax.modules import EWMA
 
-        def _apply_ema(
-            accessor, alpha, adjust, params=None, state=None, *args, **kwargs
-        ):
-            return accessor.stream(*args, **kwargs).apply(
-                lambda x: EWMA(alpha, adjust)(x),
-                params=params,
-                state=state,
-                rng=None,
+        def _apply_ema(*, accessor, return_state, format_outputs, **kwargs):
+            return accessor.stream(
+                return_state=return_state, format_outputs=format_outputs
+            ).apply(
+                lambda x: EWMA(**kwargs)(x),
             )
 
         return _apply_ema(**self.__dict__)

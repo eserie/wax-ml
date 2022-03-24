@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from wax.numba.ewma_numba import ewma, register_online_ewma
+from wax.numba.ewma_numba import ewma, register_wax_numba
 
 
 def test_ewma_numba():
@@ -129,10 +129,10 @@ def test_pandas_online(obj_type):
     else:
         X = pd.Series(x)
 
-    register_online_ewma()
-    res_full, _ = X.wax.ewma(com=10, state=None)
-    res1, state = X.iloc[:10].wax.ewma(com=10, state=None)
-    res2, _ = X.iloc[10:].wax.ewma(com=10, state=state)
+    register_wax_numba()
+    res_full = X.wax_numba.ewm(com=10).mean()
+    res1, state = X.iloc[:10].wax_numba.ewm(com=10, return_state=True).mean()
+    res2 = X.iloc[10:].wax_numba.ewm(com=10).mean(state=state)
 
     res12 = pd.concat([res1, res2])
     if obj_type == "frame":

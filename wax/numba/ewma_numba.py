@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentioal moving average."""
+from dataclasses import dataclass
 from typing import Any, NamedTuple, cast
 
 import numba
@@ -26,8 +27,9 @@ class EWMAState(NamedTuple):
 
 
 def ewma(
-    alpha: float = None,
+    *,
     com: float = None,
+    alpha: float = None,
     min_periods: int = 0,
     adjust: bool = True,
     ignore_na: bool = False,
@@ -189,69 +191,91 @@ def ewma(
     return apply
 
 
-class EWMADataFrameAccessor:
-    def __init__(self, pandas_obj):
-        self._obj = pandas_obj
+class WaxAccessor:
+    def ewm(self, *args, **kwargs):
+        return NumbaExponentialMovingWindow(accessor=self, *args, **kwargs)
 
-    def ewma(
-        self,
-        alpha: float = None,
-        com: float = None,
-        min_periods: int = 0,
-        adjust: bool = True,
-        ignore_na: bool = False,
-        initial_value=np.nan,
-        state=None,
-    ):
-        if state is not None:
-            state = state.reindex(self._obj.columns)
-            state = EWMAState(
-                mean=state["mean"].values,
-                old_wt=state["old_wt"].values,
-                nobs=state["nobs"].values,
+
+@dataclass(frozen=True)
+class NumbaExponentialMovingWindow:
+    accessor: WaxAccessor
+    com: float = None
+    alpha: float = None
+    min_periods: int = 0
+    adjust: bool = True
+    ignore_na: bool = False
+    initial_value: float = np.nan
+    return_state: bool = False
+
+    def mean(self, state=None):
+        def _apply_ema(
+            *,
+            state,
+            obj,
+            com,
+            alpha,
+            min_periods,
+            adjust,
+            ignore_na,
+            initial_value,
+            return_state,
+        ):
+            if state is not None:
+                state = state.reindex(obj.columns)
+                state = EWMAState(
+                    mean=state["mean"].values,
+                    old_wt=state["old_wt"].values,
+                    nobs=state["nobs"].values,
+                )
+
+            res, state = ewma(
+                alpha=alpha,
+                com=com,
+                min_periods=min_periods,
+                adjust=adjust,
+                ignore_na=ignore_na,
+                initial_value=initial_value,
+            )(obj.values, state)
+
+            res = pd.DataFrame(res, obj.index, obj.columns)
+
+            state = state._replace(
+                mean=pd.Series(state.mean, obj.columns),
+                old_wt=pd.Series(state.old_wt, obj.columns),
+                nobs=pd.Series(state.nobs, obj.columns),
             )
+            state = pd.concat(state._asdict(), axis=1)
+            if return_state:
+                return res, state
+            else:
+                return res
 
-        res, state = ewma(
-            alpha=alpha,
-            com=com,
-            min_periods=min_periods,
-            adjust=adjust,
-            ignore_na=ignore_na,
-            initial_value=initial_value,
-        )(self._obj.values, state)
+        kwargs = self.__dict__.copy()
+        obj = kwargs.pop("accessor")._obj
 
-        res = pd.DataFrame(res, self._obj.index, self._obj.columns)
-
-        state = state._replace(
-            mean=pd.Series(state.mean, self._obj.columns),
-            old_wt=pd.Series(state.old_wt, self._obj.columns),
-            nobs=pd.Series(state.nobs, self._obj.columns),
-        )
-        state = pd.concat(state._asdict(), axis=1)
-        return res, state
+        if isinstance(obj, pd.Series):
+            kwargs["obj"] = obj.to_frame()
+            res = _apply_ema(state=state, **kwargs)
+            if self.return_state:
+                res, state = res
+            res = res.iloc[:, 0]
+            if self.return_state:
+                return res, state
+            else:
+                return res
+        else:
+            kwargs["obj"] = obj
+            return _apply_ema(state=state, **kwargs)
 
 
-class EWMASeriesAccessor:
+class WaxNumbaEWMAccessor:
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
-    def ewma(
-        self,
-        alpha: float = None,
-        com: float = None,
-        min_periods: int = 0,
-        adjust: bool = True,
-        ignore_na: bool = False,
-        initial_value=np.nan,
-        state=None,
-    ):
-        res, state = EWMADataFrameAccessor(self._obj.to_frame()).ewma(
-            alpha, com, min_periods, adjust, ignore_na, initial_value, state
-        )
-        res = res.iloc[:, 0]
-        return res, state
+    def ewm(self, *args, **kwargs):
+        return NumbaExponentialMovingWindow(accessor=self, *args, **kwargs)
 
 
-def register_online_ewma():
-    pd.api.extensions.register_dataframe_accessor("wax")(EWMADataFrameAccessor)
-    pd.api.extensions.register_series_accessor("wax")(EWMASeriesAccessor)
+def register_wax_numba():
+    pd.api.extensions.register_dataframe_accessor("wax_numba")(WaxNumbaEWMAccessor)
+    pd.api.extensions.register_series_accessor("wax_numba")(WaxNumbaEWMAccessor)

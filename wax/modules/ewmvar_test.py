@@ -46,9 +46,14 @@ class EWMVar_v2(hk.Module):
         self.adjust = adjust
 
     def __call__(self, x):
-        mean = EWMA(self.alpha, self.adjust, initial_value=jnp.nan, name="mean")(x)
+        mean = EWMA(
+            alpha=self.alpha, adjust=self.adjust, initial_value=jnp.nan, name="mean"
+        )(x)
         mean_square = EWMA(
-            self.alpha, self.adjust, initial_value=jnp.nan, name="mean_square"
+            alpha=self.alpha,
+            adjust=self.adjust,
+            initial_value=jnp.nan,
+            name="mean_square",
         )(x * x)
         var = mean_square - mean**2
         var = jnp.where(var < 0, 0.0, var)

@@ -61,7 +61,10 @@ class EWMCov(hk.Module):
             )
             x, y = x
         mean_xy = EWMA(
-            alpha=self.alpha, adjust=self.adjust, initial_value=jnp.nan, name="mean_xy"
+            alpha=self.alpha,
+            adjust=self.adjust,
+            initial_value=jnp.nan,
+            name="mean_xy",
         )(jnp.outer(x, y))
         if self.assume_centered:
             cov = mean_xy

@@ -100,7 +100,7 @@ air_temp_ewma = dataframe.ewm(com=10).mean()
 _ = air_temp_ewma.mean(1).plot()
 ```
 
-## wax numba ewma 
+## wax numba ewma
 
 ```python
 from wax.numba.ewma_numba import register_wax_numba
@@ -149,7 +149,3 @@ output, state = dataset.wax.stream().apply(
 
 _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_dataframe().plot(figsize=(12, 8))
 ```
-```python
-
-```
-

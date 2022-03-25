@@ -41,7 +41,7 @@ def module_map(x):
 
 
 def check_ema_state(state, ref_count=124):
-    assert (state["ewma"]["count"] == ref_count).all()
+    assert (state["ewma"]["nobs"] == ref_count).all()
 
 
 def prepare_format_data(format):

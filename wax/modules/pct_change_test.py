@@ -45,14 +45,13 @@ def test_pct_change(use_jit):
 
 
 def test_pct_change_ffill():
-
-    x = jnp.array([90, 91, jnp.nan, 85])
+    x = jnp.array([jnp.nan, 90, 91, jnp.nan, 85])
 
     fun = hk.transform_with_state(lambda x: PctChange()(x))
     res = unroll(fun)(x)
 
     assert jnp.allclose(
         res,
-        jnp.array([jnp.nan, 0.0111111, jnp.nan, -0.065934], dtype=jnp.float32),
+        jnp.array([jnp.nan, jnp.nan, 0.0111111, 0.0, -0.065934], dtype=jnp.float32),
         equal_nan=True,
     )

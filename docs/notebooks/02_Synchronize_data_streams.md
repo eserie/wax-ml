@@ -9,7 +9,7 @@ jupyter:
       format_version: '1.3'
       jupytext_version: 1.13.3
   kernelspec:
-    display_name: Python 3
+    display_name: Python 3 (ipykernel)
     language: python
     name: python3
 ---
@@ -90,9 +90,9 @@ from wax.modules import EWMA
 
 def my_custom_function(dataset):
     return {
-        "air_10": EWMA(1.0 / 10.0)(dataset["air"]),
-        "air_100": EWMA(1.0 / 100.0)(dataset["air"]),
-        "ground_100": EWMA(1.0 / 100.0)(dataset["ground"]),
+        "air_10": EWMA(com=10)(dataset["air"]),
+        "air_100": EWMA(com=100.0)(dataset["air"]),
+        "ground_100": EWMA(com=100.0)(dataset["ground"]),
     }
 ```
 
@@ -103,5 +103,5 @@ results, state = dataset.wax.stream(
 ```
 
 ```python
-_ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12, 8))
+_ = results.isel(lat=0, lon=0).drop(["lat", "lon"]).to_dataframe().plot(figsize=(12, 8))
 ```

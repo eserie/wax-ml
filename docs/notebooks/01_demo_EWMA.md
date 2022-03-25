@@ -104,11 +104,14 @@ _ = air_temp_ewma.mean(1).plot()
 
 ```python
 from wax.numba.ewma_numba import register_wax_numba
+```
+
+```python
 register_wax_numba()
 ```
 
 ```python
-air_temp_ewma= dataframe.wax_numba.ewm(com=10).mean()
+air_temp_ewma = dataframe.wax_numba.ewm(com=10).mean()
 _ = air_temp_ewma.mean(1).plot()
 ```
 

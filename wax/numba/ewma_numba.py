@@ -13,7 +13,7 @@
 # limitations under the License.
 """Compute exponentioal moving average."""
 from dataclasses import dataclass
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple, Optional, cast
 
 import numba
 import numpy as np
@@ -199,8 +199,8 @@ class WaxAccessor:
 @dataclass(frozen=True)
 class NumbaExponentialMovingWindow:
     accessor: WaxAccessor
-    com: float = None
-    alpha: float = None
+    com: Optional[float] = None
+    alpha: Optional[float] = None
     min_periods: int = 0
     adjust: bool = True
     ignore_na: bool = False

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentioal moving average."""
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import haiku as hk
 from jax import numpy as jnp
@@ -23,15 +23,15 @@ class EWMA(hk.Module):
 
     def __init__(
         self,
-        alpha: float = None,
+        alpha: Optional[float] = None,
         *,
-        com: float = None,
+        com: Optional[float] = None,
         min_periods: int = 0,
         adjust: bool = True,
         ignore_na: bool = False,
-        initial_value=jnp.nan,
+        initial_value: float = jnp.nan,
         return_info: bool = False,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """Initialize module.
 

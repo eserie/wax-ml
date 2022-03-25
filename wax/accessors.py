@@ -13,7 +13,7 @@
 # limitations under the License.
 """Define accessors for xarray and pandas data containers."""
 from dataclasses import dataclass, field
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 import jax.numpy as jnp
 import numpy as onp
@@ -315,8 +315,8 @@ class WaxAccessor:
 @dataclass(frozen=True)
 class ExponentialMovingWindow:
     accessor: WaxAccessor
-    com: float = None
-    alpha: float = None
+    com: Optional[float] = None
+    alpha: Optional[float] = None
     min_periods: int = 0
     adjust: bool = True
     ignore_na: bool = False

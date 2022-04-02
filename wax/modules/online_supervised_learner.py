@@ -17,9 +17,10 @@ from typing import Any, Callable, NamedTuple, Tuple, Union
 import haiku as hk
 import jax
 import jax.numpy as jnp
-import optax
+from optax import GradientTransformation
 
 from wax.modules import FillNanInf
+from wax.modules.optax_optimizer import OptaxOptimizer
 
 
 class ParamsState(NamedTuple):
@@ -38,7 +39,7 @@ class OnlineSupervisedLearner(hk.Module):
     def __init__(
         self,
         model: Union[Callable, hk.TransformedWithState],
-        opt: Any,
+        opt: Union[OptaxOptimizer, GradientTransformation],
         loss: Callable,
         grads_fill_nan_inf=True,
         name: str = None,
@@ -59,7 +60,9 @@ class OnlineSupervisedLearner(hk.Module):
             if isinstance(model, hk.TransformedWithState)
             else hk.transform_with_state(model)
         )
-        self.opt = opt
+        self.opt = (
+            OptaxOptimizer(opt) if isinstance(opt, GradientTransformation) else opt
+        )
         self.loss = loss
         self.grads_fill_nan_inf = grads_fill_nan_inf
 
@@ -79,7 +82,6 @@ class OnlineSupervisedLearner(hk.Module):
             [],
             init=lambda *_: ParamsState(*self.model.init(hk.next_rng_key(), x)),  # type: ignore
         )
-        opt_state = hk.get_state("opt_state", [], init=lambda *_: self.opt.init(params))
 
         @jax.jit
         def _loss(params, state, x, y):
@@ -94,16 +96,12 @@ class OnlineSupervisedLearner(hk.Module):
         if self.grads_fill_nan_inf:
             grads = FillNanInf()(grads)
 
-        # update optimizer state
-        grads, opt_state = self.opt.update(grads, opt_state)
-
         # update params
-        params = optax.apply_updates(params, grads)
+        params = self.opt(params, grads)
 
         step += 1
         hk.set_state("step", step)
         hk.set_state("model_params_state", ParamsState(params, state))
-        hk.set_state("opt_state", opt_state)
 
         info = OnlineSupervisedLearnerInfo(loss=l, params=params)
         return y_pred, info

@@ -41,7 +41,7 @@ class OptInfo:
     return_params: bool = False
 
     def __post_init__(self):
-        outputs = ["loss", "model_info", "opt_loss"]
+        outputs = ["loss", "model_info"]
         if self.return_params:
             outputs += ["params"]
         self.opt_info_struct_ = namedtuple("OptInfo", outputs)
@@ -50,10 +50,9 @@ class OptInfo:
         self,
         loss: float,
         model_info: Any,
-        opt_loss: float,
         params: Any = None,
     ):
-        outputs = [loss, model_info, opt_loss]
+        outputs = [loss, model_info]
         if self.return_params:
             outputs += [params]
         return self.opt_info_struct_(*outputs)
@@ -135,21 +134,16 @@ class OnlineOptimizer(hk.Module):
             )
             if self.regularize_loss:
                 loss += self.regularize_loss(trainable_params)
-            return loss
+            return loss, (model_info, params, state)
 
         # compute loss and gradients
-        opt_loss, grads = jax.value_and_grad(_loss)(
+        (loss, (model_info, params, state)), grads = jax.value_and_grad(_loss, has_aux=True)(
             trainable_params, non_trainable_params, state, *args, **kwargs
-        )
-
-        # compute prediction and update model state
-        params = hk.data_structures.merge(trainable_params, non_trainable_params)
-        (loss, model_info), state = self.model.apply(
-            params, state, None, *args, **kwargs
         )
 
         # update optimizer state
         filled_grads = tree_map(jnp.nan_to_num, grads)
+
         updated_grads, opt_state = self.opt.update(filled_grads, opt_state)
 
         # update params
@@ -173,7 +167,6 @@ class OnlineOptimizer(hk.Module):
         opt_info = self.OptInfo(
             loss,
             model_info,
-            opt_loss,
             updated_params,
         )
         return opt_info

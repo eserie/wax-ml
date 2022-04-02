@@ -91,12 +91,13 @@ def test_online_model():
 
     opt = optax.sgd(1e-3)
 
-    @jax.jit
+    def linear_model(x):
+        yp = hk.Linear(output_size=1, with_bias=False)(x)
+        return yp
+
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
-    @jit_init_apply
-    @hk.transform_with_state
     def learner(x, y):
         return OnlineSupervisedLearner(linear_model, opt, loss)(x, y)
 

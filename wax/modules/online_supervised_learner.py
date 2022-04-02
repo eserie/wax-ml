@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Online supervised learner."""
-from typing import Any, Callable, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple, Tuple, Union
 
 import haiku as hk
 import jax
@@ -37,7 +37,7 @@ class OnlineSupervisedLearner(hk.Module):
 
     def __init__(
         self,
-        model: Any,
+        model: Union[Callable, hk.TransformedWithState],
         opt: Any,
         loss: Callable,
         grads_fill_nan_inf=True,
@@ -54,7 +54,7 @@ class OnlineSupervisedLearner(hk.Module):
                 +/- infinite values in gradients with zeros.
         """
         super().__init__(name=name)
-        self.model = model
+        self.model = model if isinstance(model, hk.TransformedWithState) else hk.transform_with_state(model)
         self.opt = opt
         self.loss = loss
         self.grads_fill_nan_inf = grads_fill_nan_inf
@@ -80,16 +80,13 @@ class OnlineSupervisedLearner(hk.Module):
         @jax.jit
         def _loss(params, state, x, y):
             y_pred, state = self.model.apply(params, state, None, x)
-            return self.loss(y_pred, y)
+            return self.loss(y_pred, y), (y_pred, state)
 
         # compute loss and gradients
-        l, grads = jax.value_and_grad(_loss)(params, state, x, y)
+        (l, (y_pred, state)), grads = jax.value_and_grad(_loss, has_aux=True)(params, state, x, y)
 
         if self.grads_fill_nan_inf:
             grads = FillNanInf()(grads)
-
-        # compute prediction and update model state
-        y_pred, state = self.model.apply(params, state, None, x)
 
         # update optimizer state
         grads, opt_state = self.opt.update(grads, opt_state)

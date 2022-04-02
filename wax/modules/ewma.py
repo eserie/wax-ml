@@ -23,8 +23,8 @@ class EWMA(hk.Module):
 
     def __init__(
         self,
-        alpha: Optional[float] = None,
         *,
+        alpha: Optional[float] = None,
         com: Optional[float] = None,
         min_periods: int = 0,
         adjust: bool = True,

@@ -54,7 +54,11 @@ class OnlineSupervisedLearner(hk.Module):
                 +/- infinite values in gradients with zeros.
         """
         super().__init__(name=name)
-        self.model = model if isinstance(model, hk.TransformedWithState) else hk.transform_with_state(model)
+        self.model = (
+            model
+            if isinstance(model, hk.TransformedWithState)
+            else hk.transform_with_state(model)
+        )
         self.opt = opt
         self.loss = loss
         self.grads_fill_nan_inf = grads_fill_nan_inf
@@ -83,7 +87,9 @@ class OnlineSupervisedLearner(hk.Module):
             return self.loss(y_pred, y), (y_pred, state)
 
         # compute loss and gradients
-        (l, (y_pred, state)), grads = jax.value_and_grad(_loss, has_aux=True)(params, state, x, y)
+        (l, (y_pred, state)), grads = jax.value_and_grad(_loss, has_aux=True)(
+            params, state, x, y
+        )
 
         if self.grads_fill_nan_inf:
             grads = FillNanInf()(grads)

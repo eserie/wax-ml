@@ -137,9 +137,9 @@ class OnlineOptimizer(hk.Module):
             return loss, (model_info, params, state)
 
         # compute loss and gradients
-        (loss, (model_info, params, state)), grads = jax.value_and_grad(_loss, has_aux=True)(
-            trainable_params, non_trainable_params, state, *args, **kwargs
-        )
+        (loss, (model_info, params, state)), grads = jax.value_and_grad(
+            _loss, has_aux=True
+        )(trainable_params, non_trainable_params, state, *args, **kwargs)
 
         # update optimizer state
         filled_grads = tree_map(jnp.nan_to_num, grads)

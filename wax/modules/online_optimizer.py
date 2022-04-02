@@ -58,13 +58,33 @@ class OptInfo:
         return self.opt_info_struct_(*outputs)
 
 
+class OptaxOptimizer(hk.Module):
+    """A module which wraps an optax GrandientTransformation.
+
+    Args:
+        opt: gradient transformation
+        name: name of the module
+    """
+
+    def __init__(self, opt: optax.GradientTransformation, name=None):
+        super().__init__(name=name)
+        self.opt = opt
+
+    def __call__(self, params, grads):
+        opt_state = hk.get_state("opt_state", [], init=lambda *_: self.opt.init(params))
+        updates, opt_state = self.opt.update(grads, opt_state)
+        params = optax.apply_updates(params, updates)
+        hk.set_state("opt_state", opt_state)
+        return params
+
+
 class OnlineOptimizer(hk.Module):
     """Wraps a model with loss and and optimizer to perform one online learning update."""
 
     def __init__(
         self,
         model: Union[Callable, hk.TransformedWithState],
-        opt: GradientTransformation,
+        opt: Union[OptaxOptimizer, GradientTransformation],
         project_params: Callable = None,
         regularize_loss: Callable = None,
         split_params: Callable = None,
@@ -88,7 +108,9 @@ class OnlineOptimizer(hk.Module):
             if isinstance(model, hk.TransformedWithState)
             else hk.transform_with_state(model)
         )
-        self.opt = opt
+        self.opt = (
+            OptaxOptimizer(opt) if isinstance(opt, GradientTransformation) else opt
+        )
         self.project_params = project_params
         self.regularize_loss = regularize_loss
         self.split_params = (
@@ -119,11 +141,6 @@ class OnlineOptimizer(hk.Module):
             init=init_model_params_and_state,
         )
 
-        def init_opt_state(shape, dtype):
-            return self.opt.init(trainable_params)
-
-        opt_state = hk.get_state("opt_state", [], init=init_opt_state)
-
         step = hk.get_state("step", [], init=lambda *_: 0)
 
         @jax.jit
@@ -144,14 +161,12 @@ class OnlineOptimizer(hk.Module):
         # update optimizer state
         filled_grads = tree_map(jnp.nan_to_num, grads)
 
-        updated_grads, opt_state = self.opt.update(filled_grads, opt_state)
-
         # update params
-        updated_trainable_params = optax.apply_updates(trainable_params, updated_grads)
+        updated_trainable_params = self.opt(trainable_params, filled_grads)
 
         if self.project_params:
             updated_trainable_params = self.project_params(
-                updated_trainable_params, opt_state
+                updated_trainable_params, self.opt
             )
 
         updated_params = hk.data_structures.merge(
@@ -163,7 +178,7 @@ class OnlineOptimizer(hk.Module):
             "model_params_and_state",
             ParamsState(updated_trainable_params, non_trainable_params, state),
         )
-        hk.set_state("opt_state", opt_state)
+
         opt_info = self.OptInfo(
             loss,
             model_info,

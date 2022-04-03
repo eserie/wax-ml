@@ -155,7 +155,7 @@ def test_grad_ewma(adjust):
 
     @partial(unroll_transform_with_state, dynamic=False)
     def fun(x):
-        return EWMA(1 / 10, adjust=adjust)(x)
+        return EWMA(alpha=1 / 10, adjust=adjust)(x)
 
     params, state = fun.init(rng, x)
     res, final_state = fun.apply(params, state, rng, x)
@@ -258,7 +258,7 @@ def test_train_ewma():
 
     def train():
         def model(x):
-            return EWMA(1 / COM_INIT, adjust=True, ignore_na=False)(x)
+            return EWMA(com=COM_INIT, adjust=True, ignore_na=False)(x)
 
         @jax.jit
         def loss(y, y_ref):
@@ -272,7 +272,7 @@ def test_train_ewma():
         rng = jax.random.PRNGKey(42)
         x = jax.random.normal(rng, (T,)).at[T // 2].set(jnp.nan)
 
-        y_ref = unroll(lambda x: EWMA(1 / COM_TARGET, adjust=True, ignore_na=False)(x))(
+        y_ref = unroll(lambda x: EWMA(com=COM_TARGET, adjust=True, ignore_na=False)(x))(
             x
         )
 

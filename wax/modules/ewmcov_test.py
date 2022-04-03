@@ -36,7 +36,7 @@ def test_init_and_first_step_cov_float64(dtype):
     @jit_init_apply
     @hk.transform_with_state
     def model(x, y):
-        return EWMCov(jnp.array(0.1), adjust=True)(x, y)
+        return EWMCov(alpha=0.1, adjust=True)(x, y)
 
     params, state = model.init(next(seq), x, y)
     cov, state = model.apply(params, state, next(seq), x, y)
@@ -56,7 +56,7 @@ def test_run_cov_vs_sklearn(assume_centered):
     @jit_init_apply
     @hk.transform_with_state
     def model(x, y):
-        return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(x, y)
+        return EWMCov(alpha=alpha, adjust=True, assume_centered=assume_centered)(x, y)
 
     cov = unroll(model)(x, y)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
@@ -77,7 +77,7 @@ def test_run_cov_vs_sklearn_adjust(assume_centered):
     @jit_init_apply
     @hk.transform_with_state
     def model(x, y):
-        return EWMCov(alpha, adjust=True, assume_centered=assume_centered)(x, y)
+        return EWMCov(alpha=alpha, adjust=True, assume_centered=assume_centered)(x, y)
 
     cov = unroll(model)(x, y)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
@@ -98,7 +98,9 @@ def test_run_cov_vs_pandas_adjust_finite(assume_centered):
     @jit_init_apply
     @hk.transform_with_state
     def model(x, y):
-        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(x, y)
+        return EWMCov(alpha=alpha, adjust="linear", assume_centered=assume_centered)(
+            x, y
+        )
 
     cov = unroll(model)(x, y)
     cov_ref = EmpiricalCovariance(assume_centered=assume_centered).fit(x).covariance_
@@ -119,14 +121,18 @@ def test_run_cov_with_legacy_api(assume_centered):
     @jit_init_apply
     @hk.transform_with_state
     def model(x, y):
-        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(x, y)
+        return EWMCov(alpha=alpha, adjust="linear", assume_centered=assume_centered)(
+            x, y
+        )
 
     cov = unroll(model)(x, y)
 
     @jit_init_apply
     @hk.transform_with_state
     def model(x_y):
-        return EWMCov(alpha, adjust="linear", assume_centered=assume_centered)(x_y)
+        return EWMCov(alpha=alpha, adjust="linear", assume_centered=assume_centered)(
+            x_y
+        )
 
     cov_ref = unroll(model)(x_y=(x, y))
 

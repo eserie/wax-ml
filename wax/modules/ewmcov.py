@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentially weighted covariance."""
+from typing import Optional
+
 import haiku as hk
 import jax.numpy as jnp
 
@@ -30,8 +32,13 @@ class EWMCov(hk.Module):
 
     def __init__(
         self,
-        alpha: float = 0.5,
+        *,
+        alpha: Optional[float] = None,
+        com: Optional[float] = None,
+        min_periods: int = 0,
         adjust: bool = True,
+        ignore_na: bool = False,
+        initial_value: float = jnp.nan,
         assume_centered: bool = False,
         name: str = None,
     ):
@@ -45,8 +52,20 @@ class EWMCov(hk.Module):
             name : name of the module instance.
         """
         super().__init__(name=name)
-        self.alpha = alpha
+        assert (
+            com is not None or alpha is not None
+        ), "com or alpha parameters must be specified."
+        if com is not None:
+            assert alpha is None
+        elif alpha is not None:
+            assert com is None
+            com = 1.0 / alpha - 1.0
+
+        self.com = com
+        self.min_periods = min_periods
         self.adjust = adjust
+        self.ignore_na = ignore_na
+        self.initial_value = initial_value
         self.assume_centered = assume_centered
 
     def __call__(self, x, y=None):
@@ -61,24 +80,30 @@ class EWMCov(hk.Module):
             )
             x, y = x
         mean_xy = EWMA(
-            alpha=self.alpha,
+            com=self.com,
+            min_periods=self.min_periods,
             adjust=self.adjust,
-            initial_value=jnp.nan,
+            ignore_na=self.ignore_na,
+            initial_value=self.initial_value,
             name="mean_xy",
         )(jnp.outer(x, y))
         if self.assume_centered:
             cov = mean_xy
         else:
             mean_x = EWMA(
-                alpha=self.alpha,
+                com=self.com,
+                min_periods=self.min_periods,
                 adjust=self.adjust,
-                initial_value=jnp.nan,
+                ignore_na=self.ignore_na,
+                initial_value=self.initial_value,
                 name="mean_x",
             )(x)
             mean_y = EWMA(
-                alpha=self.alpha,
+                com=self.com,
+                min_periods=self.min_periods,
                 adjust=self.adjust,
-                initial_value=jnp.nan,
+                ignore_na=self.ignore_na,
+                initial_value=self.initial_value,
                 name="mean_y",
             )(y)
             cov = mean_xy - jnp.outer(mean_x, mean_y)

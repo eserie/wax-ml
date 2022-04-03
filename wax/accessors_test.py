@@ -29,15 +29,15 @@ from wax.unroll import unroll
 
 
 def module_same_shape(x):
-    return EWMA(1.0 / 10.0)(x)
+    return EWMA(com=10)(x)
 
 
 def module_reduce_shape(x):
-    return EWMA(1.0 / 10.0)(x).sum()
+    return EWMA(com=10)(x).sum()
 
 
 def module_map(x):
-    return {"ts_10": EWMA(1.0 / 10.0)(x).sum(), "ts_5": EWMA(1.0 / 5.0)(x).sum()}
+    return {"ts_10": EWMA(com=10)(x).sum(), "ts_5": EWMA(com=5)(x).sum()}
 
 
 def check_ema_state(state, ref_count=124):
@@ -69,7 +69,7 @@ def test_unroll_dataset_accessor():
     dataset = prepare_format_data("dataset")
 
     def module(dataset):
-        return EWMA(1.0 / 10.0)(dataset["ground"])
+        return EWMA(com=10)(dataset["ground"])
 
     with pytest.raises(ValueError):
         dataset.wax.stream().apply(
@@ -173,8 +173,8 @@ def test_unroll_dataset_accessor_module_map():
     def module_map(dataset):
         return {
             name: {
-                "ts_10": EWMA(1.0 / 10.0, name=name)(val).sum(),
-                "ts_5": EWMA(1.0 / 5.0, name=name)(val).sum(),
+                "ts_10": EWMA(com=10, name=name)(val).sum(),
+                "ts_5": EWMA(com=5, name=name)(val).sum(),
             }
             for name, val in dataset.items()
             if name in ["ground", "air"]
@@ -210,7 +210,7 @@ def _compute_ewma_direct(dataarray):
 
     @hk.transform_with_state
     def model(x):
-        return EWMA(0.1, adjust=True)(x)
+        return EWMA(alpha=0.1, adjust=True)(x)
 
     ema3, state3 = unroll(model, return_final_state=True)(x)
     return ema3, state3
@@ -309,8 +309,8 @@ def test_ewm_dataframe():
     dataframe = pd.DataFrame(
         onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T)
     )
-    y = dataframe.ewm(alpha=1.0 / 10.0).mean()
-    y2 = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
+    y = dataframe.ewm(com=10).mean()
+    y2 = dataframe.wax.ewm(com=10).mean()
     assert (y - y2).abs().stack().max() < 1.0e-5
 
 
@@ -322,13 +322,13 @@ def test_ewm_dataframe_no_format_outputs():
     dataframe = pd.DataFrame(
         onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T)
     )
-    y = dataframe.ewm(alpha=1.0 / 10.0).mean()
-    y2 = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
+    y = dataframe.ewm(com=10).mean()
+    y2 = dataframe.wax.ewm(com=10, format_outputs=False).mean()
     y2 = pd.DataFrame(onp.array(y2), index=y.index)
 
     assert (y - y2).abs().stack().max() < 1.0e-5
 
-    y2 = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
+    y2 = dataframe.wax.ewm(com=10).mean()
 
     dataset = xr.DataArray(y2)
     output = y2.values

@@ -15,11 +15,10 @@
 from typing import Any, Callable, NamedTuple, Tuple, Union
 
 import haiku as hk
-import jax
 import jax.numpy as jnp
 from optax import GradientTransformation
 
-from wax.modules import FillNanInf
+from wax.modules.func_optimizer import FuncOptimizer
 from wax.modules.optax_optimizer import OptaxOptimizer
 
 
@@ -55,11 +54,7 @@ class OnlineSupervisedLearner(hk.Module):
                 +/- infinite values in gradients with zeros.
         """
         super().__init__(name=name)
-        self.model = (
-            model
-            if isinstance(model, hk.TransformedWithState)
-            else hk.transform_with_state(model)
-        )
+        self.model = model
         self.opt = (
             OptaxOptimizer(opt) if isinstance(opt, GradientTransformation) else opt
         )
@@ -76,32 +71,12 @@ class OnlineSupervisedLearner(hk.Module):
             y: target
         """
 
-        step = hk.get_state("step", [], init=lambda *_: jnp.array(0))
-        params, state = hk.get_state(
-            "model_params_state",
-            [],
-            init=lambda *_: ParamsState(*self.model.init(hk.next_rng_key(), x)),  # type: ignore
-        )
+        def _loss(x, y):
+            y_pred = self.model(x)
+            return self.loss(y, y_pred), y_pred
 
-        @jax.jit
-        def _loss(params, state, x, y):
-            y_pred, state = self.model.apply(params, state, None, x)
-            return self.loss(y_pred, y), (y_pred, state)
-
-        # compute loss and gradients
-        (l, (y_pred, state)), grads = jax.value_and_grad(_loss, has_aux=True)(
-            params, state, x, y
-        )
-
-        if self.grads_fill_nan_inf:
-            grads = FillNanInf()(grads)
-
-        # update params
-        params = self.opt(params, grads)
-
-        step += 1
-        hk.set_state("step", step)
-        hk.set_state("model_params_state", ParamsState(params, state))
-
+        (l, y_pred), params = FuncOptimizer(
+            _loss, self.opt, has_aux=True, grads_fill_nan_inf=self.grads_fill_nan_inf
+        )(x, y)
         info = OnlineSupervisedLearnerInfo(loss=l, params=params)
         return y_pred, info

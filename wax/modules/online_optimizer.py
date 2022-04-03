@@ -124,7 +124,6 @@ class OnlineOptimizer(hk.Module):
 
         step = hk.get_state("step", [], init=lambda *_: 0)
 
-        @jax.jit
         def _loss(trainable_params, non_trainable_params, state, *args, **kwargs):
             params = hk.data_structures.merge(trainable_params, non_trainable_params)
             (loss, model_info), state = self.model.apply(

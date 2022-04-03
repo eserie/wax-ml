@@ -94,8 +94,8 @@ class EWMVar(hk.Module):
             dtype=x.dtype,
             init=lambda shape, dtype: jnp.full(shape, jnp.nan, dtype),
         )
-        count = hk.get_state(
-            "count",
+        nobs = hk.get_state(
+            "nobs",
             shape=x.shape,
             dtype=x.dtype,
             init=lambda shape, dtype: jnp.full(shape, 0.0, dtype),
@@ -106,16 +106,16 @@ class EWMVar(hk.Module):
         variance = jnp.where(jnp.isnan(variance), 0.0, variance)
 
         mask = jnp.logical_not(jnp.isnan(x))
-        count = jnp.where(mask, count + 1, count)
+        nobs = jnp.where(mask, nobs + 1, nobs)
 
         # alpha adjustement scheme
         if self.adjust == "linear":
             tscale = 1.0 / alpha
-            tscale = jnp.where(count < tscale, count, tscale)
+            tscale = jnp.where(nobs < tscale, nobs, tscale)
             alpha = jnp.where(tscale > 0, 1.0 / tscale, jnp.nan)
         elif self.adjust:
             # exponential scheme (as in pandas)
-            alpha = alpha / (1.0 - (1.0 - alpha) ** (count))
+            alpha = alpha / (1.0 - (1.0 - alpha) ** (nobs))
 
         diff = x - mean
         incr = alpha * diff
@@ -126,6 +126,6 @@ class EWMVar(hk.Module):
 
         hk.set_state("mean", mean)
         hk.set_state("variance", variance)
-        hk.set_state("count", count)
+        hk.set_state("nobs", nobs)
 
         return variance

@@ -24,8 +24,8 @@ class EWMA(hk.Module):
     def __init__(
         self,
         *,
-        alpha: Optional[float] = None,
         com: Optional[float] = None,
+        alpha: Optional[float] = None,
         min_periods: int = 0,
         adjust: bool = True,
         ignore_na: bool = False,
@@ -36,14 +36,14 @@ class EWMA(hk.Module):
         """Initialize module.
 
         Args:
-            alpha:  Specify smoothing factor :math:`\alpha` directly
-                :math:`0 < \alpha \leq 1`.
             com : Specify decay in terms of center of mass
                 :math:`\alpha = 1 / (1 + com)`, for :math:`com \geq 0`.
 
+            alpha:  Specify smoothing factor :math:`\alpha` directly
+                :math:`0 < \alpha \leq 1`.
+
             min_periods : Minimum number of observations in window required to have a value;
                 otherwise, result is ``np.nan``.
-
 
             adjust : Divide by decaying adjustment factor in beginning periods to account
                 for imbalance in relative weightings (viewing EWMA as a moving average).

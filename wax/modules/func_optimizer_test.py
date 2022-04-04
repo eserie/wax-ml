@@ -2,6 +2,7 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 import optax
+from jax.config import config
 
 from wax.modules.func_optimizer import FuncOptimizer
 from wax.modules.optax_optimizer import OptaxOptimizer
@@ -18,6 +19,7 @@ def generate_data():
 
 
 def test_func_optimizer():
+    config.update("jax_enable_x64", False)
 
     x, y = generate_data()
 

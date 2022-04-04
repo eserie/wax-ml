@@ -11,32 +11,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable, Optional
+
 import haiku as hk
 import jax
 
 from wax.modules import FillNanInf
-from wax.modules.transform_params import TransformParams, get_init_params
+from wax.modules.update_params import UpdateParams, get_init_params
 
 
 class FuncOptimizer(hk.Module):
-    def __init__(self, func, opt, has_aux=False, grads_fill_nan_inf=False, name=None):
+    def __init__(
+        self,
+        func,
+        opt,
+        has_aux=False,
+        split_params: Optional[Callable] = None,
+        grads_fill_nan_inf=False,
+        name=None,
+    ):
         self.func = func
         self.opt = opt
         self.has_aux = has_aux
         self.grads_fill_nan_inf = grads_fill_nan_inf
+        self.split_params = split_params
         super().__init__(name=name)
 
     def __call__(self, *args, **kwargs):
-        params = hk.get_state(
-            "params", [], init=lambda *_: get_init_params(self.func, *args, **kwargs)
+        trainable_params = hk.get_state(
+            "trainable_params",
+            [],
+            init=lambda *_: get_init_params(
+                self.func, split_params=self.split_params, *args, **kwargs
+            ),
         )
-        func_params = TransformParams(self.func)
-        l, grads = jax.value_and_grad(func_params, has_aux=self.has_aux)(
-            params, *args, **kwargs
+        func = UpdateParams(self.func, split_params=self.split_params)
+        results, grads = jax.value_and_grad(func, has_aux=self.has_aux)(
+            trainable_params, *args, **kwargs
         )
         if self.grads_fill_nan_inf:
             grads = FillNanInf()(grads)
 
-        params = jax.tree_multimap(self.opt, params, grads)
-        hk.set_state("params", params)
-        return l, params
+        # trainable_params = jax.tree_multimap(self.opt, trainable_params, grads)
+        trainable_params = self.opt(trainable_params, grads)
+
+        hk.set_state("trainable_params", trainable_params)
+        return results, trainable_params

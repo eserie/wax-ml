@@ -1,3 +1,5 @@
+from typing import Callable, Optional
+
 # Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,23 +17,56 @@ import haiku as hk
 
 
 class UpdateParams(hk.Module):
-    def __init__(self, fun, name=None):
+    """Transform a callable as a function of its trainable parameters.
+
+    The non trainable parameters and state are captured and managed as state
+    of the module.
+    """
+
+    def __init__(
+        self, func: Callable, split_params: Optional[Callable] = None, name=None
+    ):
         super().__init__(name=name)
-        self.fun = (
-            fun
-            if isinstance(fun, hk.TransformedWithState)
-            else hk.transform_with_state(fun)
+        self.func = func
+        self.split_params = (
+            split_params
+            if split_params is not None
+            else lambda params: (params, type(params)())
         )
 
-    def __call__(self, params, *args, **kwargs):
-        rng = hk.next_rng_key()
+    def __call__(self, trainable_params, *args, **kwargs):
+        init, apply = hk.transform_with_state(self.func)
+        rng = hk.next_rng_key() if hk.running_init() else None
 
-        def init_state(*_):
-            _, state = self.fun.init(rng, *args, **kwargs)
-            return state
+        def init_model_non_trainable_params_and_state(shape, dtype):
+            """Set state from trainable params and state of the model."""
+            params, state = init(rng, *args, **kwargs)
+            trainable_params, non_trainable_params = self.split_params(params)
+            trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
+            return (non_trainable_params, state)
 
-        state = hk.get_state("state", [], init=init_state)
-        res, state = self.fun.apply(params, state, rng, *args, **kwargs)
-        hk.set_state("state", state)
+        non_trainable_params, state = hk.get_state(
+            "non_trainable_params_and_state",
+            [],
+            init=init_model_non_trainable_params_and_state,
+        )
 
+        params = hk.data_structures.merge(trainable_params, non_trainable_params)
+
+        res, state = apply(params, state, rng, *args, **kwargs)
+
+        hk.set_state("non_trainable_params_and_state", (non_trainable_params, state))
         return res
+
+
+def get_init_params(func, *args, split_params: Optional[Callable] = None, **kwargs):
+    init_rng = hk.next_rng_key() if hk.running_init() else None
+    init, _ = hk.transform(func)
+    params = init(init_rng, *args, **kwargs)
+
+    if split_params:
+        trainable_params, non_trainable_params = split_params(params)
+        trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
+        return trainable_params
+    else:
+        return params

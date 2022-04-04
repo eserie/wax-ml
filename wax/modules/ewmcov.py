@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentially weighted covariance."""
+from typing import Optional
+
 import haiku as hk
 import jax.numpy as jnp
 
@@ -30,23 +32,83 @@ class EWMCov(hk.Module):
 
     def __init__(
         self,
-        alpha: float = 0.5,
+        *,
+        com: Optional[float] = None,
+        alpha: Optional[float] = None,
+        min_periods: int = 0,
         adjust: bool = True,
+        ignore_na: bool = False,
+        initial_value: float = jnp.nan,
         assume_centered: bool = False,
         name: str = None,
     ):
         """
 
         Args:
-            alpha: alpha parameter of the exponential moving average.
-            adjust: if true, implement a non-stationary filter with exponential initialization
-                scheme. If "linear", implement a non-stationary filter with linear initialization.
+            com : Specify decay in terms of center of mass
+                :math:`\alpha = 1 / (1 + com)`, for :math:`com \geq 0`.
+
+            alpha:  Specify smoothing factor :math:`\alpha` directly
+                :math:`0 < \alpha \leq 1`.
+
+            min_periods : Minimum number of observations in window required to have a value;
+                otherwise, result is ``np.nan``.
+
+            adjust : Divide by decaying adjustment factor in beginning periods to account
+                for imbalance in relative weightings (viewing EWMA as a moving average).
+                - When ``adjust=True`` (default), the EW function is calculated using weights
+                  :math:`w_i = (1 - \alpha)^i`. For example, the EW moving average of the series
+                  [:math:`x_0, x_1, ..., x_t`] would be:
+                .. math::
+                    y_t = \frac{x_t + (1 - \alpha)x_{t-1} + (1 - \alpha)^2 x_{t-2} + ... + (1 -
+                    \alpha)^t x_0}{1 + (1 - \alpha) + (1 - \alpha)^2 + ... + (1 - \alpha)^t}
+                - When ``adjust=False``, the exponentially weighted function is calculated
+                  recursively:
+                .. math::
+                    \begin{split}
+                        y_0 &= x_0\\
+                        y_t &= (1 - \alpha) y_{t-1} + \alpha x_t,
+                    \end{split}
+                The effective  center of mass (com) interpolate exponentially between 0 and the
+                nominal center of mass.
+
+                - When ``adjust='linear'`` the effective  center of mass (com) interpolate linearly
+                between 0 and the nominal center of mass.
+
+            ignore_na : Ignore missing values when calculating weights.
+                - When ``ignore_na=False`` (default), weights are based on absolute positions.
+                  For example, the weights of :math:`x_0` and :math:`x_2` used in calculating
+                  the final weighted average of [:math:`x_0`, None, :math:`x_2`] are
+                  :math:`(1-\alpha)^2` and :math:`1` if ``adjust=True``, and
+                  :math:`(1-\alpha)^2` and :math:`\alpha` if ``adjust=False``.
+                - When ``ignore_na=True``, weights are based
+                  on relative positions. For example, the weights of :math:`x_0` and :math:`x_2`
+                  used in calculating the final weighted average of
+                  [:math:`x_0`, None, :math:`x_2`] are :math:`1-\alpha` and :math:`1` if
+                  ``adjust=True``, and :math:`1-\alpha` and :math:`\alpha` if ``adjust=False``.
+
+
+            initial_value : initial value for the state.
+
             assume_centered: if true, assume that the mean estimator is zero.
+
             name : name of the module instance.
         """
         super().__init__(name=name)
-        self.alpha = alpha
+        assert (
+            com is not None or alpha is not None
+        ), "com or alpha parameters must be specified."
+        if com is not None:
+            assert alpha is None
+        elif alpha is not None:
+            assert com is None
+            com = 1.0 / alpha - 1.0
+
+        self.com = com
+        self.min_periods = min_periods
         self.adjust = adjust
+        self.ignore_na = ignore_na
+        self.initial_value = initial_value
         self.assume_centered = assume_centered
 
     def __call__(self, x, y=None):
@@ -61,24 +123,30 @@ class EWMCov(hk.Module):
             )
             x, y = x
         mean_xy = EWMA(
-            alpha=self.alpha,
+            com=self.com,
+            min_periods=self.min_periods,
             adjust=self.adjust,
-            initial_value=jnp.nan,
+            ignore_na=self.ignore_na,
+            initial_value=self.initial_value,
             name="mean_xy",
         )(jnp.outer(x, y))
         if self.assume_centered:
             cov = mean_xy
         else:
             mean_x = EWMA(
-                alpha=self.alpha,
+                com=self.com,
+                min_periods=self.min_periods,
                 adjust=self.adjust,
-                initial_value=jnp.nan,
+                ignore_na=self.ignore_na,
+                initial_value=self.initial_value,
                 name="mean_x",
             )(x)
             mean_y = EWMA(
-                alpha=self.alpha,
+                com=self.com,
+                min_periods=self.min_periods,
                 adjust=self.adjust,
-                initial_value=jnp.nan,
+                ignore_na=self.ignore_na,
+                initial_value=self.initial_value,
                 name="mean_y",
             )(y)
             cov = mean_xy - jnp.outer(mean_x, mean_y)

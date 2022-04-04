@@ -74,7 +74,7 @@ def test_init_and_first_step_var_float64(dtype):
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMVar(0.1, adjust=True)(x)
+        return EWMVar(alpha=0.1, adjust=True)(x)
 
     params, state = model.init(next(seq), x)
     var, state = model.apply(params, state, next(seq), x)
@@ -93,7 +93,7 @@ def test_run_var_vs_pandas_not_adjust():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMVar(0.1, adjust=False)(x)
+        return EWMVar(alpha=0.1, adjust=False)(x)
 
     var, state = unroll(model, return_final_state=True)(x)
     var = pd.DataFrame(var)
@@ -123,7 +123,7 @@ def test_run_var_vs_pandas_adjust():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMVar(0.1, adjust=True)(x)
+        return EWMVar(alpha=0.1, adjust=True)(x)
 
     var, state = unroll(model, return_final_state=True)(x)
     var = pd.DataFrame(var)
@@ -154,7 +154,7 @@ def test_run_var_vs_pandas_adjust_finite():
     @jit_init_apply
     @hk.transform_with_state
     def model(x):
-        return EWMVar(0.1, adjust="linear")(x)
+        return EWMVar(alpha=0.1, adjust="linear")(x)
 
     var, state = unroll(model, return_final_state=True)(x)
     var = pd.DataFrame(var)

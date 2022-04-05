@@ -9,6 +9,26 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.4.0 (April 5 2022)
+
+* EWMA alignement with pandas and speedup (#53)
+  This adds the options:
+      * `com`
+      * `min_periods`
+      * `ignore_na`
+      * `return_info`
+* [wax_numba] add an implementation of the ewma in numba extending the one of pandas with the additional modes we have in wax:
+    * `adjust='linear'`
+    * `initial_value` parameter
+    * a state management for online usages and warm-start of the ewma.
+    * add `numba` to requirements
+
+* [EWMA] use `log1com` as a haiku parameter to ease training with gradient descent.
+* Align EWMCov and EWMVar with EWMA (#55)
+
+* [PctChange] correct `PctChange` module to align with pandas behavior. Introduce `fillna_zero` option.
+
+
 ## wax 0.3.2 (February 25 2022)
 
 * [modules] faster EWMA in adjust=True mode.

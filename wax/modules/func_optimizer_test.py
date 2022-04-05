@@ -39,10 +39,10 @@ def test_func_optimizer():
 
     rng = jax.random.PRNGKey(42)
     res = unroll(learn, rng=rng)(x, y)
-    (loss, yp), w_history = res
+    (l_, yp), w_history = res
 
     # check that averaged loss is less than initial loss.
-    assert loss.mean() < loss[0] / 37
+    assert l_.mean() < l_[0] / 37
     # pd.DataFrame(w_history["linear"]["w"].squeeze()).plot()
     # plt.show();
     # pd.Series(l).expanding().mean().plot(title="loss")

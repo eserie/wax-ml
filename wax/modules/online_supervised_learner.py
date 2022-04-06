@@ -37,7 +37,7 @@ class OnlineSupervisedLearner(hk.Module):
 
     def __init__(
         self,
-        model: Union[Callable, hk.TransformedWithState],
+        model: Callable,
         opt: Union[OptaxOptimizer, GradientTransformation],
         loss: Callable,
         grads_fill_nan_inf=True,

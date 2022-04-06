@@ -204,7 +204,6 @@ params, state = sim.init(rng, eps)
 (opt_info), state = sim.apply(params, state, rng, eps)
 
 pd.Series(opt_info.loss).expanding().mean().plot()
-pd.Series(opt_info.opt_loss).expanding().mean().plot()
 # -
 
 # Let's look at the latest weights:
@@ -289,7 +288,7 @@ from optax._src.base import OptState
 
 
 # + tags=[]
-def build_agent(time_series_model=None, opt=None):
+def build_agent(time_series_model=None, opt=None, embargo=1):
     if time_series_model is None:
         time_series_model = lambda y, X: SNARIMAX(10)(y, X)
 
@@ -341,7 +340,7 @@ def build_agent(time_series_model=None, opt=None):
                 project_params=project_params,
                 split_params=split_params,
                 return_params=True,
-            )(*lag(1)(y, X))
+            )(*lag(embargo)(y, X))
 
             y_pred, forecast_info = UpdateParams(time_series_model)(
                 opt_info.params, y, X

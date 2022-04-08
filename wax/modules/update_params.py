@@ -1,5 +1,3 @@
-from typing import Callable, Optional
-
 # Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +11,8 @@ from typing import Callable, Optional
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Callable, Optional
+
 import haiku as hk
 
 

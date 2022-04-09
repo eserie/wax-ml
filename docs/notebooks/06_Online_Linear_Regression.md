@@ -9,7 +9,7 @@ jupyter:
       format_version: '1.3'
       jupytext_version: 1.13.3
   kernelspec:
-    display_name: Python 3
+    display_name: Python 3 (ipykernel)
     language: python
     name: python3
 ---
@@ -187,7 +187,11 @@ $$
 
 
 ```python
-@jax.jit
+def linear_model(x):
+    return hk.Linear(output_size=1, with_bias=False)(x)
+```
+
+```python
 def loss(y_pred, y):
     return jnp.mean(jnp.square(y_pred - y))
 ```
@@ -197,8 +201,6 @@ def loss(y_pred, y):
 
 
 ```python
-@jit_init_apply
-@hk.transform_with_state
 def learner(x, y):
     return OnlineSupervisedLearner(linear_model, opt, loss)(x, y)
 ```
@@ -272,14 +274,11 @@ Let's define a simple linear regression agent with the elements we have defined 
 def linear_regression_agent(obs):
     x, y = obs
 
-    @jit_init_apply
-    @hk.transform_with_state
     def model(x):
         return hk.Linear(output_size=1, with_bias=False)(x)
 
     opt = optax.sgd(1e-3)
 
-    @jax.jit
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
@@ -316,7 +315,6 @@ def stationary_linear_regression_env(action, raw_obs):
     w_true = -jnp.ones(3)
 
     # The environment has its proper loss definition
-    @jax.jit
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
@@ -370,7 +368,6 @@ from wax.modules import GymFeedback
 ```
 
 ```python
-@hk.transform_with_state
 def gym_fun(raw_obs):
     return GymFeedback(
         linear_regression_agent, stationary_linear_regression_env, return_action=True
@@ -430,7 +427,6 @@ class NonStationaryEnvironment(hk.Module):
         )
 
         # The environment has its proper loss definition
-        @jax.jit
         def loss(y_pred, y):
             return jnp.mean(jnp.square(y_pred - y))
 
@@ -458,7 +454,6 @@ change of environment.
 
 
 ```python
-@hk.transform_with_state
 def gym_fun(raw_obs):
     return GymFeedback(
         linear_regression_agent, NonStationaryEnvironment(), return_action=True

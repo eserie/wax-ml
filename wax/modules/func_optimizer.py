@@ -15,9 +15,11 @@ from typing import Callable, Optional
 
 import haiku as hk
 import jax
+import jax.numpy as jnp
 
 from wax.modules import FillNanInf
 from wax.modules.update_params import UpdateParams, get_init_params
+from wax.predicate import pass_all_predicate
 
 
 class FuncOptimizer(hk.Module):
@@ -26,7 +28,9 @@ class FuncOptimizer(hk.Module):
         func,
         opt,
         has_aux=False,
-        split_params: Optional[Callable] = None,
+        params_predicate: Optional[
+            Callable[[str, str, jnp.ndarray], bool]
+        ] = pass_all_predicate,
         grads_fill_nan_inf=False,
         name=None,
     ):
@@ -34,7 +38,7 @@ class FuncOptimizer(hk.Module):
         self.opt = opt
         self.has_aux = has_aux
         self.grads_fill_nan_inf = grads_fill_nan_inf
-        self.split_params = split_params
+        self.params_predicate = params_predicate
         super().__init__(name=name)
 
     def __call__(self, *args, **kwargs):
@@ -42,10 +46,10 @@ class FuncOptimizer(hk.Module):
             "trainable_params",
             [],
             init=lambda *_: get_init_params(
-                self.func, split_params=self.split_params, *args, **kwargs
+                self.func, params_predicate=self.params_predicate, *args, **kwargs
             ),
         )
-        func = UpdateParams(self.func, split_params=self.split_params)
+        func = UpdateParams(self.func, params_predicate=self.params_predicate)
         results, grads = jax.value_and_grad(func, has_aux=self.has_aux)(
             trainable_params, *args, **kwargs
         )

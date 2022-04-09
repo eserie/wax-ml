@@ -19,10 +19,12 @@ from typing import Any, Callable, NamedTuple, Union
 import haiku as hk
 import jax
 import jax.numpy as jnp
+from haiku.data_structures import partition
 from jax.tree_util import tree_map
 from optax import GradientTransformation
 
 from wax.modules.optax_optimizer import OptaxOptimizer
+from wax.predicate import pass_all_predicate
 
 
 class ParamsState(NamedTuple):
@@ -68,7 +70,7 @@ class OnlineOptimizer(hk.Module):
         opt: Union[OptaxOptimizer, GradientTransformation],
         project_params: Callable = None,
         regularize_loss: Callable = None,
-        split_params: Callable = None,
+        params_predicate: Callable[[str, str, jnp.ndarray], bool] = pass_all_predicate,
         return_params=False,
         name: str = None,
     ):
@@ -79,7 +81,7 @@ class OnlineOptimizer(hk.Module):
             opt : optimizer: Optax transformation consisting of a function pair: (initialise, update).
             project_params : function to project parameters. It applies to parameters and optimizer state .
             regularize_loss: function to regularize the model loss. It applies to the parameters.
-            split_params: function to split params in trainable and non-trainable params.
+            params_predicate: function to split params in trainable and non-trainable params.
                 See https://dm-haiku.readthedocs.io/en/latest/notebooks/non_trainable.html
             name : name of the module
         """
@@ -94,11 +96,8 @@ class OnlineOptimizer(hk.Module):
         )
         self.project_params = project_params
         self.regularize_loss = regularize_loss
-        self.split_params = (
-            split_params
-            if split_params is not None
-            else lambda params: (params, type(params)())
-        )
+        self.params_predicate = params_predicate
+
         self.OptInfo = OptInfo(return_params)
 
     def __call__(self, *args, **kwargs):
@@ -112,7 +111,9 @@ class OnlineOptimizer(hk.Module):
         def init_model_params_and_state(shape, dtype):
             """Set state from trainable params and state of the model."""
             params, state = self.model.init(hk.next_rng_key(), *args, **kwargs)
-            trainable_params, non_trainable_params = self.split_params(params)
+            trainable_params, non_trainable_params = partition(
+                self.params_predicate, params
+            )
             trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
             return ParamsState(trainable_params, non_trainable_params, state)
 

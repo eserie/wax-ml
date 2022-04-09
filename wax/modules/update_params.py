@@ -14,6 +14,10 @@
 from typing import Callable, Optional
 
 import haiku as hk
+import jax.numpy as jnp
+from haiku.data_structures import partition
+
+from wax.predicate import pass_all_predicate
 
 
 class UpdateParams(hk.Module):
@@ -24,15 +28,16 @@ class UpdateParams(hk.Module):
     """
 
     def __init__(
-        self, func: Callable, split_params: Optional[Callable] = None, name=None
+        self,
+        func: Callable,
+        params_predicate: Optional[
+            Callable[[str, str, jnp.ndarray], bool]
+        ] = pass_all_predicate,
+        name=None,
     ):
         super().__init__(name=name)
         self.func = func
-        self.split_params = (
-            split_params
-            if split_params is not None
-            else lambda params: (params, type(params)())
-        )
+        self.params_predicate = params_predicate
 
     def __call__(self, trainable_params, *args, **kwargs):
         init, apply = hk.transform_with_state(self.func)
@@ -41,7 +46,10 @@ class UpdateParams(hk.Module):
         def init_model_non_trainable_params_and_state(shape, dtype):
             """Set state from trainable params and state of the model."""
             params, state = init(rng, *args, **kwargs)
-            trainable_params, non_trainable_params = self.split_params(params)
+
+            trainable_params, non_trainable_params = partition(
+                self.params_predicate, params
+            )
             trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
             return (non_trainable_params, state)
 
@@ -59,13 +67,18 @@ class UpdateParams(hk.Module):
         return res
 
 
-def get_init_params(func, *args, split_params: Optional[Callable] = None, **kwargs):
+def get_init_params(
+    func,
+    *args,
+    params_predicate: Optional[Callable[[str, str, jnp.ndarray], bool]] = None,
+    **kwargs
+):
     init_rng = hk.next_rng_key() if hk.running_init() else None
     init, _ = hk.transform(func)
     params = init(init_rng, *args, **kwargs)
 
-    if split_params:
-        trainable_params, non_trainable_params = split_params(params)
+    if params_predicate:
+        trainable_params, non_trainable_params = partition(params_predicate, params)
         trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
         return trainable_params
     else:

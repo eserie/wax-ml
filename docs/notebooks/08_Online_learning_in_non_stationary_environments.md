@@ -109,12 +109,9 @@ def build_agent(time_series_model=None, opt=None):
             del opt_state
             return jax.tree_map(lambda w: jnp.clip(w, -1, 1), params)
 
-        def split_params(params):
-            def filter_params(m, n, p):
-                # print(m, n, p)
-                return m.endswith("snarimax/~/linear") and n == "w"
-
-            return hk.data_structures.partition(filter_params, params)
+        def params_predicate(m: str, n: str, p: jnp.ndarray) -> bool:
+            # print(m, n, p)
+            return m.endswith("snarimax/~/linear") and n == "w"
 
         def learn_and_forecast(y, X=None):
             # use lagged data for the optimizer
@@ -122,7 +119,7 @@ def build_agent(time_series_model=None, opt=None):
                 model_with_loss,
                 opt,
                 project_params=project_params,
-                split_params=split_params,
+                params_predicate=params_predicate,
                 return_params=True,
             )(*tree_lag(1)(y, X))
 

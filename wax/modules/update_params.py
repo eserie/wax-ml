@@ -70,7 +70,7 @@ class UpdateParams(hk.Module):
 def get_init_params(
     func,
     *args,
-    params_predicate: Optional[Callable[[str, str, jnp.ndarray], bool]] = None,
+    params_predicate: Optional[Callable[[str, str, jnp.ndarray], bool]] = pass_all_predicate,
     **kwargs
 ):
     init_rng = hk.next_rng_key() if hk.running_init() else None

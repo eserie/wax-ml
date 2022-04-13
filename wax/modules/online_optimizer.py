@@ -19,9 +19,12 @@ from typing import Any, Callable, NamedTuple, Union
 import haiku as hk
 import jax
 import jax.numpy as jnp
-import optax
+from haiku.data_structures import partition
 from jax.tree_util import tree_map
 from optax import GradientTransformation
+
+from wax.modules.optax_optimizer import OptaxOptimizer
+from wax.predicate import pass_all_predicate
 
 
 class ParamsState(NamedTuple):
@@ -41,7 +44,7 @@ class OptInfo:
     return_params: bool = False
 
     def __post_init__(self):
-        outputs = ["loss", "model_info", "opt_loss"]
+        outputs = ["loss", "model_info"]
         if self.return_params:
             outputs += ["params"]
         self.opt_info_struct_ = namedtuple("OptInfo", outputs)
@@ -50,10 +53,9 @@ class OptInfo:
         self,
         loss: float,
         model_info: Any,
-        opt_loss: float,
         params: Any = None,
     ):
-        outputs = [loss, model_info, opt_loss]
+        outputs = [loss, model_info]
         if self.return_params:
             outputs += [params]
         return self.opt_info_struct_(*outputs)
@@ -65,10 +67,10 @@ class OnlineOptimizer(hk.Module):
     def __init__(
         self,
         model: Union[Callable, hk.TransformedWithState],
-        opt: GradientTransformation,
+        opt: Union[OptaxOptimizer, GradientTransformation],
         project_params: Callable = None,
         regularize_loss: Callable = None,
-        split_params: Callable = None,
+        params_predicate: Callable[[str, str, jnp.ndarray], bool] = pass_all_predicate,
         return_params=False,
         name: str = None,
     ):
@@ -79,7 +81,7 @@ class OnlineOptimizer(hk.Module):
             opt : optimizer: Optax transformation consisting of a function pair: (initialise, update).
             project_params : function to project parameters. It applies to parameters and optimizer state .
             regularize_loss: function to regularize the model loss. It applies to the parameters.
-            split_params: function to split params in trainable and non-trainable params.
+            params_predicate: function to split params in trainable and non-trainable params.
                 See https://dm-haiku.readthedocs.io/en/latest/notebooks/non_trainable.html
             name : name of the module
         """
@@ -89,14 +91,13 @@ class OnlineOptimizer(hk.Module):
             if isinstance(model, hk.TransformedWithState)
             else hk.transform_with_state(model)
         )
-        self.opt = opt
+        self.opt = (
+            OptaxOptimizer(opt) if isinstance(opt, GradientTransformation) else opt
+        )
         self.project_params = project_params
         self.regularize_loss = regularize_loss
-        self.split_params = (
-            split_params
-            if split_params is not None
-            else lambda params: (params, type(params)())
-        )
+        self.params_predicate = params_predicate
+
         self.OptInfo = OptInfo(return_params)
 
     def __call__(self, *args, **kwargs):
@@ -110,7 +111,9 @@ class OnlineOptimizer(hk.Module):
         def init_model_params_and_state(shape, dtype):
             """Set state from trainable params and state of the model."""
             params, state = self.model.init(hk.next_rng_key(), *args, **kwargs)
-            trainable_params, non_trainable_params = self.split_params(params)
+            trainable_params, non_trainable_params = partition(
+                self.params_predicate, params
+            )
             trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
             return ParamsState(trainable_params, non_trainable_params, state)
 
@@ -120,14 +123,8 @@ class OnlineOptimizer(hk.Module):
             init=init_model_params_and_state,
         )
 
-        def init_opt_state(shape, dtype):
-            return self.opt.init(trainable_params)
-
-        opt_state = hk.get_state("opt_state", [], init=init_opt_state)
-
         step = hk.get_state("step", [], init=lambda *_: 0)
 
-        @jax.jit
         def _loss(trainable_params, non_trainable_params, state, *args, **kwargs):
             params = hk.data_structures.merge(trainable_params, non_trainable_params)
             (loss, model_info), state = self.model.apply(
@@ -135,29 +132,22 @@ class OnlineOptimizer(hk.Module):
             )
             if self.regularize_loss:
                 loss += self.regularize_loss(trainable_params)
-            return loss
+            return loss, (model_info, params, state)
 
         # compute loss and gradients
-        opt_loss, grads = jax.value_and_grad(_loss)(
-            trainable_params, non_trainable_params, state, *args, **kwargs
-        )
-
-        # compute prediction and update model state
-        params = hk.data_structures.merge(trainable_params, non_trainable_params)
-        (loss, model_info), state = self.model.apply(
-            params, state, None, *args, **kwargs
-        )
+        (loss, (model_info, params, state)), grads = jax.value_and_grad(
+            _loss, has_aux=True
+        )(trainable_params, non_trainable_params, state, *args, **kwargs)
 
         # update optimizer state
         filled_grads = tree_map(jnp.nan_to_num, grads)
-        updated_grads, opt_state = self.opt.update(filled_grads, opt_state)
 
         # update params
-        updated_trainable_params = optax.apply_updates(trainable_params, updated_grads)
+        updated_trainable_params = self.opt(trainable_params, filled_grads)
 
         if self.project_params:
             updated_trainable_params = self.project_params(
-                updated_trainable_params, opt_state
+                updated_trainable_params, self.opt
             )
 
         updated_params = hk.data_structures.merge(
@@ -169,11 +159,10 @@ class OnlineOptimizer(hk.Module):
             "model_params_and_state",
             ParamsState(updated_trainable_params, non_trainable_params, state),
         )
-        hk.set_state("opt_state", opt_state)
+
         opt_info = self.OptInfo(
             loss,
             model_info,
-            opt_loss,
             updated_params,
         )
         return opt_info

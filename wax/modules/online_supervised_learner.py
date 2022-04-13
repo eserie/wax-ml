@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Online supervised learner."""
-from typing import Any, Callable, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple, Tuple, Union
 
 import haiku as hk
-import jax
 import jax.numpy as jnp
-import optax
+from optax import GradientTransformation
 
-from wax.modules import FillNanInf
+from wax.modules.func_optimizer import FuncOptimizer
+from wax.modules.optax_optimizer import OptaxOptimizer
 
 
 class ParamsState(NamedTuple):
@@ -37,8 +37,8 @@ class OnlineSupervisedLearner(hk.Module):
 
     def __init__(
         self,
-        model: Any,
-        opt: Any,
+        model: Callable,
+        opt: Union[OptaxOptimizer, GradientTransformation],
         loss: Callable,
         grads_fill_nan_inf=True,
         name: str = None,
@@ -55,7 +55,9 @@ class OnlineSupervisedLearner(hk.Module):
         """
         super().__init__(name=name)
         self.model = model
-        self.opt = opt
+        self.opt = (
+            OptaxOptimizer(opt) if isinstance(opt, GradientTransformation) else opt
+        )
         self.loss = loss
         self.grads_fill_nan_inf = grads_fill_nan_inf
 
@@ -69,38 +71,12 @@ class OnlineSupervisedLearner(hk.Module):
             y: target
         """
 
-        step = hk.get_state("step", [], init=lambda *_: jnp.array(0))
-        params, state = hk.get_state(
-            "model_params_state",
-            [],
-            init=lambda *_: ParamsState(*self.model.init(hk.next_rng_key(), x)),  # type: ignore
-        )
-        opt_state = hk.get_state("opt_state", [], init=lambda *_: self.opt.init(params))
+        def _loss(x, y):
+            y_pred = self.model(x)
+            return self.loss(y, y_pred), y_pred
 
-        @jax.jit
-        def _loss(params, state, x, y):
-            y_pred, state = self.model.apply(params, state, None, x)
-            return self.loss(y_pred, y)
-
-        # compute loss and gradients
-        l, grads = jax.value_and_grad(_loss)(params, state, x, y)
-
-        if self.grads_fill_nan_inf:
-            grads = FillNanInf()(grads)
-
-        # compute prediction and update model state
-        y_pred, state = self.model.apply(params, state, None, x)
-
-        # update optimizer state
-        grads, opt_state = self.opt.update(grads, opt_state)
-
-        # update params
-        params = optax.apply_updates(params, grads)
-
-        step += 1
-        hk.set_state("step", step)
-        hk.set_state("model_params_state", ParamsState(params, state))
-        hk.set_state("opt_state", opt_state)
-
+        (l, y_pred), params = FuncOptimizer(
+            _loss, self.opt, has_aux=True, grads_fill_nan_inf=self.grads_fill_nan_inf
+        )(x, y)
         info = OnlineSupervisedLearnerInfo(loss=l, params=params)
         return y_pred, info

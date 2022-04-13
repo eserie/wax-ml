@@ -91,12 +91,13 @@ def test_online_model():
 
     opt = optax.sgd(1e-3)
 
-    @jax.jit
+    def linear_model(x):
+        yp = hk.Linear(output_size=1, with_bias=False)(x)
+        return yp
+
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
-    @jit_init_apply
-    @hk.transform_with_state
     def learner(x, y):
         return OnlineSupervisedLearner(linear_model, opt, loss)(x, y)
 
@@ -118,6 +119,10 @@ def linear_regression_agent(obs):
 
     opt = optax.sgd(1e-3)
 
+    def linear_model(x):
+        yp = hk.Linear(output_size=1, with_bias=False)(x)
+        return yp
+
     @jax.jit
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
@@ -133,7 +138,6 @@ def stationary_linear_regression_env(y_pred, raw_obs):
     w_true = -jnp.ones(3)
 
     # The environment has its proper loss definition
-    @jax.jit
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 

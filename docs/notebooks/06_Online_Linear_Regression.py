@@ -9,7 +9,7 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.13.3
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -147,7 +147,10 @@ opt = optax.sgd(1e-3)
 # $$
 
 
-@jax.jit
+def linear_model(x):
+    return hk.Linear(output_size=1, with_bias=False)(x)
+
+
 def loss(y_pred, y):
     return jnp.mean(jnp.square(y_pred - y))
 
@@ -155,8 +158,6 @@ def loss(y_pred, y):
 # ### Define a learning strategy
 
 
-@jit_init_apply
-@hk.transform_with_state
 def learner(x, y):
     return OnlineSupervisedLearner(linear_model, opt, loss)(x, y)
 
@@ -220,14 +221,11 @@ axs[1].set_title("Weight[0,0]")
 def linear_regression_agent(obs):
     x, y = obs
 
-    @jit_init_apply
-    @hk.transform_with_state
     def model(x):
         return hk.Linear(output_size=1, with_bias=False)(x)
 
     opt = optax.sgd(1e-3)
 
-    @jax.jit
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
@@ -259,7 +257,6 @@ def stationary_linear_regression_env(action, raw_obs):
     w_true = -jnp.ones(3)
 
     # The environment has its proper loss definition
-    @jax.jit
     def loss(y_pred, y):
         return jnp.mean(jnp.square(y_pred - y))
 
@@ -307,7 +304,6 @@ def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
 from wax.modules import GymFeedback
 
 
-@hk.transform_with_state
 def gym_fun(raw_obs):
     return GymFeedback(
         linear_regression_agent, stationary_linear_regression_env, return_action=True
@@ -357,7 +353,6 @@ class NonStationaryEnvironment(hk.Module):
         )
 
         # The environment has its proper loss definition
-        @jax.jit
         def loss(y_pred, y):
             return jnp.mean(jnp.square(y_pred - y))
 
@@ -383,7 +378,6 @@ class NonStationaryEnvironment(hk.Module):
 # change of environment.
 
 
-@hk.transform_with_state
 def gym_fun(raw_obs):
     return GymFeedback(
         linear_regression_agent, NonStationaryEnvironment(), return_action=True

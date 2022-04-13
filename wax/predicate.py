@@ -11,3 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from jax import numpy as jnp
+
+
+def pass_all_predicate(m: str, n: str, p: jnp.ndarray) -> bool:
+    return True

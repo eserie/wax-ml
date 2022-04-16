@@ -38,6 +38,7 @@ class FuncOptimizer(hk.Module):
         results: return of func
         trainable_params: updated trainable params
     """
+
     def __init__(
         self,
         func,

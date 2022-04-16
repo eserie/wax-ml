@@ -28,16 +28,6 @@ class OptaxOptimizer(hk.Module):
         self.opt = opt
 
     def __call__(self, params, grads):
-
-        # force conversion to immutable dict
-        # In jupyter notebooks the following exception is raised:
-        # ValueError: Custom node type mismatch: expected type
-        # when used with optax.adam optimizer, the opt.init(params) appears
-        # to return a dict instead of a FlatMap.
-        # Strangely, this error does not appear in tests.
-        params = hk.data_structures.to_immutable_dict(params)
-        grads = hk.data_structures.to_immutable_dict(grads)
-
         opt_state = hk.get_state("opt_state", [], init=lambda *_: self.opt.init(params))
         updates, opt_state = self.opt.update(grads, opt_state)
         params = optax.apply_updates(params, updates)

@@ -23,6 +23,22 @@ from wax.predicate import pass_all_predicate
 
 
 class FuncOptimizer(hk.Module):
+    """Optimize a function with an iterative solver.
+
+    Args:
+        func: a function to optimize
+        opt: an iterative solver
+        has_aux: option propagated to jax.grad
+        params_predicate: predicate function to partition parameters in trainable parameter
+            and non-trainable parameters.
+        grads_fill_nan_inf: if True, fill nan and infinite value of the gradients with zeros.
+        name: name of the module.
+
+    Returns:
+        results: return of func
+        trainable_params: updated trainable params
+    """
+
     def __init__(
         self,
         func,

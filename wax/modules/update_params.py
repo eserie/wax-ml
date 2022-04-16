@@ -70,7 +70,9 @@ class UpdateParams(hk.Module):
 def get_init_params(
     func,
     *args,
-    params_predicate: Optional[Callable[[str, str, jnp.ndarray], bool]] = None,
+    params_predicate: Optional[
+        Callable[[str, str, jnp.ndarray], bool]
+    ] = pass_all_predicate,
     **kwargs
 ):
     init_rng = hk.next_rng_key() if hk.running_init() else None
@@ -79,7 +81,6 @@ def get_init_params(
 
     if params_predicate:
         trainable_params, non_trainable_params = partition(params_predicate, params)
-        trainable_params = hk.data_structures.to_mutable_dict(trainable_params)
         return trainable_params
     else:
         return params

@@ -361,7 +361,7 @@ def dynamic_unroll_fori_loop(
         params, prev_state, rng, inputs, output_sequence = loop_state
         args_i, kwargs_i = tree_map(lambda x: x[i], inputs)
         outputs, next_state = fun.apply(params, prev_state, rng, *args_i, **kwargs_i)
-        output_sequence = jax.ops.index_update(output_sequence, i, outputs)
+        output_sequence = output_sequence.at[i].set(outputs)
         return LoopState(
             params,
             next_state,

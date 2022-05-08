@@ -47,8 +47,7 @@ def test_mask_std_with_mask(assume_centered):
         lambda mask, x: MaskStd(assume_centered=assume_centered)(mask, x)
     )
 
-    mask = jnp.full(x.shape, True)
-    mask = jax.ops.index_update(mask, jax.ops.index[:1], False)
+    mask = jnp.full(x.shape, True).at[:1].set(False)
 
     params = fun.init(next(rng), mask, x)
     x_std = fun.apply(params, next(rng), mask, x)
@@ -61,8 +60,7 @@ def test_mask_std_with_mask_shape_2():
 
     fun = hk.transform(lambda mask, x: MaskStd()(mask, x))
 
-    mask = jnp.full(x.shape, True)
-    mask = jax.ops.index_update(mask, jax.ops.index[0, 2], False)
+    mask = jnp.full(x.shape, True).at[0, 2].set(False)
 
     params = fun.init(next(rng), mask, x)
     x_std = fun.apply(params, next(rng), mask, x)
@@ -78,8 +76,7 @@ def test_mask_std_axis_1():
 
     fun = hk.transform(lambda mask, x: MaskStd(axis=0)(mask, x))
 
-    mask = jnp.full(x.shape, True)
-    mask = jax.ops.index_update(mask, jax.ops.index[0, 2], False)
+    mask = jnp.full(x.shape, True).at[0, 2].set(False)
 
     params = fun.init(next(rng), mask, x)
     x_std = fun.apply(params, next(rng), mask, x)
@@ -105,7 +102,7 @@ def test_grad_mask_std():
     params = {"w": jax.random.normal(rng, shape)}
 
     # put some nan values
-    x = jax.ops.index_update(x, 0, jnp.nan)
+    x = x.at[0].set(False)
 
     @hk.transform
     def fun(x):
@@ -132,7 +129,7 @@ def test_grad_mask_std_unroll():
     params = {"w": jax.random.normal(rng, shape)}
 
     # put some nan values
-    x = jax.ops.index_update(x, 0, jnp.nan)
+    x = x.at[0].set(False)
 
     from wax.unroll import unroll_transform_with_state
 

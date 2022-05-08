@@ -41,7 +41,6 @@ from jax.tree_util import tree_multimap
 from tqdm.auto import tqdm
 
 import wax.external.eagerpy as ep
-from wax.compile import jit_init_apply
 from wax.encode import (
     Encoder,
     datetime64_encoder,
@@ -49,7 +48,7 @@ from wax.encode import (
     floor_datetime,
     string_encoder,
 )
-from wax.unroll import unroll_transform_with_state
+from wax.unroll import UnrollTransformedWithState, unroll_transform_with_state
 from wax.utils import get_unique_dtype
 
 # DTypeLike = TypeVar("DTypeLike")
@@ -505,7 +504,7 @@ class Stream:
         module: Callable,
         encoders: EncoderMapping = None,
         skip_first=False,
-    ) -> Tuple[Callable, jnp.ndarray]:
+    ) -> Tuple[UnrollTransformedWithState, jnp.ndarray]:
         """Prepare a function that wraps the input function with the actual data and indices
          in a pair of pure functions (TransformedWithState tuple).
 
@@ -541,7 +540,7 @@ class Stream:
             (np_data, np_index, xs), self.tensor_type
         )
 
-        @jit_init_apply
+        # @jit_init_apply
         @partial(unroll_transform_with_state, skip_first=skip_first)
         def transform_dataset(step):
             dataset = partial(tree_access_data, np_data, np_index)(step)

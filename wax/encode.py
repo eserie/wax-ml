@@ -62,10 +62,10 @@ def encode_int64(seed: int) -> onp.ndarray:
     return onp.concatenate([high, low], 0)
 
 
-def decode_int64(code):
+def decode_int64(code: Union[onp.ndarray, jnp.ndarray]) -> onp.ndarray:
     """See https://codereview.stackexchange.com/questions/80386/packing-and-unpacking-two-32-bit-integers-into-an-unsigned-64-bit-integer  # noqa"""
     # assert isinstance(code, np.ndarray)
-    high, low = code
+    high, low = onp.array(code)
 
     def _convert(k):
         return onp.reshape(k.astype(onp.int64), [1])

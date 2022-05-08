@@ -16,7 +16,6 @@
 from typing import Any, Callable, NamedTuple
 
 import haiku as hk
-import jax
 import jax.numpy as jnp
 
 
@@ -42,7 +41,7 @@ def buffer_fn(maxlen: int, fill_value=jnp.nan):
         buffer, len_buffer, i_start = state
 
         buffer = jnp.roll(buffer, -1, axis=0)
-        buffer = jax.ops.index_update(buffer, -1, x)
+        buffer = buffer.at[-1].set(x)
         len_buffer = jnp.minimum(len_buffer + 1, maxlen)
         i_start = maxlen - len_buffer
 

@@ -24,7 +24,7 @@ def test_apply_mask_axis_0():
     x = jax.random.normal(next(rng), (2, 3))
 
     mask = jnp.full(x.shape[0], True)
-    mask = jax.ops.index_update(mask, 0, False)
+    mask = mask.at[0].set(False)
 
     # check that an error is raised if axis is not specified
     fun = hk.transform(lambda mask, x: ApplyMask()(mask, x))
@@ -49,7 +49,7 @@ def test_apply_mask_axis_1():
     x = jax.random.normal(next(rng), (2, 3))
 
     mask = jnp.full(x.shape[1], True)
-    mask = jax.ops.index_update(mask, 0, False)
+    mask = mask.at[0].set(False)
 
     # check that an error is raised if axis is not specified
     fun = hk.transform(lambda mask, x: ApplyMask()(mask, x))
@@ -74,7 +74,7 @@ def test_apply_mask_axis_2_raises():
     x = jax.random.normal(next(rng), (2, 3, 1))
 
     mask = jnp.full(x.shape[1], True)
-    mask = jax.ops.index_update(mask, 0, False)
+    mask = mask.at[0].set(False)
 
     # check that an error is raised if axis is not specified
     fun = hk.transform(lambda mask, x: ApplyMask(axis=2)(mask, x))

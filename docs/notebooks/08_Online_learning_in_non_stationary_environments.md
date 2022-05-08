@@ -321,7 +321,7 @@ def scan_hparams_newton():
     STEP_SIZE, NEWTON_EPS = loss_newton.stack().idxmin()
 
     x = -gym_newton.reward[LEARN_TIME_SLICE].mean(axis=0)
-    x = jax.ops.index_update(x, jnp.isnan(x), jnp.inf)
+    x = jnp.where(jnp.isnan(x), jnp.inf, x)
     I_BEST_PARAM = jnp.argmin(x)
 
     BEST_NEWTON_GYM = jax.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)

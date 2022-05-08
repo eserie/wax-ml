@@ -80,6 +80,8 @@ def test_nan_at_beginning(adjust, ignore_na):
 
 
 def test_init_value():
+    from wax.numba.ewma_numba import ewma
+
     # check random variable with nans
     x = np.ones((30,), "float64")
     x[0] = np.nan

@@ -41,7 +41,7 @@ def test_mask_mean_with_mask():
     fun = hk.transform(lambda mask, x: MaskMean()(mask, x))
 
     mask = jnp.full(x.shape, True)
-    mask = jax.ops.index_update(mask, jax.ops.index[:1], False)
+    mask = mask.at[:1].set(False)
 
     params = fun.init(next(rng), mask, x)
     x_mean = fun.apply(params, next(rng), mask, x)
@@ -54,8 +54,7 @@ def test_mask_mean_with_mask_shape_2():
 
     fun = hk.transform(lambda mask, x: MaskMean()(mask, x))
 
-    mask = jnp.full(x.shape, True)
-    mask = jax.ops.index_update(mask, jax.ops.index[0, 2], False)
+    mask = jnp.full(x.shape, True).at[0, 2].set(False)
 
     params = fun.init(next(rng), mask, x)
     x_mean = fun.apply(params, next(rng), mask, x)
@@ -71,8 +70,7 @@ def test_mask_mean_axis_1():
 
     fun = hk.transform(lambda mask, x: MaskMean(axis=0)(mask, x))
 
-    mask = jnp.full(x.shape, True)
-    mask = jax.ops.index_update(mask, jax.ops.index[0, 2], False)
+    mask = jnp.full(x.shape, True).at[0, 2].set(False)
 
     params = fun.init(next(rng), mask, x)
     x_mean = fun.apply(params, next(rng), mask, x)

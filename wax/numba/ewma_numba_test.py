@@ -15,10 +15,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from wax.numba.ewma_numba import ewma, register_wax_numba
+numba = pytest.importorskip("numba")
 
 
 def test_ewma_numba():
+    from wax.numba.ewma_numba import ewma
 
     x = np.ones((30,), "float64")
     x[0] = np.nan
@@ -32,6 +33,8 @@ def test_ewma_numba():
 
 
 def check_against_pandas_ewm(x, **ewma_kwargs):
+    from wax.numba.ewma_numba import ewma
+
     res, state = ewma(**ewma_kwargs)(x, state=None)
     res = pd.DataFrame(np.array(res))
 
@@ -77,6 +80,8 @@ def test_nan_at_beginning(adjust, ignore_na):
 
 
 def test_init_value():
+    from wax.numba.ewma_numba import ewma
+
     # check random variable with nans
     x = np.ones((30,), "float64")
     x[0] = np.nan
@@ -94,6 +99,8 @@ def test_init_value():
 
 
 def test_ewma_state():
+    from wax.numba.ewma_numba import ewma
+
     x = np.ones((30,), "float64")
     x[0] = np.nan
     x[1] = -1
@@ -118,6 +125,8 @@ def test_ewma_state():
 
 @pytest.mark.parametrize("obj_type", ["frame", "series"])
 def test_pandas_online(obj_type):
+    from wax.numba.ewma_numba import register_wax_numba
+
     x = np.ones((30,), "float64")
     x[0] = np.nan
     x[1] = -1

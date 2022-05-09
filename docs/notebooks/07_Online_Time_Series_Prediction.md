@@ -754,7 +754,7 @@ sns.heatmap(loss_newton[loss_newton < 0.4], annot=True, cmap="YlGnBu")
 STEP_SIZE, NEWTON_EPS = loss_newton.stack().idxmin()
 
 x = -gym_newton.reward[-5000:].mean(axis=0)
-x = jax.ops.index_update(x, jnp.isnan(x), jnp.inf)
+x = jnp.where(jnp.isnan(x), jnp.inf, x)
 I_BEST_PARAM = jnp.argmin(x)
 
 

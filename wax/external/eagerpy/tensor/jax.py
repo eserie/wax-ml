@@ -328,7 +328,7 @@ class JAXTensor(BaseTensor):
         indices, values = unwrap_(indices, values)
         if isinstance(indices, tuple):
             indices = unwrap_(*indices)
-        return type(self)(jax.ops.index_update(self.raw, indices, values))
+        return type(self)(self.raw.at[indices].set(values))
 
     def arange(
         self: TensorType,

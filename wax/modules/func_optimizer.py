@@ -72,8 +72,7 @@ class FuncOptimizer(hk.Module):
         if self.grads_fill_nan_inf:
             grads = FillNanInf()(grads)
 
-        # trainable_params = jax.tree_multimap(self.opt, trainable_params, grads)
-        trainable_params = self.opt(trainable_params, grads)
+        trainable_params = jax.tree_map(self.opt, trainable_params, grads)
 
         hk.set_state("trainable_params", trainable_params)
         return results, trainable_params

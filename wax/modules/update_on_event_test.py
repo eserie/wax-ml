@@ -15,7 +15,7 @@ import haiku as hk
 import jax.numpy as jnp
 
 from wax.compile import jit_init_apply
-from wax.modules.update_on_event import UpdateOnEvent
+from wax.modules.update_on_event import UpdateOnEvent, UpdateOnMask
 
 TEST_KEY = jnp.array([255383827, 267815257], dtype=jnp.uint32)
 
@@ -182,3 +182,22 @@ def test_deleguate_some_event_true():
     )
     assert jnp.allclose(ref_outputs, outputs[:, 0])
     return output
+
+
+def test_update_on_mask():
+    import numpy as np
+
+    from wax.modules import EWMA
+    from wax.unroll import unroll
+
+    def fun(mask, x):
+        return UpdateOnMask(EWMA(com=10))(mask, x)
+
+    x = jnp.zeros((100, 2)).at[0].set(1)
+    mask = jnp.full((100, 2), True).at[3:10, 0].set(False)
+    y = unroll(fun)(mask, x)
+
+    a = jnp.concatenate([y[:3, 0], y[10:, 0]])
+    b = y[:-7, 1]
+    assert a.shape == b.shape
+    np.testing.assert_allclose(a, b)

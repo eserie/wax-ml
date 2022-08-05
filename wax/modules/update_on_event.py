@@ -16,6 +16,7 @@
 Part of this module may be integrated in Haiku.
 See: https://github.com/deepmind/dm-haiku/issues/126
 """
+from functools import partial
 from typing import Mapping, Set
 
 import haiku as hk
@@ -115,6 +116,51 @@ class UpdateOnEvent(hk.Module):
 
         if next_state_dict:
             self.module.set_state_from_dict(next_state_dict)
+
+        hk.set_state("prev_output", output)
+        return output
+
+
+class UpdateOnMask(hk.Module):
+    """Apply a module and update its state and results when a given mask is true.
+    If the module has state management, then it will be ask to delegate the state
+    management to this module.
+    """
+
+    def __init__(self, module, initial_output_value=jnp.nan, name=None):
+        super().__init__(name=name)
+        self.module = module
+        self.initial_output_value = initial_output_value
+
+    def __call__(self, on_event, *args, **kwargs):
+        # state_dict = self.state_dict()
+
+        prev_state_dict = self.module.state_dict()
+
+        output = self.module(*args, **kwargs)
+
+        prev_output = hk.get_state(
+            "prev_output",
+            shape=[],
+            init=lambda *_: tree_map(
+                lambda x: jnp.full(x.shape, self.initial_output_value, dtype=x.dtype),
+                output,
+            ),
+        )
+
+        next_state_dict = self.module.state_dict() if prev_state_dict else {}
+
+        if next_state_dict and prev_state_dict:
+            state = tree_map(
+                partial(jnp.where, on_event), next_state_dict, prev_state_dict
+            )
+        else:
+            state = prev_state_dict
+
+        output = tree_map(partial(jnp.where, on_event), output, prev_output)
+
+        if next_state_dict:
+            self.module.set_state_from_dict(state)
 
         hk.set_state("prev_output", output)
         return output

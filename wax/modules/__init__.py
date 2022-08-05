@@ -35,7 +35,7 @@ from wax.modules.online_supervised_learner import OnlineSupervisedLearner
 from wax.modules.pct_change import PctChange
 from wax.modules.rolling_mean import RollingMean
 from wax.modules.snarimax import SNARIMAX
-from wax.modules.update_on_event import UpdateOnEvent
+from wax.modules.update_on_event import UpdateOnEvent, UpdateOnMask
 from wax.modules.update_params import UpdateParams
 from wax.modules.vmap import VMap
 
@@ -53,6 +53,7 @@ __all__ = [
     "PctChange",
     "RollingMean",
     "UpdateOnEvent",
+    "UpdateOnMask",
     "FillNanInf",
     "ApplyMask",
     "MaskMean",

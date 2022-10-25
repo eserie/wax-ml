@@ -225,7 +225,7 @@ class JAXTensor(BaseTensor):
         if len(indices) != len(self):
             raise ValueError("length of indices must match length of tensor")
         x = np.arange(self.raw.shape[1]).reshape(1, -1)
-        indices = indices.raw.reshape(-1, 1)
+        indices = indices.raw.reshape(-1, 1)  # type: ignore
         return type(self)((x == indices) * value)
 
     def from_numpy(self: TensorType, a: Any) -> TensorType:

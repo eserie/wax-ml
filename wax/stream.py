@@ -22,6 +22,7 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    Hashable,
     Mapping,
     NamedTuple,
     Optional,
@@ -53,7 +54,9 @@ from wax.utils import get_unique_dtype
 # DTypeLike = TypeVar("DTypeLike")
 DTypeLike = str
 
-EncoderMapping = Union[Dict[str, Callable[[Any], Encoder]], Dict[str, Encoder]]
+EncoderMapping = Union[
+    Dict[Hashable, Callable[[Any], Encoder]], Dict[Hashable, Encoder]
+]
 
 
 DEFAULT_TYPES_ENCODERS = cast(
@@ -111,7 +114,7 @@ class StreamObservation(NamedTuple):
 
 class DatasetSchema(NamedTuple):
     coords: xr.core.coordinates.DatasetCoordinates
-    encoders: Dict[str, Encoder]
+    encoders: Dict[Hashable, Encoder]
 
 
 def _is_verbose(verbose, time_dim):
@@ -243,7 +246,7 @@ def get_dataset_index(
                 flat_idx = onp.arange(len(values_atleast_1d.ravel()))
                 dataset_index[dim] = xr.DataArray(
                     onp.outer(onp.arange(n_steps), flat_idx),
-                    dims=("step", dim + "_flat_idx"),
+                    dims=("step", cast(str, dim) + "_flat_idx"),
                 )
     return dataset_index
 
@@ -501,7 +504,7 @@ class Stream:
         self,
         dataset: xr.Dataset,
         module: Callable,
-        encoders: EncoderMapping = None,
+        encoders: Optional[EncoderMapping] = None,
         skip_first=False,
     ) -> Tuple[UnrollTransformedWithState, jnp.ndarray]:
         """Prepare a function that wraps the input function with the actual data and indices

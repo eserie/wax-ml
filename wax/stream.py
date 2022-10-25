@@ -37,7 +37,7 @@ import pandas as pd
 import xarray as xr
 from jax import numpy as jnp
 from jax import tree_flatten, tree_leaves, tree_map, tree_unflatten
-from jax.tree_util import tree_multimap
+from jax.tree_util import tree_map
 from tqdm.auto import tqdm
 
 import wax.external.eagerpy as ep
@@ -391,7 +391,7 @@ def tree_access_data(data, index, step):
             to access the data at a given step.
         step : step on which to access.
     """
-    return tree_multimap(partial(access_data, step), data, index)
+    return tree_map(partial(access_data, step), data, index)
 
 
 @dataclass(frozen=True)
@@ -628,7 +628,7 @@ class Stream:
             # init obs
             init_obs = StreamObservation(
                 pd.NaT,  # time are initialized to None as there is not nan for datetimes in numpy.
-                tree_multimap(
+                tree_map(
                     lambda x, fv: onp.full_like(x, fv),
                     stream_obs[time_dim].value,
                     fill_value.value,

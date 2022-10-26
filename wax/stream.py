@@ -22,6 +22,7 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    Hashable,
     Mapping,
     NamedTuple,
     Optional,
@@ -37,7 +38,6 @@ import pandas as pd
 import xarray as xr
 from jax import numpy as jnp
 from jax import tree_flatten, tree_leaves, tree_map, tree_unflatten
-from jax.tree_util import tree_multimap
 from tqdm.auto import tqdm
 
 import wax.external.eagerpy as ep
@@ -54,7 +54,9 @@ from wax.utils import get_unique_dtype
 # DTypeLike = TypeVar("DTypeLike")
 DTypeLike = str
 
-EncoderMapping = Union[Dict[str, Callable[[Any], Encoder]], Dict[str, Encoder]]
+EncoderMapping = Union[
+    Dict[Hashable, Callable[[Any], Encoder]], Dict[Hashable, Encoder]
+]
 
 
 DEFAULT_TYPES_ENCODERS = cast(
@@ -112,7 +114,7 @@ class StreamObservation(NamedTuple):
 
 class DatasetSchema(NamedTuple):
     coords: xr.core.coordinates.DatasetCoordinates
-    encoders: Dict[str, Encoder]
+    encoders: Dict[Hashable, Encoder]
 
 
 def _is_verbose(verbose, time_dim):
@@ -244,7 +246,7 @@ def get_dataset_index(
                 flat_idx = onp.arange(len(values_atleast_1d.ravel()))
                 dataset_index[dim] = xr.DataArray(
                     onp.outer(onp.arange(n_steps), flat_idx),
-                    dims=("step", dim + "_flat_idx"),
+                    dims=("step", cast(str, dim) + "_flat_idx"),
                 )
     return dataset_index
 
@@ -391,7 +393,7 @@ def tree_access_data(data, index, step):
             to access the data at a given step.
         step : step on which to access.
     """
-    return tree_multimap(partial(access_data, step), data, index)
+    return tree_map(partial(access_data, step), data, index)
 
 
 @dataclass(frozen=True)
@@ -502,7 +504,7 @@ class Stream:
         self,
         dataset: xr.Dataset,
         module: Callable,
-        encoders: EncoderMapping = None,
+        encoders: Optional[EncoderMapping] = None,
         skip_first=False,
     ) -> Tuple[UnrollTransformedWithState, jnp.ndarray]:
         """Prepare a function that wraps the input function with the actual data and indices
@@ -628,7 +630,7 @@ class Stream:
             # init obs
             init_obs = StreamObservation(
                 pd.NaT,  # time are initialized to None as there is not nan for datetimes in numpy.
-                tree_multimap(
+                tree_map(
                     lambda x, fv: onp.full_like(x, fv),
                     stream_obs[time_dim].value,
                     fill_value.value,

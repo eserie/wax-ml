@@ -91,11 +91,11 @@ def scale_by_newton(eps: float = 1e-7) -> base.GradientTransformation:
 
         shapes = jax.tree_map(lambda x: Tuple(x.shape), updates)
         updates = jax.tree_map(lambda x: x.flatten(), updates)
-        hessian_inv = jax.tree_multimap(
+        hessian_inv = jax.tree_map(
             lambda u, hinv: sherman_morrison(hinv, u, u), updates, state.hessian_inv
         )
-        updates = jax.tree_multimap(lambda hinv, g: hinv @ g, hessian_inv, updates)
-        updates = jax.tree_multimap(lambda u, shape: u.reshape(shape), updates, shapes)
+        updates = jax.tree_map(lambda hinv, g: hinv @ g, hessian_inv, updates)
+        updates = jax.tree_map(lambda u, shape: u.reshape(shape), updates, shapes)
 
         return updates, ScaleByNewtonState(hessian_inv=hessian_inv)
 

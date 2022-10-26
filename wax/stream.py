@@ -40,7 +40,6 @@ from jax import numpy as jnp
 from jax.tree_util import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from tqdm.auto import tqdm
 
-import wax.external.eagerpy as ep
 from wax.encode import (
     Encoder,
     datetime64_encoder,
@@ -538,9 +537,7 @@ class Stream:
                 return x
 
             np_data, np_index, xs = tree_map(np_convert, (np_data, np_index, xs))
-        np_data, np_index, xs = ep.convert_to_tensors(
-            (np_data, np_index, xs), self.tensor_type
-        )
+        np_data, np_index, xs = jax.device_put((np_data, np_index, xs))
 
         # @jit_init_apply
         @partial(unroll_transform_with_state, skip_first=skip_first)

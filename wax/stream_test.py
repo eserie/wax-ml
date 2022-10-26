@@ -13,6 +13,7 @@
 # limitations under the License.
 from functools import partial, reduce
 
+import jax
 import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
@@ -24,7 +25,6 @@ from jax.tree_util import tree_flatten, tree_map
 from numpy import array
 from pandas import NaT
 
-import wax.external.eagerpy as ep
 from wax.datasets.generate_temperature_data import (
     generate_temperature_data_multi_time_scale,
 )
@@ -217,7 +217,7 @@ def test_stream_dataset_dynamic_unroll2():
     # explicitly convert in np.float32 and int32 berfore jax conversion to avoid jax warnings.
     np_data, np_index = tree_map(onp_half_precision, (np_data, np_index))
     # convert to jax
-    np_data, np_index = ep.convert_to_tensors((np_data, np_index), "jax")
+    np_data, np_index = jax.device_put((np_data, np_index))
 
     # check data types:
     def check_type(data):
@@ -300,7 +300,9 @@ def test_stream_dataset_dynamic_unroll3():
     # explicitly convert in np.float32 and int32 berfore jax conversion to avoid jax warnings.
     np_data, np_index = tree_map(onp_half_precision, (np_data, np_index))
     # convert to jax
-    np_data, np_index = ep.convert_to_tensors((np_data, np_index), "jax")
+    np_data, np_index = jax.device_put(
+        (np_data, np_index),
+    )
 
     # check data types:
     def check_type(data):

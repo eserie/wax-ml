@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import haiku as hk
+import jax
 import jax.numpy as jnp
 import pytest
 from haiku._src.data_structures import FlatMapping
@@ -20,8 +21,8 @@ from jax.config import config
 from jax.numpy import array as DeviceArray
 from jax.numpy import int32, uint32
 
-from wax.external.eagerpy import convert_to_tensors
-from wax.modules.gym_feedback import GymFeedback
+from wax.modules.counter import Counter
+from wax.modules.gym_feedback import GymFeedback, GymOutput
 from wax.testing import assert_tree_all_close
 from wax.transform import (
     BatchState,
@@ -29,9 +30,6 @@ from wax.transform import (
     transform_batch_with_state_static,
 )
 from wax.unroll import data_unroll, gym_static_unroll, unroll
-
-from .counter import Counter
-from .gym_feedback import GymOutput
 
 GymState = GymFeedback.GymState
 
@@ -139,7 +137,7 @@ def test_gym_module_transform_batch_with_state(static):
 
     rng = next(hk.PRNGSequence(42))
     if static:
-        xs, rng = convert_to_tensors((xs, rng), tensor_type="jax")
+        xs, rng = jax.device_put((xs, rng))
         batch_fun = transform_batch_with_state_static(gym_fun, skip_first=True)
     else:
         batch_fun = transform_batch_with_state(gym_fun, skip_first=True)

@@ -36,7 +36,6 @@ class UnrollTransformedWithState(NamedTuple):
 
 
 class ScanState(NamedTuple):
-    params: Any
     fun_state: Any
     rng: jnp.ndarray
 
@@ -62,23 +61,25 @@ def unroll_transform_with_state(
         tfunc = cast(TransformedWithState, fun)
     del fun
 
-    def scan_f(scan_state, inputs):
-        params, state, rng = scan_state
-        args_step, kwargs_step = inputs
-        if rng is not None:
-            (rng, sub_rng) = jax.random.split(rng)
-        else:
-            sub_rng = None
-        outputs, state = tfunc.apply(params, state, sub_rng, *args_step, **kwargs_step)
-        return ScanState(params, state, rng), outputs
-
-    def init(rng: jnp.ndarray, *args, **kwargs):
+    def init_fn(rng: jnp.ndarray, *args, **kwargs):
         xs = (args, kwargs)
         args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
         params, state = tfunc.init(rng, *args_0, **kwargs_0)
         return params, state
 
     def apply_fn(params: Any, state: Any, rng: jnp.ndarray, *args, **kwargs):
+        def scan_f(scan_state, inputs):
+            state, rng = scan_state
+            args_step, kwargs_step = inputs
+            if rng is not None:
+                (rng, sub_rng) = jax.random.split(rng)
+            else:
+                sub_rng = None
+            outputs, state = tfunc.apply(
+                params, state, sub_rng, *args_step, **kwargs_step
+            )
+            return ScanState(state, rng), outputs
+
         xs = (args, kwargs)
 
         if skip_first:
@@ -88,13 +89,11 @@ def unroll_transform_with_state(
             scan = jax.lax.scan
         else:
             scan = partial(static_scan, pbar=pbar)
-        scan_state, output_sequence = scan(
-            scan_f, init=ScanState(params, state, rng), xs=xs
-        )
-        _, final_state, _ = scan_state
+        scan_state, output_sequence = scan(scan_f, init=ScanState(state, rng), xs=xs)
+        final_state, final_rng = scan_state
         return output_sequence, final_state
 
-    return UnrollTransformedWithState(init, apply_fn)
+    return UnrollTransformedWithState(init_fn, apply_fn)
 
 
 def unroll(

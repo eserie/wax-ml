@@ -13,7 +13,7 @@
 # limitations under the License.
 """Some utils functions used in WAX-ML."""
 
-from jax import tree_flatten
+from jax.tree_util import tree_flatten
 
 
 def dict_map(fun, col):

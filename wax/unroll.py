@@ -22,9 +22,8 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 from haiku import TransformedWithState
-from jax import tree_flatten, tree_unflatten
 from jax._src.lax.control_flow import fori_loop
-from jax.tree_util import tree_map
+from jax.tree_util import tree_flatten, tree_map, tree_unflatten
 from tqdm.auto import tqdm
 
 logger = logging.getLogger(__name__)

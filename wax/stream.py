@@ -37,7 +37,7 @@ import numpy as onp
 import pandas as pd
 import xarray as xr
 from jax import numpy as jnp
-from jax import tree_flatten, tree_leaves, tree_map, tree_unflatten
+from jax.tree_util import tree_flatten, tree_leaves, tree_map, tree_unflatten
 from tqdm.auto import tqdm
 
 import wax.external.eagerpy as ep

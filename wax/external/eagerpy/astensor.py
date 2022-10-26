@@ -24,7 +24,7 @@ from typing import (
     overload,
 )
 
-from jax import tree_flatten, tree_unflatten
+from jax.tree_util import tree_flatten, tree_unflatten
 
 from .tensor import (
     JAXTensor,

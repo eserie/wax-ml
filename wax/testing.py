@@ -16,8 +16,8 @@ from numbers import Number
 
 import numpy as onp
 from jax import numpy as jnp
-from jax import tree_flatten
 from jax._src.numpy.lax_numpy import int32, uint32
+from jax.tree_util import tree_flatten
 
 
 def assert_tree_all_close(x, y, check_treedef=True):

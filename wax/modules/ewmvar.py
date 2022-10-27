@@ -37,7 +37,7 @@ class EWMVar(hk.Module):
         adjust: bool = True,
         name: str = None
     ):
-        """Initialize module.
+        r"""Initialize the module.
 
         Args:
             com : Specify decay in terms of center of mass

@@ -247,7 +247,7 @@ def test_air_temperature_dataset():
         return y["air"].flatten().sum()
 
     output = da.wax.stream(return_state=False).apply(diff, format_dims=da.air.dims)
-    check = da.air.to_series().sum(level=0)
+    check = da.air.to_series().groupby(level=0).sum()
     assert_tree_all_close(output.to_series(), check)
 
 
@@ -262,7 +262,7 @@ def test_air_temperature_dataarray():
         return y.flatten().sum()
 
     output = da.wax.stream(return_state=False).apply(diff, format_dims=da.dims)
-    check = da.to_series().sum(level=0)
+    check = da.to_series().groupby(level=0).sum()
     assert_tree_all_close(output.to_series(), check)
 
 
@@ -279,7 +279,7 @@ def test_air_temperature_dataframe():
     output = (
         da.to_pandas().wax.stream(return_state=False).apply(diff, format_dims=da.dims)
     )
-    check = da.to_series().sum(level=0)
+    check = da.to_series().groupby(level=0).sum()
     assert_tree_all_close(output, check)
 
 
@@ -298,7 +298,7 @@ def test_air_temperature_series():
         .wax.stream(return_state=False)
         .apply(diff, format_dims=dataset.dims)
     )
-    check = dataset.to_series().sum(level=0)
+    check = dataset.to_series().groupby(level=0).sum()
     assert_tree_all_close(output, check)
 
 

@@ -334,7 +334,9 @@ def dynamic_unroll_fori_loop(
     """
     LoopState = namedtuple("LoopState", "params, state, rng, x, output_sequence")
 
-    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
+    fun_init_params, fun_init_state = unroll_transform_with_state(fun).init(
+        rng, *args, **kwargs
+    )
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
     xs = (args, kwargs)

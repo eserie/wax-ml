@@ -22,6 +22,7 @@ from wax.modules.ewma import EWMA
 
 class EWMCov(hk.Module):
     """Compute exponentially weighted covariance.
+
     To calculate the variance we use the fact that Var(X) = Mean(x^2) - Mean(x)^2 and internally
     we use the exponentially weighted mean of x/x^2 to calculate this.
 
@@ -42,7 +43,7 @@ class EWMCov(hk.Module):
         assume_centered: bool = False,
         name: str = None,
     ):
-        """
+        r"""Initialize the module.
 
         Args:
             com : Specify decay in terms of center of mass

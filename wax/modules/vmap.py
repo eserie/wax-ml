@@ -28,7 +28,7 @@ class VMap(hk.Module):
         )
 
     def __call__(self, *args, **kwargs):
-        n_batches = len(jax.tree_leaves((args, kwargs))[0])
+        n_batches = len(jax.tree_util.tree_leaves((args, kwargs))[0])
         try:
             rng = hk.next_rng_key()
             rng = jax.random.split(rng, num=n_batches)

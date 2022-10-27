@@ -19,7 +19,7 @@ from jax import numpy as jnp
 
 
 class EWMA(hk.Module):
-    """Compute exponentioal moving average."""
+    """Compute exponential moving average."""
 
     def __init__(
         self,
@@ -33,7 +33,7 @@ class EWMA(hk.Module):
         return_info: bool = False,
         name: Optional[str] = None,
     ):
-        """Initialize module.
+        r"""Initialize module.
 
         Args:
             com : Specify decay in terms of center of mass

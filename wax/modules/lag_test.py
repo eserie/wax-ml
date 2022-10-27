@@ -45,7 +45,7 @@ def test_lag(use_jit):
 
 
 def test_lag_unroll_int():
-    xs = jnp.array([10, 11, 12], dtype="int")
+    xs = jnp.array([10, 11, 12], dtype="int32")
 
     res = unroll(lambda x: Lag(1)(x))(xs)
     assert (res == jnp.array([0, 10, 11])).all()

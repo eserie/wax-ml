@@ -181,4 +181,3 @@ def test_deleguate_some_event_true():
         dtype=jnp.float32,
     )
     assert jnp.allclose(ref_outputs, outputs[:, 0])
-    return output

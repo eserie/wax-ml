@@ -22,9 +22,8 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 from haiku import TransformedWithState
-from jax import tree_flatten, tree_unflatten
 from jax._src.lax.control_flow import fori_loop
-from jax.tree_util import tree_map
+from jax.tree_util import tree_flatten, tree_map, tree_unflatten
 from tqdm.auto import tqdm
 
 logger = logging.getLogger(__name__)
@@ -335,7 +334,9 @@ def dynamic_unroll_fori_loop(
     """
     LoopState = namedtuple("LoopState", "params, state, rng, x, output_sequence")
 
-    fun_init_params, fun_init_state = init_params_state(fun, rng, *args, **kwargs)
+    fun_init_params, fun_init_state = unroll_transform_with_state(fun).init(
+        rng, *args, **kwargs
+    )
     params = fun_init_params if params is None else params
     state = fun_init_state if state is None else state
     xs = (args, kwargs)

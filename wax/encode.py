@@ -45,7 +45,7 @@ def encode_int64(seed: int) -> onp.ndarray:
     if onp.shape(seed):
         raise TypeError("seed must be a scalar.")
     if isinstance(seed, onp.ndarray):
-        seed = onp.asscalar(seed)
+        seed = seed.item()
     if not isinstance(seed, (int, onp.int32, onp.uint32, onp.int64)):
         raise TypeError(f"seed must be an int, got {type(seed)}")
 

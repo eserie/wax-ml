@@ -18,10 +18,9 @@ import numpy as onp
 import pandas as pd
 import xarray as xr
 from haiku import transform_with_state
-from jax import tree_flatten
 from jax.numpy import array as DeviceArray
 from jax.numpy import int32
-from jax.tree_util import tree_map
+from jax.tree_util import tree_flatten, tree_map
 from numpy import array
 from pandas import NaT
 

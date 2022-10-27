@@ -35,7 +35,7 @@ def ewma(
     ignore_na: bool = False,
     initial_value=np.nan,
 ):
-    """Compute exponentioal moving average.
+    r"""Compute exponentioal moving average.
 
     Args:
         alpha:  Specify smoothing factor :math:`\alpha` directly

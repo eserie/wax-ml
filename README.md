@@ -114,12 +114,6 @@ For now, WAX-ML contains:
   <img src="docs/tikz/gymfeedback.png" alt="logo" width="60%"></img>
   </div>
 
-- some ``universal'' modules powered by  [EagerPy](https://github.com/jonasrauber/eagerpy)
-  that can work with [TensorFlow](https://www.tensorflow.org/), [PyTorch](https://pytorch.org/),
-  [JAX](https://github.com/google/jax), and [NumPy](https://numpy.org/) tensors
-  At the moment, we have only implemented a demonstration module for the
-  exponential moving average that we have called `EagerEWMA`.
-
 ### What is JAX?
 
 JAX is a research-oriented computational system implemented in Python that leverages the
@@ -543,31 +537,6 @@ the one in the one in [dask](https://github.com/dask/dask).
 WAX-ML should provide tools for reinforcement learning that should complement well those
 already existing such as [RLax](https://github.com/deepmind/rlax) or [deluca](https://github.com/google/deluca).
 
-
-## Universal functions
-
-WAX-ML uses [EagerPy](https://github.com/jonasrauber/eagerpy) to efficiently mix different
-types of tensors and develop high level APIs to work with
-e.g. [NumPy](https://numpy.org/), [pandas](https://pandas.pydata.org/),
-[xarray](http://xarray.pydata.org/en/stable/).
-
-The use of EagerPy should allow, if necessary, to propose implementations of algorithms
-compatible with other tensor libraries such as NumPy, TensorFlow, and PyTorch, with native performance.
-
-We currently have a working example for the EWMA module which is implemented in
-`wax.universal.modules`.  See the code in :
-```
-wax.universal.modules.ewma.py
-wax.universal.modules.ewma_test.py
-```
-
-For now, the core algorithms in WAX-ML are only implemented in JAX to "stay focused".
-But if there is interest in implementing universal algorithms, more work
-could be done from this simple example.
-
-Currently, WAX-ML uses an internalized version EagerPy implemented in `wax.external.eagerpy`
-sub-package.
-
 ## Future plans
 
 ### Feedback loops and control theory
@@ -747,7 +716,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-WAX-ML bundles portions of astropy, dask, deluca, eagerpy, haiku, jax, xarray.
+WAX-ML bundles portions of astropy, dask, deluca, haiku, jax, xarray.
 
 astropy, dask are available under a "3-clause BSD" license:
 - dask: `wax/gym/callbacks/callbacks.py`
@@ -758,9 +727,6 @@ deluca, haiku, jax and xarray are available under a "Apache" license:
 - haiku: `docs/notebooks/05_reconstructing_the_light_curve_of_stars.*`
 - jax: `docs/conf.py`, `docs/developer.md`
 - xarray: `wax/datasets/generate_temperature_data.py`
-
-eagerpy is available under an "MIT" license:
-- eagerpy: `wax.external.eagerpy`, `wax.external.eagerpy_tests`
 
 The full text of these `licenses` is included in the licenses directory.
 

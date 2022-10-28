@@ -12,7 +12,6 @@ Subpackages
     wax.modules
     wax.gym
     wax.datasets
-    wax.universal
 
 
 .. autosummary::

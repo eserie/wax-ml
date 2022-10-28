@@ -2,7 +2,7 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py,md
+#     formats: ipynb,py:light,md
 #     text_representation:
 #       extension: .py
 #       format_name: light
@@ -66,7 +66,6 @@ import pandas as pd
 import xarray as xr
 
 from wax.accessors import register_wax_accessors
-from wax.external.eagerpy import convert_to_tensors
 from wax.format import format_dataframe
 from wax.modules import EWMA
 from wax.stream import tree_access_data
@@ -226,7 +225,7 @@ _ = outputs.block_until_ready()
 
 # + colab={"base_uri": "https://localhost:8080/"} id="76479f76-7b6e-4321-97c3-942f2987bc01" outputId="7f22f580-be0b-4d23-9d4d-7d89c9dd117b"
 np_data, np_index, xs = stream.trace_dataset(dataset)
-jnp_data, jnp_index, jxs = convert_to_tensors((np_data, np_index, xs), "jax")
+jnp_data, jnp_index, jxs = jax.device_put((np_data, np_index, xs))
 
 # + [markdown] id="a4fa1934-3633-4661-b808-c60e4b8c4600"
 # We explicitly set data on CPUs (the is not needed if you only have CPUs):

@@ -15,11 +15,11 @@
 
 from typing import Any, Dict, List
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 from jax.tree_util import tree_flatten, tree_unflatten
 
-import wax.external.eagerpy as ep
 from wax.gym.callbacks import Callback
 from wax.modules.gym_feedback import GymOutput
 from wax.stream import DatasetSchema
@@ -110,8 +110,7 @@ class Record(Callback):
                 if return_action is true, aslo return recorded agent actions.
 
         """
-        sequence = ep.astensors(self._sequence)
-        # sequence = self._sequence
+        sequence = self._sequence
 
         def _stack(x):
             if isinstance(x[0], (pd.DataFrame, pd.Series)):
@@ -119,9 +118,8 @@ class Record(Callback):
             elif isinstance(x[0], (xr.Dataset, xr.DataArray)):
                 return xr.concat(x, dim=x[0].dims[0])
             else:
-                return ep.stack(x, axis=0)
+                return np.stack(x, axis=0)
 
         sequence = list(map(_stack, sequence))
         sequence = tree_unflatten(self._treedef, sequence)
-        sequence = ep.as_raw_tensors(sequence)
         return sequence

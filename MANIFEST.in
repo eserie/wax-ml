@@ -1,4 +1,2 @@
 include wax/VERSION
-include wax/external/eagerpy/VERSION
-include wax/external/eagerpy/py.typed
 include LICENSE

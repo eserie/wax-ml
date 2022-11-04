@@ -1,3 +1,7 @@
+import haiku as hk
+import jax
+import jax.numpy as jnp
+
 # Copyright 2022 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from wax.stateful import unroll_lift_with_state, vmap_lift_with_state
-import haiku  as hk
-import jax
-import jax.numpy as jnp
 
 
 class MyModule(hk.Module):
@@ -24,7 +25,9 @@ class MyModule(hk.Module):
 
     def __call__(self, x):
         assert x.ndim == 0
-        steps = hk.get_parameter("steps", (1,), init=lambda *_: self.steps*jnp.ones(1))
+        steps = hk.get_parameter(
+            "steps", (1,), init=lambda *_: self.steps * jnp.ones(1)
+        )
         state = hk.get_state("state", (1,), init=lambda *_: jnp.zeros(1) + x)
         state = state + steps
         hk.set_state("state", state)
@@ -39,6 +42,7 @@ def test_vmap_lift_wtih_state():
         def outer_fun(x):
             def fun(x):
                 return MyModule(steps=2)(x)
+
             return vmap_lift_with_state(fun)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
@@ -58,16 +62,18 @@ def test_vmap_lift_wtih_state():
         state = state + steps
         out = state + x
         return out.reshape(-1, 1)
+
     assert jnp.allclose(run_vmap(), run_static())
 
 
 def test_unroll_lift_wtih_state():
     x = jnp.zeros(3).astype(jnp.float32)
-    def run_unroll():
 
+    def run_unroll():
         def outer_fun(x):
             def fun(x):
                 return MyModule(steps=1)(x)
+
             return unroll_lift_with_state(fun)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
@@ -89,4 +95,5 @@ def test_unroll_lift_wtih_state():
             out.append(state + x[i])
         out = jnp.stack(out)
         return out
+
     assert jnp.allclose(run_unroll(), run_static())

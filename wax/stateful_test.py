@@ -42,6 +42,7 @@ def test_vmap_lift_wtih_state():
         def outer_fun(x):
             def fun(x):
                 return MyModule(steps=2)(x)
+
             return vmap_lift_with_state(fun, split_rng)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
@@ -66,6 +67,7 @@ def test_vmap_lift_wtih_state():
         state = state + steps
         out = state + x
         return out.reshape(-1, 1)
+
     assert jnp.allclose(run_vmap(True), run_static())
     assert jnp.allclose(run_vmap(False), run_static())
 

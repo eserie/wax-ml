@@ -31,7 +31,7 @@ class MyModule(hk.Module):
         return state + x
 
 
-def test_vmpa_lift_state():
+def test_vmap_lift_wtih_state():
 
     x = jnp.arange(3).astype(jnp.float32)
 
@@ -61,7 +61,7 @@ def test_vmpa_lift_state():
     assert jnp.allclose(run_vmap(), run_static())
 
 
-def test_unroll_lift_state():
+def test_unroll_lift_wtih_state():
     x = jnp.zeros(3).astype(jnp.float32)
     def run_unroll():
 

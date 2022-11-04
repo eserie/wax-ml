@@ -1,3 +1,5 @@
+import warnings
+
 # Copyright 2021 The WAX-ML Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +18,9 @@ from typing import Callable, Union
 import haiku as hk
 import jax
 from haiku import TransformedWithState
-import warnings
+
 from wax.stateful import vmap_lift_with_state
+
 
 class VMap(hk.Module):
     def __init__(self, fun: Callable, name=None):
@@ -31,6 +34,7 @@ class VMap(hk.Module):
 
     def __call__(self, *args, **kwargs):
         return vmap_lift_with_state(self.fun)(*args, **kwargs)
+
 
 # Helper functions
 

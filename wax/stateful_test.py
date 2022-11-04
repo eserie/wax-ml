@@ -38,17 +38,21 @@ def test_vmap_lift_wtih_state():
 
     x = jnp.arange(3).astype(jnp.float32)
 
-    def run_vmap():
+    def run_vmap(split_rng):
         def outer_fun(x):
             def fun(x):
                 return MyModule(steps=2)(x)
-
-            return vmap_lift_with_state(fun)(x)
+            return vmap_lift_with_state(fun, split_rng)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
         params, state = init(jax.random.PRNGKey(0), x)
-        out, state = apply(params, state, None, x)
-        out, state = apply(params, state, None, x)
+        if split_rng:
+            rng = jax.random.PRNGKey(0)
+            out, state = apply(params, state, rng, x)
+            out, state = apply(params, state, rng, x)
+        else:
+            out, state = apply(params, state, None, x)
+            out, state = apply(params, state, None, x)
         return out
 
     def run_static():
@@ -62,8 +66,8 @@ def test_vmap_lift_wtih_state():
         state = state + steps
         out = state + x
         return out.reshape(-1, 1)
-
-    assert jnp.allclose(run_vmap(), run_static())
+    assert jnp.allclose(run_vmap(True), run_static())
+    assert jnp.allclose(run_vmap(False), run_static())
 
 
 def test_unroll_lift_wtih_state():

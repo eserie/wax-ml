@@ -32,7 +32,10 @@ class VMap(hk.Module):
         self.fun = fun
 
     def __call__(self, *args, **kwargs):
-        return vmap_lift_with_state(self.fun)(*args, **kwargs)
+        try:
+            return vmap_lift_with_state(self.fun, split_rng=True)(*args, **kwargs)
+        except ValueError:
+            return vmap_lift_with_state(self.fun, split_rng=False)(*args, **kwargs)
 
 
 # Helper functions
@@ -43,7 +46,11 @@ def add_batch(fun: Union[Callable, TransformedWithState], take_mean=True):
     It should be used inside a transformed function."""
 
     def fun_batch(*args, **kwargs):
-        res = vmap_lift_with_state(fun)(*args, **kwargs)
+        try:
+            res = vmap_lift_with_state(fun, split_rng=True)(*args, **kwargs)
+        except ValueError:
+            res = vmap_lift_with_state(fun, split_rng=False)(*args, **kwargs)
+
         if take_mean:
             res = jax.tree_map(lambda x: x.mean(axis=0), res)
         return res

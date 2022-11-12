@@ -43,11 +43,11 @@ def test_vmap_lift_wtih_state():
             def fun(x):
                 return MyModule(steps=2)(x)
 
-            return vmap_lift_with_state(fun, split_rng)(x)
+            return vmap_lift_with_state(fun, split_rng=split_rng)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
         params, state = init(jax.random.PRNGKey(0), x)
-        if split_rng:
+        if True:
             rng = jax.random.PRNGKey(0)
             out, state = apply(params, state, rng, x)
             out, state = apply(params, state, rng, x)

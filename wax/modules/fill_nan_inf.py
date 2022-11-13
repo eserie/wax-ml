@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Fill nan, posinf and neginf values."""
-from typing import Any
+from typing import Any, Optional
 
 import haiku as hk
 import jax.numpy as jnp
@@ -22,7 +22,7 @@ from jax import tree_map
 class FillNanInf(hk.Module):
     """Fill nan, posinf and neginf values."""
 
-    def __init__(self, fill_value: Any = 0.0, name: str = None):
+    def __init__(self, fill_value: Any = 0.0, name: Optional[str] = None):
         """Initialize module.
 
         Args:

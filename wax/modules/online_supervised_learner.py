@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Online supervised learner."""
-from typing import Any, Callable, NamedTuple, Tuple, Union
+from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
 
 import haiku as hk
 import jax.numpy as jnp
@@ -41,7 +41,7 @@ class OnlineSupervisedLearner(hk.Module):
         opt: Union[OptaxOptimizer, GradientTransformation],
         loss: Callable,
         grads_fill_nan_inf=True,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """Initialize module.
 

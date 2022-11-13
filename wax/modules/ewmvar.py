@@ -35,7 +35,7 @@ class EWMVar(hk.Module):
         com: Optional[float] = None,
         alpha: Optional[float] = None,
         adjust: bool = True,
-        name: str = None
+        name: Optional[str] = None
     ):
         r"""Initialize the module.
 

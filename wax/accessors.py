@@ -44,7 +44,7 @@ class StreamDataset(Stream):
         format_dims: Union[Tuple, onp.ndarray] = (),
         params: Any = None,
         state: Any = None,
-        rng: jnp.ndarray = None,
+        rng: Optional[jnp.ndarray] = None,
     ) -> Any:
         """Apply a module to a dataset.
 
@@ -101,7 +101,7 @@ class StreamDataArray(Stream):
         format_dims: Any = None,
         params: Any = None,
         state: Any = None,
-        rng: jnp.ndarray = None,
+        rng: Optional[jnp.ndarray] = None,
     ) -> Any:
         """Apply a module to a dataset.
 
@@ -167,7 +167,7 @@ class StreamDataFrame(Stream):
         format_dims: Any = None,
         params: Any = None,
         state: Any = None,
-        rng: jnp.ndarray = None,
+        rng: Optional[jnp.ndarray] = None,
     ) -> Any:
         """Apply a module to a dataset.
 
@@ -258,7 +258,7 @@ class StreamSeries(Stream):
         format_dims: Any = None,
         params: Any = None,
         state: Any = None,
-        rng: jnp.ndarray = None,
+        rng: Optional[jnp.ndarray] = None,
     ) -> Any:
         """Apply a module to a dataset.
 

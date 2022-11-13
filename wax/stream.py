@@ -51,7 +51,7 @@ from wax.unroll import UnrollTransformedWithState, unroll_transform_with_state
 from wax.utils import get_unique_dtype
 
 # DTypeLike = TypeVar("DTypeLike")
-DTypeLike = str
+DTypeLike = type
 
 EncoderMapping = Union[
     Dict[Hashable, Callable[[Any], Encoder]], Dict[Hashable, Encoder]
@@ -463,7 +463,7 @@ class Stream:
     @staticmethod
     def get_dataset_schema(
         xdata: xr.Dataset,
-        types_encoders: EncoderMapping = None,
+        types_encoders: Optional[EncoderMapping] = None,
         check: bool = False,
     ) -> DatasetSchema:
         """Determine data schema of a Dataset.

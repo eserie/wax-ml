@@ -13,7 +13,7 @@
 # limitations under the License.
 """Implement buffering mechanism."""
 
-from typing import Any, Callable, NamedTuple
+from typing import Any, Callable, NamedTuple, Optional
 
 import haiku as hk
 import jax.numpy as jnp
@@ -58,7 +58,7 @@ class Buffer(hk.Module):
         maxlen: int,
         fill_value=jnp.nan,
         return_state: bool = False,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """Initialize the module/
 

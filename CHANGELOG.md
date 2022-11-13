@@ -9,6 +9,20 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.6.0 (November 13 2022)
+
+* add stateful.py module with vmap_lift_with_state and unroll_lift_with… (#65)
+* remove tensorflow and pytorch from requirements
+* remove dependency with eagerpy (#62)
+* correct imports of tree utils to avoid FutureWarnings (#63)
+* replace jax.tree_multi_map (removed in JAX release v0.3.16) with jax.tree_map
+* faster unroll: do not propagate params in scan state (#61)
+
+## wax 0.5.0 (May 16 2022)
+
+* update to Jax v0.3.10 (#59)
+* add optimizers  (#56), (#58)
+
 ## wax 0.4.0 (April 5 2022)
 
 * EWMA alignement with pandas and speedup (#53)

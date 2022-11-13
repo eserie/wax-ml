@@ -46,28 +46,9 @@ def vmap_lift_with_state(
     *,
     split_rng: bool,
 ) -> Callable[..., Any]:
-    """Equivalent to :func:`jax.vmap` with module parameters/state not mapped.
+    """Modified version of :func:`haiku.vmap` with added params_axes and state_axes arguments.
 
-    The behaviour of Haiku random key APIs under :func:`vmap` is controlled by the
-    ``split_rng`` argument:
-
-    >>> x = jnp.arange(2)
-    >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=False)
-    >>> key1, key2 = f(x)
-    >>> assert (key1 == key2).all()
-
-    >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=True)
-    >>> key1, key2 = f(x)
-    >>> assert not (key1 == key2).all()
-
-    Random numbers in Haiku are typically used for two things, firstly for
-    initialising model parameters, and secondly for creating random samples as
-    part of the forward pass of a neural network (e.g. for dropout). If you are
-    using :func:`vmap` with a module that uses Haiku random keys for both (e.g.
-    you don't pass keys explicitly into the network), then it is quite likely that
-    you will want to vary the value of ``split_rng`` depending on whether we are
-    initalizing (e.g. creating model parameters) or applying the model. An easy
-    way to do this is to set ``split_rng=(not hk.running_init())``.
+    See :func:`haiku.vmap` docstring for more details.
 
     Args:
       fun: See :func:`jax.vmap`.
@@ -75,6 +56,8 @@ def vmap_lift_with_state(
       out_axes: See :func:`jax.vmap`.
       axis_name: See :func:`jax.vmap`.
       axis_size: See :func:`jax.vmap`.
+      params_axes: Axis to map over parameters.
+      state_axes: Axis to map over state.
       split_rng: Controls whether random key APIs in Haiku (e.g.
         :func:`next_rng_key`) return different (aka. the internal key is split
         before calling your mapped function) or the same (aka. the internal key

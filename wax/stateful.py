@@ -138,24 +138,27 @@ def vmap_lift_with_state(
     return mapped_fun
 
 
-def unroll_lift_with_state(fn: Callable, skip_first=False, split_rng=False):
+def unroll_lift_with_state(
+    fn: Callable, skip_first=False, split_rng=False, init_rng=False
+):
     def apply_fn(*args, **kwargs):
-        init, apply = hk.transform_with_state(fn)
-        params_and_state_fn, updater = lift_with_state(init, name="f_lift")
+        tfn = hk.transform_with_state(fn)
+        params_and_state_fn, updater = lift_with_state(tfn.init, name="unroll_lift")
 
-        xs = (args, kwargs)
-        args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
-        init_rng = hk.next_rng_key() if hk.running_init() else None
-        init_rng = None
-        params, state = params_and_state_fn(init_rng, *args_0, **kwargs_0)
+        def init(xs):
+            args_0, kwargs_0 = tree_map(lambda x: x[0], xs)
+            rng = hk.next_rng_key() if (hk.running_init() and init_rng) else None
+            params, state = params_and_state_fn(rng, *args_0, **kwargs_0)
+            return params, state
 
         def scan_f(state, inputs):
             args_step, kwargs_step = inputs
             rng = hk.maybe_next_rng_key() if split_rng else None
-            outputs, state = apply(params, state, rng, *args_step, **kwargs_step)
+            outputs, state = tfn.apply(params, state, rng, *args_step, **kwargs_step)
             return state, outputs
 
         xs = (args, kwargs)
+        params, state = init(xs)
         if skip_first:
             xs = tree_map(lambda x: x[1:], xs)
         final_state, output_sequence = hk.scan(scan_f, init=state, xs=xs)

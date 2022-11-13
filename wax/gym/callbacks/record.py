@@ -13,7 +13,7 @@
 # limitations under the License.
 """TODO refactor this module"""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -63,7 +63,7 @@ class Record(Callback):
 
     def __init__(
         self,
-        schema: DatasetSchema = None,
+        schema: Optional[DatasetSchema] = None,
         format_dims: Any = None,
         return_obs: bool = False,
         return_action: bool = False,

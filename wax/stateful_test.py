@@ -47,7 +47,7 @@ def test_vmap_lift_wtih_state():
 
         init, apply = hk.transform_with_state(outer_fun)
         params, state = init(jax.random.PRNGKey(0), x)
-        if True:
+        if split_rng:
             rng = jax.random.PRNGKey(0)
             out, state = apply(params, state, rng, x)
             out, state = apply(params, state, rng, x)

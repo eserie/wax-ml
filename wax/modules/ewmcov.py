@@ -41,7 +41,7 @@ class EWMCov(hk.Module):
         ignore_na: bool = False,
         initial_value: float = jnp.nan,
         assume_centered: bool = False,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         r"""Initialize the module.
 

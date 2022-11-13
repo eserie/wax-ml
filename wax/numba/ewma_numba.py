@@ -28,8 +28,8 @@ class EWMAState(NamedTuple):
 
 def ewma(
     *,
-    com: float = None,
-    alpha: float = None,
+    com: Optional[float] = None,
+    alpha: Optional[float] = None,
     min_periods: int = 0,
     adjust: bool = True,
     ignore_na: bool = False,
@@ -108,7 +108,7 @@ def ewma(
         )
         return state
 
-    def apply(values: np.ndarray, state: EWMAState = None):
+    def apply(values: np.ndarray, state: Optional[EWMAState] = None):
         is_1d = False
         if values.ndim == 1:
             values = values.reshape(-1, 1)

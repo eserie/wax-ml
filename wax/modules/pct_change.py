@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Relative change between the current and a prior element."""
+from typing import Optional
+
 import haiku as hk
 import jax.numpy as jnp
 
@@ -38,9 +40,9 @@ class PctChange(hk.Module):
         self,
         periods: int = 1,
         fill_method: str = "pad",
-        limit: int = None,
+        limit: Optional[int] = None,
         fillna_zero: bool = True,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         super().__init__(name=name)
         self.periods = periods

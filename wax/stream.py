@@ -463,7 +463,7 @@ class Stream:
     @staticmethod
     def get_dataset_schema(
         xdata: xr.Dataset,
-        types_encoders: EncoderMapping = None,
+        types_encoders: Optional[EncoderMapping] = None,
         check: bool = False,
     ) -> DatasetSchema:
         """Determine data schema of a Dataset.

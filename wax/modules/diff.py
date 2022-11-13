@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Implement difference of values on sequential data."""
+from typing import Optional
+
 import haiku as hk
 
 from wax.modules.buffer import Buffer
@@ -20,7 +22,7 @@ from wax.modules.buffer import Buffer
 class Diff(hk.Module):
     """Implement difference of values on sequential data."""
 
-    def __init__(self, periods: int = 1, name: str = None):
+    def __init__(self, periods: int = 1, name: Optional[str] = None):
         """Initialize module.
 
         Args:

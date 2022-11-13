@@ -14,7 +14,7 @@
 """Online optimizer module."""
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple, Optional, Union
 
 import haiku as hk
 import jax
@@ -68,11 +68,11 @@ class OnlineOptimizer(hk.Module):
         self,
         model: Union[Callable, hk.TransformedWithState],
         opt: Union[OptaxOptimizer, GradientTransformation],
-        project_params: Callable = None,
-        regularize_loss: Callable = None,
+        project_params: Optional[Callable] = None,
+        regularize_loss: Optional[Callable] = None,
         params_predicate: Callable[[str, str, jnp.ndarray], bool] = pass_all_predicate,
         return_params=False,
-        name: str = None,
+        name: Optional[str] = None,
     ):
         """Initialize module.
 

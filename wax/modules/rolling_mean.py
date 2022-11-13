@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Rolling mean."""
+from typing import Optional
+
 import haiku as hk
 import jax.numpy as jnp
 
@@ -21,7 +23,7 @@ from wax.modules.buffer import Buffer
 class RollingMean(hk.Module):
     """Rolling mean."""
 
-    def __init__(self, horizon: int, min_periods: int = 1, name: str = None):
+    def __init__(self, horizon: int, min_periods: int = 1, name: Optional[str] = None):
         """Initialize the module.
 
         Args:

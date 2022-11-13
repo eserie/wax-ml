@@ -29,7 +29,9 @@ from haiku._src.stateful import (
 from haiku.experimental import lift_with_state
 from jax.tree_util import tree_map
 
-list_to_tuple = lambda x: tuple(x) if isinstance(x, list) else x
+
+def list_to_tuple(x):
+    return tuple(x) if isinstance(x, list) else x
 
 
 @add_split_rng_error

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import itertools
 
 import haiku as hk
 import jax
@@ -38,8 +37,9 @@ class MyModule(hk.Module):
 
 
 @pytest.mark.parametrize(
-    "init_rng, split_rng", [[False, False], [True, False], [True, True]])
-def test_vmap_lift_wtih_state(init_rng,split_rng):
+    "init_rng, split_rng", [[False, False], [True, False], [True, True]]
+)
+def test_vmap_lift_wtih_state(init_rng, split_rng):
 
     x = jnp.arange(3).astype(jnp.float32)
 
@@ -81,7 +81,8 @@ def test_vmap_lift_wtih_state(init_rng,split_rng):
 
 
 @pytest.mark.parametrize(
-    "init_rng, split_rng", [[False, False], [True, False], [True, True]])
+    "init_rng, split_rng", [[False, False], [True, False], [True, True]]
+)
 def test_unroll_lift_wtih_state(init_rng, split_rng):
     x = jnp.zeros(3).astype(jnp.float32)
 

@@ -9,6 +9,9 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.6.1 (November 14 2022)
+
+* patch vmap_lift_with_state (now rely on hk.experimental.lift_with_state)
 ## wax 0.6.0 (November 13 2022)
 
 * add stateful.py module with vmap_lift_with_state and unroll_lift_with… (#65)

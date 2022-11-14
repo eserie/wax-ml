@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import jax
 import jax.numpy as jnp
 
 from wax.modules import VMap
@@ -27,4 +28,4 @@ def test_vmap_without_prng_key():
 
         return VMap(fun)(x)
 
-    unroll(outer_fun)(x)
+    unroll(outer_fun, rng=jax.random.PRNGKey(0))(x)

@@ -19,7 +19,7 @@ from haiku.experimental import lift_with_state
 from jax.tree_util import tree_map
 
 
-def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=False):
+def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=True):
     if split_rng and not init_rng:
         raise ValueError("split_rng=True requires init_rng=True")
 
@@ -35,7 +35,7 @@ def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=False):
                 return tfun.init(rng, *args, **kwargs)
 
             params_and_state_fn, updater = hk.experimental.lift_with_state(
-                init_fn, name="f_lift", allow_reuse=False
+                init_fn, name="vmap_lift", allow_reuse=False
             )
             params, state = params_and_state_fn(*args, **kwargs)
 
@@ -57,7 +57,7 @@ def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=False):
                 return tfun.init(rng, *args, **kwargs)
 
             params_and_state_fn, updater = hk.experimental.lift_with_state(
-                init_fn, name="f_lift", allow_reuse=False
+                init_fn, name="vmap_lift", allow_reuse=False
             )
             params, state = params_and_state_fn(rng, *args, **kwargs)
 
@@ -76,7 +76,7 @@ def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=False):
 
 
 def unroll_lift_with_state(
-    fn: Callable, skip_first=False, split_rng=False, init_rng=False
+    fn: Callable, skip_first=False, split_rng=False, init_rng=True
 ):
     if split_rng and not init_rng:
         raise ValueError("split_rng=True requires init_rng=True")

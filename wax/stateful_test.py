@@ -38,9 +38,8 @@ class MyModule(hk.Module):
 
 
 @pytest.mark.parametrize(
-    "init_rng, split_rng", itertools.product([True, False], [True, False])
-)
-def test_vmap_lift_wtih_state(split_rng, init_rng):
+    "init_rng, split_rng", [[False, False], [True, False], [True, True]])
+def test_vmap_lift_wtih_state(init_rng,split_rng):
 
     x = jnp.arange(3).astype(jnp.float32)
 
@@ -49,10 +48,10 @@ def test_vmap_lift_wtih_state(split_rng, init_rng):
             def fun(x):
                 return MyModule(steps=2)(x)
 
-            return vmap_lift_with_state(fun, split_rng=split_rng)(x)
+            return vmap_lift_with_state(fun, split_rng=split_rng, init_rng=init_rng)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
-        if init_rng:
+        if init_rng or split_rng:
             params, state = init(jax.random.PRNGKey(0), x)
         else:
             params, state = init(None, x)
@@ -82,8 +81,7 @@ def test_vmap_lift_wtih_state(split_rng, init_rng):
 
 
 @pytest.mark.parametrize(
-    "init_rng, split_rng", itertools.product([True, False], [True, False])
-)
+    "init_rng, split_rng", [[False, False], [True, False], [True, True]])
 def test_unroll_lift_wtih_state(init_rng, split_rng):
     x = jnp.zeros(3).astype(jnp.float32)
 
@@ -97,7 +95,7 @@ def test_unroll_lift_wtih_state(init_rng, split_rng):
             )
 
         init, apply = hk.transform_with_state(outer_fun)
-        if init_rng:
+        if init_rng or split_rng:
             params, state = init(jax.random.PRNGKey(0), x)
         else:
             params, state = init(None, x)

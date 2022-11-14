@@ -19,20 +19,20 @@ from haiku.experimental import lift_with_state
 from jax.tree_util import tree_map
 
 
-def vmap_lift_with_state(fun: Callable, split_rng=False):
+def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=False):
+    if split_rng and not init_rng:
+        raise ValueError("split_rng=True requires init_rng=True")
+
     def apply_fn(*args, **kwargs):
 
         tfun = hk.transform_with_state(fun)
 
         if not split_rng:
-            try:
-                init_rng = hk.next_rng_key() if hk.running_init() else None
-            except ValueError:
-                init_rng = None
+            rng = hk.next_rng_key() if (hk.running_init() and init_rng) else None
 
             @jax.vmap
             def init_fn(*args, **kwargs):
-                return tfun.init(init_rng, *args, **kwargs)
+                return tfun.init(rng, *args, **kwargs)
 
             params_and_state_fn, updater = hk.experimental.lift_with_state(
                 init_fn, name="f_lift", allow_reuse=False
@@ -46,7 +46,7 @@ def vmap_lift_with_state(fun: Callable, split_rng=False):
             out, state = apply_fn(params, state, *args, **kwargs)
         else:
             n_batches = len(jax.tree_util.tree_leaves((args, kwargs))[0])
-            if hk.running_init():
+            if init_rng and hk.running_init():
                 rng = hk.next_rng_key()
                 rng = jax.random.split(rng, num=n_batches)
             else:
@@ -78,6 +78,9 @@ def vmap_lift_with_state(fun: Callable, split_rng=False):
 def unroll_lift_with_state(
     fn: Callable, skip_first=False, split_rng=False, init_rng=False
 ):
+    if split_rng and not init_rng:
+        raise ValueError("split_rng=True requires init_rng=True")
+
     def apply_fn(*args, **kwargs):
         tfn = hk.transform_with_state(fn)
         params_and_state_fn, updater = lift_with_state(tfn.init, name="unroll_lift")

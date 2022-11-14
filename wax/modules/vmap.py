@@ -33,9 +33,9 @@ class VMap(hk.Module):
 
     def __call__(self, *args, **kwargs):
         try:
-            return vmap_lift_with_state(self.fun, split_rng=True)(*args, **kwargs)
+            return vmap_lift_with_state(self.fun, split_rng=True, init_rng=True)(*args, **kwargs)
         except ValueError:
-            return vmap_lift_with_state(self.fun, split_rng=False)(*args, **kwargs)
+            return vmap_lift_with_state(self.fun, split_rng=False, init_rng=False)(*args, **kwargs)
 
 
 # Helper functions

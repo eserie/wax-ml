@@ -37,8 +37,10 @@ class MyModule(hk.Module):
         return state + x
 
 
-@pytest.mark.parametrize("split_rng", [True, False])
-def test_vmap_lift_wtih_state(split_rng):
+@pytest.mark.parametrize(
+    "init_rng, split_rng", itertools.product([True, False], [True, False])
+)
+def test_vmap_lift_wtih_state(split_rng, init_rng):
 
     x = jnp.arange(3).astype(jnp.float32)
 
@@ -50,7 +52,11 @@ def test_vmap_lift_wtih_state(split_rng):
             return vmap_lift_with_state(fun, split_rng=split_rng)(x)
 
         init, apply = hk.transform_with_state(outer_fun)
-        params, state = init(jax.random.PRNGKey(0), x)
+        if init_rng:
+            params, state = init(jax.random.PRNGKey(0), x)
+        else:
+            params, state = init(None, x)
+
         if split_rng:
             rng = jax.random.PRNGKey(0)
             out, state = apply(params, state, rng, x)

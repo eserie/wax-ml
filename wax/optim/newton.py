@@ -75,7 +75,7 @@ def scale_by_newton(eps: float = 1e-7) -> base.GradientTransformation:
     """
 
     def init_fn(params):
-        hessian_inv = jax.tree_map(
+        hessian_inv = jax.tree_util.tree_map(
             lambda t: jnp.eye(len(t.flatten()), dtype=t.dtype) / eps, params
         )
         return ScaleByNewtonState(hessian_inv=hessian_inv)
@@ -89,13 +89,15 @@ def scale_by_newton(eps: float = 1e-7) -> base.GradientTransformation:
 
             ...
 
-        shapes = jax.tree_map(lambda x: Tuple(x.shape), updates)
-        updates = jax.tree_map(lambda x: x.flatten(), updates)
-        hessian_inv = jax.tree_map(
+        shapes = jax.tree_util.tree_map(lambda x: Tuple(x.shape), updates)
+        updates = jax.tree_util.tree_map(lambda x: x.flatten(), updates)
+        hessian_inv = jax.tree_util.tree_map(
             lambda u, hinv: sherman_morrison(hinv, u, u), updates, state.hessian_inv
         )
-        updates = jax.tree_map(lambda hinv, g: hinv @ g, hessian_inv, updates)
-        updates = jax.tree_map(lambda u, shape: u.reshape(shape), updates, shapes)
+        updates = jax.tree_util.tree_map(lambda hinv, g: hinv @ g, hessian_inv, updates)
+        updates = jax.tree_util.tree_map(
+            lambda u, shape: u.reshape(shape), updates, shapes
+        )
 
         return updates, ScaleByNewtonState(hessian_inv=hessian_inv)
 

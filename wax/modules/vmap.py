@@ -51,7 +51,7 @@ def add_batch(fun: Union[Callable, TransformedWithState], take_mean=True):
             res = vmap_lift_with_state(fun, split_rng=False)(*args, **kwargs)
 
         if take_mean:
-            res = jax.tree_map(lambda x: x.mean(axis=0), res)
+            res = jax.tree_util.tree_map(lambda x: x.mean(axis=0), res)
         return res
 
     return fun_batch

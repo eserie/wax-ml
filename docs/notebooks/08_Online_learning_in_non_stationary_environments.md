@@ -107,7 +107,7 @@ def build_agent(time_series_model=None, opt=None):
 
         def project_params(params: Any, opt_state: OptState = None):
             del opt_state
-            return jax.tree_map(lambda w: jnp.clip(w, -1, 1), params)
+            return jax.tree_util.tree_map(lambda w: jnp.clip(w, -1, 1), params)
 
         def params_predicate(m: str, n: str, p: jnp.ndarray) -> bool:
             # print(m, n, p)
@@ -203,7 +203,7 @@ def scan_hparams_first_order():
         BEST_STEP_SIZE[name] = loss.idxmin()
 
         best_idx = jnp.argmax(gym.reward[LEARN_TIME_SLICE].mean(axis=0))
-        BEST_GYM[name] = jax.tree_map(lambda x: x[:, best_idx], gym)
+        BEST_GYM[name] = jax.tree_util.tree_map(lambda x: x[:, best_idx], gym)
 
         ax = loss.plot(
             logx=True, logy=False, ax=ax, label=name, ylim=(MIN_ERR, MAX_ERR)
@@ -324,7 +324,7 @@ def scan_hparams_newton():
     x = jnp.where(jnp.isnan(x), jnp.inf, x)
     I_BEST_PARAM = jnp.argmin(x)
 
-    BEST_NEWTON_GYM = jax.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
+    BEST_NEWTON_GYM = jax.tree_util.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
 
     print("Best newton parameters: ", STEP_SIZE, NEWTON_EPS)
 

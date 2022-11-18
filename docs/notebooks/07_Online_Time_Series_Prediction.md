@@ -223,7 +223,7 @@ pd.Series(opt_info.loss).expanding().mean().plot()
 Let's look at the latest weights:
 
 ```python
-jax.tree_map(lambda x: x[-1], opt_info.params)
+jax.tree_util.tree_map(lambda x: x[-1], opt_info.params)
 ```
 
 
@@ -348,7 +348,7 @@ def build_agent(time_series_model=None, opt=None, embargo=1):
 
         def project_params(params: Any, opt_state: OptState = None):
             del opt_state
-            return jax.tree_map(lambda w: jnp.clip(w, -1, 1), params)
+            return jax.tree_util.tree_map(lambda w: jnp.clip(w, -1, 1), params)
 
         def params_predicate(m: str, n: str, p: jnp.ndarray) -> bool:
             # print(m, n, p)
@@ -563,7 +563,7 @@ def add_batch(fun, take_mean=True):
     def fun_batch(*args, **kwargs):
         res = VMap(fun)(*args, **kwargs)
         if take_mean:
-            res = jax.tree_map(lambda x: x.mean(axis=0), res)
+            res = jax.tree_util.tree_map(lambda x: x.mean(axis=0), res)
         return res
 
     return fun_batch
@@ -649,7 +649,7 @@ for name, (gym, info) in res.items():
 
     BEST_STEP_SIZE[name] = loss.idxmin()
     best_idx = loss.reset_index(drop=True).idxmin()
-    BEST_GYM[name] = jax.tree_map(lambda x: x[:, best_idx], gym)
+    BEST_GYM[name] = jax.tree_util.tree_map(lambda x: x[:, best_idx], gym)
 
     ax = loss[loss < 0.15].plot(logx=True, logy=False, ax=ax, label=name)
 plt.legend()
@@ -758,7 +758,7 @@ x = jnp.where(jnp.isnan(x), jnp.inf, x)
 I_BEST_PARAM = jnp.argmin(x)
 
 
-BEST_NEWTON_GYM = jax.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
+BEST_NEWTON_GYM = jax.tree_util.tree_map(lambda x: x[:, I_BEST_PARAM], gym_newton)
 print("Best newton parameters: ", STEP_SIZE, NEWTON_EPS)
 ```
 

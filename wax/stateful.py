@@ -35,7 +35,7 @@ def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=True):
                 return tfun.init(rng, *args, **kwargs)
 
             params_and_state_fn, updater = hk.experimental.lift_with_state(
-                init_fn, name="vmap_lift", allow_reuse=False
+                init_fn, name="vmap_lift"
             )
             params, state = params_and_state_fn(*args, **kwargs)
 
@@ -57,7 +57,7 @@ def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=True):
                 return tfun.init(rng, *args, **kwargs)
 
             params_and_state_fn, updater = hk.experimental.lift_with_state(
-                init_fn, name="vmap_lift", allow_reuse=False
+                init_fn, name="vmap_lift"
             )
             params, state = params_and_state_fn(rng, *args, **kwargs)
 

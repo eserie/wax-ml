@@ -14,18 +14,29 @@
 import jax
 import jax.numpy as jnp
 
-from wax.modules import VMap
+from wax.modules import EWMA, VMap
+from wax.stateful import unroll_lift_with_state
 from wax.unroll import unroll
 
 
-def test_vmap_without_prng_key():
+def test_vmap_with_outer_unroll_lift_with_state():
     """Test that VMap module work without PRNG key specified"""
-    x = jnp.arange(10).reshape(2, 5)
+    x = jnp.arange(2 * 2 * 2).reshape(2, 2, 2).astype(jnp.float32)
 
     def outer_fun(x):
-        def fun(x):
-            return x
+        @unroll_lift_with_state
+        def step(x):
+            return VMap(EWMA(com=10))(x)
 
-        return VMap(fun)(x)
+        return step(x)
 
-    unroll(outer_fun, rng=jax.random.PRNGKey(0))(x)
+    res = unroll(outer_fun, rng=jax.random.PRNGKey(0))(x)
+    assert res.shape == x.shape
+    ref = jnp.array(
+        [
+            [[0.0, 1.0], [1.0476191, 2.047619]],
+            [[2.1268883, 3.1268883], [3.2376645, 4.2376647]],
+        ],
+        dtype=jnp.float32,
+    )
+    assert jnp.allclose(res, ref)

@@ -9,6 +9,13 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.6.3 (November 18 2022)
+
+* import tree_map from tree_util
+* fix VMap module
+## wax 0.6.2 (November 14 2022)
+
+* Fix deployement of 0.6.1
 ## wax 0.6.1 (November 14 2022)
 
 * patch vmap_lift_with_state (now rely on hk.experimental.lift_with_state)

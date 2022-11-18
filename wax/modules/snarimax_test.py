@@ -119,7 +119,7 @@ def build_agent(time_series_model=None, opt=None):
 
         def project_params(params: Any, opt_state: OptState = None):
             del opt_state
-            return jax.tree_map(lambda w: jnp.clip(w, -1, 1), params)
+            return jax.tree_util.tree_map(lambda w: jnp.clip(w, -1, 1), params)
 
         def params_predicate(m: str, n: str, p: jnp.ndarray) -> bool:
             # print(m, n, p)

@@ -327,7 +327,7 @@ def unroll_stream(
     outputs = _init_outputs()
 
     if pbar:
-        stream = tqdm(stream, desc="stream_unroll")
+        stream = tqdm(stream, desc="stream_unroll")  # type: ignore
 
     for obs in stream:
         obs_flat = tree_leaves(obs)

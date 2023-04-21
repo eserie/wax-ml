@@ -42,7 +42,6 @@ def gym_unroll(agent, env, obs=None, callbacks=None):
     GymUnrollState = namedtuple("GymUnrollState", "rw, obs, action, done, info")
 
     with local_callbacks(callbacks) as callbacks:
-
         # unpack callbacks
         (
             on_train_start_cbs,
@@ -58,7 +57,6 @@ def gym_unroll(agent, env, obs=None, callbacks=None):
             on_train_start(env, agent, obs)
 
         while True:
-
             # agent act
             action = agent(obs)
 

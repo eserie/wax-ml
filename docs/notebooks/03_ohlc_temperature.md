@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.3
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3
     language: python
@@ -40,19 +40,19 @@ It is sampled at an hourly resolution.
 We will make "trailing" air temperature bins during each day and "reset" the bin
 aggregation process at each day change.
 
-```python tags=[]
+```python
 import numpy as onp
 import xarray as xr
 ```
 
-```python tags=[]
+```python
 from wax.accessors import register_wax_accessors
 from wax.modules import OHLC, HasChanged
 
 register_wax_accessors()
 ```
 
-```python tags=[]
+```python
 dataset = xr.tutorial.open_dataset("air_temperature")
 dataset["date"] = dataset.time.dt.date.astype(onp.datetime64)
 ```
@@ -61,7 +61,7 @@ dataset["date"] = dataset.time.dt.date.astype(onp.datetime64)
 dataset
 ```
 
-```python tags=[]
+```python
 def bin_temperature(da):
     day_change = HasChanged()(da["date"])
     return OHLC()(da["air"], reset_on=day_change)
@@ -73,12 +73,11 @@ output, state = dataset.wax.stream().apply(
 output = xr.Dataset(output._asdict())
 ```
 
-```python tags=[]
+```python
 df = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().loc["2013-01"]
 _ = df.plot(figsize=(12, 8), title="Trailing Open-High-Low-Close temperatures")
 ```
 
-<!-- #region tags=[] -->
 ## The `UpdateOnEvent` module
 
 The `OHLC` module uses the primitive `wax.modules.UpdateOnEvent`.
@@ -88,4 +87,3 @@ Its implementation required to complete Haiku with a central function
 
 We have opened an [issue on the Haiku github](https://github.com/deepmind/dm-haiku/issues/126)
 to integrate it in Haiku.
-<!-- #endregion -->

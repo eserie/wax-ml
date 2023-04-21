@@ -141,7 +141,6 @@ def check_time_index(index, direct=True):
 
 
 def check_outputs(outputs, schema):
-
     # TODO: check what is correct...
     # assert outputs["NEWS"].shape == (25, 3, 2)
     assert outputs["NEWS"].shape == (124, 3)

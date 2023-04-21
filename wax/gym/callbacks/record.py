@@ -87,7 +87,6 @@ class Record(Callback):
         if gym_state.done:
             return
         if gym_state.action is not None:
-
             outputs = self.GymOutput.format(
                 gym_state.rw, gym_state.obs, gym_state.action
             )

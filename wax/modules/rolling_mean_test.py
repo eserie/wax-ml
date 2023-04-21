@@ -47,7 +47,6 @@ def test_rolling_mean_init_apply():
 
 
 def test_run_ema_vs_pandas_not_adjust(window=10, min_periods=5):
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)

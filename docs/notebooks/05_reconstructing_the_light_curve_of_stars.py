@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.3
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -244,7 +244,6 @@ def min_max_scaler(values: pd.DataFrame, output_format: str = "dataframe") -> En
             return array_normed
 
     def decode(array_scaled):
-
         value = scaler.inverse_transform(array_scaled)
 
         if output_format == "dataframe":
@@ -332,7 +331,6 @@ def split_feature_target(
 def split_train_validation(
     dataframe, train_size, look_back, scaler: Optional[Callable] = None
 ) -> TrainSplit:
-
     # prepare scaler
     train_df = dataframe.iloc[:train_size]
 

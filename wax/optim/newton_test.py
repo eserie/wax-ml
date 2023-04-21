@@ -37,7 +37,6 @@ def loss(w, x):
 
 
 def test_sgd():
-
     w = jnp.ones(3)
     x = jnp.ones(3)
 

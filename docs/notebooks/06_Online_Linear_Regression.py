@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.3
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -252,7 +252,6 @@ from wax.modules import Lag
 
 
 def stationary_linear_regression_env(action, raw_obs):
-
     # Only the environment now the true value of the parameters
     w_true = -jnp.ones(3)
 
@@ -339,7 +338,6 @@ axs[1].set_title("Weight[0,0]")
 
 class NonStationaryEnvironment(hk.Module):
     def __call__(self, action, raw_obs):
-
         step = hk.get_state("step", [], init=lambda *_: 0)
 
         # Only the environment now the true value of the parameters

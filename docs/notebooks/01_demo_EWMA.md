@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.3
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -54,7 +54,7 @@ Let's show how it works.
 
 First you need to load accessors:
 
-```python tags=[]
+```python
 from wax.accessors import register_wax_accessors
 
 register_wax_accessors()
@@ -70,7 +70,7 @@ Let's apply the EWMA algorithm to the [NCEP/NCAR 's Air temperature data](http:/
 
 ### 🌡 Load temperature dataset 🌡
 
-```python tags=[]
+```python
 import xarray as xr
 
 dataset = xr.tutorial.open_dataset("air_temperature")
@@ -78,7 +78,7 @@ dataset = xr.tutorial.open_dataset("air_temperature")
 
 Let's see what this dataset looks like:
 
-```python tags=[]
+```python
 dataset
 ```
 

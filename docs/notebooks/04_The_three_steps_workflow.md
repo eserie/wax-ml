@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.3
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -66,7 +66,7 @@ Let's illustrate how to reimplement WAX-ML EWMA yourself with the WAX-ML 3-step 
 ## Imports
 <!-- #endregion -->
 
-```python id="2bdfbf9a" tags=[]
+```python id="2bdfbf9a"
 import numpy as onp
 import pandas as pd
 import xarray as xr
@@ -93,7 +93,7 @@ T = 1.0e5
 N = 1000
 ```
 
-```python id="03af743d" tags=[]
+```python id="03af743d"
 T, N = map(int, (T, N))
 dataframe = pd.DataFrame(
     onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T, freq="s")
@@ -104,7 +104,7 @@ dataframe = pd.DataFrame(
 ### pandas EWMA
 <!-- #endregion -->
 
-```python colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424" tags=[]
+```python colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424"
 %%time
 df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 ```
@@ -113,7 +113,7 @@ df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 ### WAX-ML EWMA
 <!-- #endregion -->
 
-```python colab={"base_uri": "https://localhost:8080/"} id="11f3705d" outputId="744f0faa-7030-4155-80ae-4a5c745731f8" tags=[]
+```python colab={"base_uri": "https://localhost:8080/"} id="11f3705d" outputId="744f0faa-7030-4155-80ae-4a5c745731f8"
 %%time
 df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 ```
@@ -130,7 +130,7 @@ It's a little faster, but not that much faster...
 Let's disable the final formatting step (the output is now in raw JAX format):
 <!-- #endregion -->
 
-```python colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6" tags=[]
+```python colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6"
 %%time
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
 df_ewma_wax_no_format.block_until_ready()
@@ -238,7 +238,7 @@ outputs.device()
 Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 <!-- #endregion -->
 
-```python colab={"base_uri": "https://localhost:8080/"} id="a889d294" outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4" tags=[]
+```python colab={"base_uri": "https://localhost:8080/"} id="a889d294" outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4"
 %%timeit
 outputs = unroll(transform_dataset)(jxs)
 _ = outputs.block_until_ready()
@@ -281,6 +281,7 @@ jnp_data, jnp_index, jxs = tree_map(
 print("data copied to CPU device.")
 ```
 
+
 <!-- #region id="f851fbe7-096e-4399-ae5c-08739837dfeb" -->
 We have now "JAX-ready" data for later fast access.
 <!-- #endregion -->
@@ -289,6 +290,7 @@ We have now "JAX-ready" data for later fast access.
 Let's define the transformation that wrap the actual data and indices in a pair of
 pure functions:
 <!-- #endregion -->
+
 
 ```python id="e7ebbb08-d790-4977-b49d-c9224e299a42"
 @jax.jit

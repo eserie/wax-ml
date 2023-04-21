@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.3
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -311,7 +311,7 @@ Let's build an agent:
 from optax._src.base import OptState
 ```
 
-```python tags=[]
+```python
 def build_agent(time_series_model=None, opt=None, embargo=1):
     if time_series_model is None:
         time_series_model = lambda y, X: SNARIMAX(10)(y, X)
@@ -372,7 +372,6 @@ def build_agent(time_series_model=None, opt=None, embargo=1):
 
     return agent
 ```
-
 
 ```python
 agent = build_agent()
@@ -644,7 +643,6 @@ ax = None
 BEST_STEP_SIZE = {}
 BEST_GYM = {}
 for name, (gym, info) in res.items():
-
     loss = pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[-5000:].mean()
 
     BEST_STEP_SIZE[name] = loss.idxmin()

@@ -24,7 +24,6 @@ def vmap_lift_with_state(fun: Callable, split_rng=False, init_rng=True):
         raise ValueError("split_rng=True requires init_rng=True")
 
     def apply_fn(*args, **kwargs):
-
         tfun = hk.transform_with_state(fun)
 
         if not split_rng:

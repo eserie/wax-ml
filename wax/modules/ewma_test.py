@@ -28,7 +28,6 @@ from wax.unroll import dynamic_unroll_fori_loop, unroll, unroll_transform_with_s
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
 def test_init_and_first_step_ema(dtype):
-
     if dtype == "float64":
         config.update("jax_enable_x64", True)
     else:
@@ -48,7 +47,6 @@ def test_init_and_first_step_ema(dtype):
 
 
 def test_run_ema_vs_pandas_not_adjust():
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
@@ -67,7 +65,6 @@ def test_run_ema_vs_pandas_not_adjust():
 
 
 def test_dynamic_unroll_fori_loop():
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
@@ -86,7 +83,6 @@ def test_dynamic_unroll_fori_loop():
 
 
 def test_dynamic_unroll():
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
@@ -106,7 +102,6 @@ def test_dynamic_unroll():
 
 
 def test_run_ema_vs_pandas_adjust():
-
     config.update("jax_enable_x64", True)
 
     seq = hk.PRNGSequence(42)
@@ -145,7 +140,6 @@ def test_run_ema_vs_pandas_adjust_finite():
 
 @pytest.mark.parametrize("adjust", [False, True, "linear"])
 def test_grad_ewma(adjust):
-
     rng = jax.random.PRNGKey(42)
     x = jax.random.normal(rng, (10, 3))
     # put some nan values

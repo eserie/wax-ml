@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.3
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -60,7 +60,7 @@ jax.devices()
 # + [markdown] id="bd2e906e"
 # ## Imports
 
-# + id="2bdfbf9a" tags=[]
+# + id="2bdfbf9a"
 import numpy as onp
 import pandas as pd
 import xarray as xr
@@ -83,7 +83,7 @@ register_wax_accessors()
 T = 1.0e5
 N = 1000
 
-# + id="03af743d" tags=[]
+# + id="03af743d"
 T, N = map(int, (T, N))
 dataframe = pd.DataFrame(
     onp.random.normal(size=(T, N)), index=pd.date_range("1970", periods=T, freq="s")
@@ -92,14 +92,14 @@ dataframe = pd.DataFrame(
 # + [markdown] id="d1fd46f7"
 # ### pandas EWMA
 
-# + colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="27092faf" outputId="e97a2738-5c2a-4bf9-c9e0-c44040185424"
 # %%time
 df_ewma_pandas = dataframe.ewm(alpha=1.0 / 10.0).mean()
 
 # + [markdown] id="678be283"
 # ### WAX-ML EWMA
 
-# + colab={"base_uri": "https://localhost:8080/"} id="11f3705d" outputId="744f0faa-7030-4155-80ae-4a5c745731f8" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="11f3705d" outputId="744f0faa-7030-4155-80ae-4a5c745731f8"
 # %%time
 df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 
@@ -112,7 +112,7 @@ df_ewma_wax = dataframe.wax.ewm(alpha=1.0 / 10.0).mean()
 # + [markdown] id="7361def9"
 # Let's disable the final formatting step (the output is now in raw JAX format):
 
-# + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="f87f5668" outputId="3f37d97e-1875-4f66-9e6b-9a22b20642a6"
 # %%time
 df_ewma_wax_no_format = dataframe.wax.ewm(alpha=1.0 / 10.0, format_outputs=False).mean()
 df_ewma_wax_no_format.block_until_ready()
@@ -203,7 +203,7 @@ outputs.device()
 # + [markdown] id="b73f3252"
 # Once it has been compiled and "traced" by JAX, the function is much faster to execute:
 
-# + colab={"base_uri": "https://localhost:8080/"} id="a889d294" outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4" tags=[]
+# + colab={"base_uri": "https://localhost:8080/"} id="a889d294" outputId="e69a75ff-4b00-4a1d-f101-49944e01d9b4"
 # %%timeit
 outputs = unroll(transform_dataset)(jxs)
 _ = outputs.block_until_ready()
@@ -246,6 +246,7 @@ print("data copied to CPU device.")
 # + [markdown] id="19f3b58e-61f3-481c-a512-cb87bde622a8"
 # Let's define the transformation that wrap the actual data and indices in a pair of
 # pure functions:
+
 
 # + id="e7ebbb08-d790-4977-b49d-c9224e299a42"
 @jax.jit

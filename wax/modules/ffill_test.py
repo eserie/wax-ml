@@ -20,7 +20,6 @@ from wax.unroll import unroll
 
 @pytest.mark.parametrize("use_jit", [False, True])
 def test_ffill(use_jit):
-
     xs = jnp.array([90, 91, jnp.nan, 85])
     res = unroll(lambda x: Ffill()(x))(xs)
     assert jnp.allclose(res, jnp.array([90, 91, 91, 85], dtype=jnp.float32))

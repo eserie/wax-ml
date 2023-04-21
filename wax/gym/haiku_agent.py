@@ -44,7 +44,6 @@ class HaikuAgent(Agent):
         self._initialized = False
 
     def __call__(self, obs):
-
         if not self._initialized:
             self._initialize(obs)
 

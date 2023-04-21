@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.3
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -47,7 +47,7 @@ jax.devices()
 
 # First you need to load accessors:
 
-# + tags=[]
+# +
 from wax.accessors import register_wax_accessors
 
 register_wax_accessors()
@@ -61,7 +61,7 @@ register_wax_accessors()
 
 # ### 🌡 Load temperature dataset 🌡
 
-# + tags=[]
+# +
 import xarray as xr
 
 dataset = xr.tutorial.open_dataset("air_temperature")
@@ -69,9 +69,7 @@ dataset = xr.tutorial.open_dataset("air_temperature")
 
 # Let's see what this dataset looks like:
 
-# + tags=[]
 dataset
-# -
 
 # To compute a EWMA on some variables of a dataset, we usually need to convert data
 # in pandas

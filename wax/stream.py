@@ -717,7 +717,6 @@ class Stream:
                 if _is_verbose(self.verbose, time_dim):
 
                     def as_list(vals):
-
                         vals = onp.array(vals)
                         if vals.ndim == 2:
                             idx = onp.stack([vals[i] for i in range(len(vals))])

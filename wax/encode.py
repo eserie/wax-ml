@@ -166,7 +166,6 @@ def floor_datetime(time, freq: Union[str, DateOffset] = "d"):
 
 
 def string_encoder(values: Any) -> Encoder:
-
     ravel = False
     original_shape = None
 

@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.3
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -60,7 +60,7 @@ jax.devices()
 # - An air temperature is defined with hourly resolution.
 # - A "fake" ground temperature is defined with a daily resolution as the air temperature minus 10 degrees.
 
-# + tags=[]
+# +
 import xarray as xr
 
 dataset = xr.tutorial.open_dataset("air_temperature")
@@ -71,12 +71,12 @@ dataset["ground"] = dataset.air.resample(time="d").last().rename({"time": "day"}
 
 dataset
 
-# + tags=[]
+# +
 from wax.accessors import register_wax_accessors
 
 register_wax_accessors()
 
-# + tags=[]
+# +
 from wax.modules import EWMA
 
 

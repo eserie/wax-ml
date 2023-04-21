@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.3
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -167,7 +167,6 @@ by measuring the average loss between the 5000 and 10000 steps.
 
 ```python
 def scan_hparams_first_order():
-
     STEP_SIZE_idx = pd.Index(onp.logspace(-4, 1, N_STEP_SIZE), name="step_size")
     STEP_SIZE = jax.device_put(STEP_SIZE_idx.values)
 
@@ -195,7 +194,6 @@ def scan_hparams_first_order():
     BEST_GYM = {}
 
     for name, (gym, info) in res.items():
-
         loss = (
             pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[LEARN_TIME_SLICE].mean()
         )
@@ -245,7 +243,6 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
         )
 
     for i, optimizer in enumerate(tqdm(OPTIMIZERS)):
-
         name = optimizer.__name__
 
         def gym_loop(eps):
@@ -399,7 +396,6 @@ def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
     MESURES.append(("Expanding means", measure))
 
     for MEASURE_NAME, MEASUR_FUNC in MESURES:
-
         plt.figure()
 
         for i, (name, gym) in enumerate(BEST_GYM.items()):

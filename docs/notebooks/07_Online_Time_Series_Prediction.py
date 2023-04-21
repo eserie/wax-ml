@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.3
+#       jupytext_version: 1.14.5
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -287,7 +287,6 @@ env = build_env()
 from optax._src.base import OptState
 
 
-# + tags=[]
 def build_agent(time_series_model=None, opt=None, embargo=1):
     if time_series_model is None:
         time_series_model = lambda y, X: SNARIMAX(10)(y, X)
@@ -347,9 +346,6 @@ def build_agent(time_series_model=None, opt=None, embargo=1):
         return learn_and_forecast(y, X)
 
     return agent
-
-
-# -
 
 
 agent = build_agent()
@@ -597,7 +593,6 @@ ax = None
 BEST_STEP_SIZE = {}
 BEST_GYM = {}
 for name, (gym, info) in res.items():
-
     loss = pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[-5000:].mean()
 
     BEST_STEP_SIZE[name] = loss.idxmin()

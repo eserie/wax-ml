@@ -20,7 +20,6 @@ from wax.modules.mask_std import MaskStd
 
 
 def test_mask_std_no_mask():
-
     rng = hk.PRNGSequence(42)
     x = jax.random.normal(next(rng), (10,))
     std_ref = x.std()
@@ -35,7 +34,6 @@ def test_mask_std_no_mask():
 
 @pytest.mark.parametrize("assume_centered", [False, True])
 def test_mask_std_with_mask(assume_centered):
-
     rng = hk.PRNGSequence(42)
     x = jax.random.normal(next(rng), (10,))
     if assume_centered:

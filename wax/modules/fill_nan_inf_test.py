@@ -19,7 +19,6 @@ from wax.modules.fill_nan_inf import FillNanInf
 
 
 def test_fill_nan_inf():
-
     seq = hk.PRNGSequence(42)
     x = jax.random.normal(shape=(100, 5), key=next(seq), dtype=jnp.float64)
     mask_nan = jax.random.choice(next(seq), 2, shape=x.shape)

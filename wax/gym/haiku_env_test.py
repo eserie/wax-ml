@@ -138,7 +138,6 @@ def test_unroll_array():
         return Agent()(obs)
 
     with Record() as rec, ProgressBar():
-
         state = agent.unroll(env)
 
     assert isinstance(state.action["structured_action"], np.ndarray)
@@ -163,7 +162,6 @@ def test_unroll_dataframe():
         return Agent()(obs)
 
     with Record() as rec, ProgressBar():
-
         state = agent.unroll(env)
 
     assert isinstance(state.action["structured_action"], pd.DataFrame)
@@ -188,7 +186,6 @@ def test_unroll_dataframe_stop_callback():
         return Agent()(obs)
 
     with Record() as rec, ProgressBar(), Stop(3):
-
         state = agent.unroll(env)
 
     assert isinstance(state.action["structured_action"], pd.DataFrame)
@@ -211,7 +208,6 @@ def test_unroll_dataarray_stop_callback():
         return Agent()(obs)
 
     with Record() as rec, ProgressBar(), Stop(3):
-
         state = agent.unroll(env)
 
     assert isinstance(state.action["structured_action"], xr.DataArray)

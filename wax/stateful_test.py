@@ -40,7 +40,6 @@ class MyModule(hk.Module):
     "init_rng, split_rng", [[False, False], [True, False], [True, True]]
 )
 def test_vmap_lift_wtih_state(init_rng, split_rng):
-
     x = jnp.arange(3).astype(jnp.float32)
 
     def run_vmap():

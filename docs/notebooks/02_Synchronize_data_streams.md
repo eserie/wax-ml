@@ -7,7 +7,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.13.3
+      jupytext_version: 1.14.5
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -65,7 +65,7 @@ Let's use the dataset "air temperature" with :
 - An air temperature is defined with hourly resolution.
 - A "fake" ground temperature is defined with a daily resolution as the air temperature minus 10 degrees.
 
-```python tags=[]
+```python
 import xarray as xr
 
 dataset = xr.tutorial.open_dataset("air_temperature")
@@ -78,13 +78,13 @@ Let's see what this dataset looks like:
 dataset
 ```
 
-```python tags=[]
+```python
 from wax.accessors import register_wax_accessors
 
 register_wax_accessors()
 ```
 
-```python tags=[]
+```python
 from wax.modules import EWMA
 
 

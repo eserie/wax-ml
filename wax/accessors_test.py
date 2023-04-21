@@ -205,7 +205,6 @@ def test_wax_ewma(format):
 
 
 def _compute_ewma_direct(dataarray):
-
     x = jnp.array(dataarray.values, dtype=jnp.float64)
 
     @hk.transform_with_state
@@ -218,7 +217,6 @@ def _compute_ewma_direct(dataarray):
 
 @pytest.mark.parametrize("format", ["dataframe"])
 def test_wax_ewma_vs_pandas(format):
-
     config.update("jax_enable_x64", True)
     register_wax_accessors()
     data = prepare_format_data(format)

@@ -19,7 +19,6 @@ from wax.modules.mask_mean import MaskMean
 
 
 def test_mask_mean_no_mask():
-
     rng = hk.PRNGSequence(42)
     x = jax.random.normal(next(rng), (10,))
     x_mean_ref = x.mean()
@@ -33,7 +32,6 @@ def test_mask_mean_no_mask():
 
 
 def test_mask_mean_with_mask():
-
     rng = hk.PRNGSequence(42)
     x = jax.random.normal(next(rng), (10,))
     x_mean_ref = x[1:].mean()

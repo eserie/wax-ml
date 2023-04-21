@@ -9,6 +9,10 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.6.4 (April 22 2023)
+
+* upgrade CI to python 3.9
+* remove numba functions from the core package
 ## wax 0.6.3 (November 18 2022)
 
 * import tree_map from tree_util

@@ -85,15 +85,6 @@ dataframe = dataset.air.to_series().unstack(["lon", "lat"])
 air_temp_ewma = dataframe.ewm(com=10).mean()
 _ = air_temp_ewma.mean(1).plot()
 
-# ## wax numba ewma
-
-from wax.numba.ewma_numba import register_wax_numba
-
-register_wax_numba()
-
-air_temp_ewma = dataframe.wax_numba.ewm(com=10).mean()
-_ = air_temp_ewma.mean(1).plot()
-
 # ### EWMA with WAX-ML
 
 air_temp_ewma = dataframe.wax.ewm(com=10).mean()

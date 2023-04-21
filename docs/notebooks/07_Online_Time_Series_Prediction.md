@@ -115,6 +115,7 @@ Let's setup an online model to try to learn the dynamic of the time-series.
 
 First let's run the filter with it's initial random weights.
 
+
 ```python
 def predict(y, X=None):
     return SNARIMAX(10, 0, 0)(y, X)

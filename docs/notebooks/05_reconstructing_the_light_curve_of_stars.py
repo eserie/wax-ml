@@ -557,6 +557,7 @@ _ = plot.draw()
 #
 # If we're allowed to feed in the ground truth, we can just run the original model's `apply` function.
 
+
 # + colab={} colab_type="code" id="f2qETEqXLT1N"
 def plot_samples(truth: np.ndarray, prediction: np.ndarray) -> gg.ggplot:
     assert truth.shape == prediction.shape
@@ -590,6 +591,7 @@ del sample_x, predicted
 
 # + [markdown] colab_type="text" id="tDyGshz_lwrM"
 # If we can't feed in the ground truth (because we don't have it), we can also run the model autoregressively.
+
 
 # + colab={} colab_type="code" id="Cg8oQ75Ulvld"
 def autoregressive_predict(
@@ -656,6 +658,7 @@ _ = plot.draw()
 # 2. If modules are instantiated in the same order, they'll have the same names in different functions.
 #
 # Here, we rely on method #2 to create a fast autoregressive prediction.
+
 
 # + colab_type="text" id="qGkr2gf2oALo"
 @hk.transform

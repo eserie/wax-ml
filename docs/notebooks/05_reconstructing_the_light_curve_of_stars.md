@@ -625,6 +625,7 @@ plot = (
 _ = plot.draw()
 ```
 
+
 <!-- #region colab_type="text" id="yr7jrOL3ki-b" -->
 ### Sampling
 
@@ -632,6 +633,7 @@ The point of training models is so that they can make predictions! How can we ge
 
 If we're allowed to feed in the ground truth, we can just run the original model's `apply` function.
 <!-- #endregion -->
+
 
 ```python colab={} colab_type="code" id="f2qETEqXLT1N"
 def plot_samples(truth: np.ndarray, prediction: np.ndarray) -> gg.ggplot:
@@ -665,6 +667,7 @@ del sample_x, predicted
 <!-- #region colab_type="text" id="tDyGshz_lwrM" -->
 If we can't feed in the ground truth (because we don't have it), we can also run the model autoregressively.
 <!-- #endregion -->
+
 
 ```python colab={} colab_type="code" id="Cg8oQ75Ulvld"
 def autoregressive_predict(
@@ -719,6 +722,7 @@ plot += gg.geom_vline(xintercept=context.shape[1], linetype="dashed")
 _ = plot.draw()
 ```
 
+
 <!-- #region colab_type="text" id="qGkr2gf2oALo" -->
 #### Sharing parameters with a different function.
 
@@ -735,6 +739,7 @@ This can be achieved through a combination of two techniques:
 
 Here, we rely on method #2 to create a fast autoregressive prediction.
 <!-- #endregion -->
+
 
 ```python colab_type="text" id="qGkr2gf2oALo"
 @hk.transform

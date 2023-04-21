@@ -478,6 +478,7 @@ CROSS_VAL_GYM = cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM)
 plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 ```
 
+
 ### Conclusions
 
 - The NEWTON and ADAGRAD optimizers are the faster to converge.
@@ -485,6 +486,7 @@ plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 
 
 ### Fixed setting
+
 
 ```python
 @add_batch

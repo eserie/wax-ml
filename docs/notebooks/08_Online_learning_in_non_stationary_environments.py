@@ -457,6 +457,7 @@ plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM)
 
 # ### Fixed setting
 
+
 # +
 @add_batch
 def gym_loop_newton(eps):

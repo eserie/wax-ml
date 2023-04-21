@@ -109,6 +109,7 @@ pd.Series(y).plot()
 
 # First let's run the filter with it's initial random weights.
 
+
 # +
 def predict(y, X=None):
     return SNARIMAX(10, 0, 0)(y, X)

@@ -1,13 +1,12 @@
 ---
 jupyter:
   jupytext:
-    encoding: '# -*- coding: utf-8 -*-'
-    formats: ipynb,py,md
+    formats: ipynb,py:percent,md
     text_representation:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.17.2
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -17,7 +16,7 @@ jupyter:
 ```python
 # Uncomment to run the notebook in Colab
 # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# ! pip install -q --upgrade jax
 ```
 
 ```python
@@ -26,7 +25,7 @@ import jax
 ```
 
 ```python
-print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+print(f"jax backend {jax.default_backend()}")
 jax.devices()
 ```
 
@@ -56,7 +55,7 @@ information pass through and thus guaranty a data processing that respects causa
 
 The buffering mechanism used in the case of higher frequencies works with a fixed
 buffer size (see the WAX-ML module
-[`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))
+[`wax.modules.Buffer`](https://eserie.github.io/wax-ml/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer))
 which allows us to use JAX / XLA optimizations and have efficient processing.
 
 Let's illustrate with a small example how `wax.stream.Stream` synchronizes data streams.

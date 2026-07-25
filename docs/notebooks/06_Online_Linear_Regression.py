@@ -1,35 +1,37 @@
-# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py,md
+#     formats: ipynb,py:percent,md
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.14.5
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# +
+# %%
 # Uncomment to run the notebook in Colab
 # # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
-# -
+# # ! pip install -q --upgrade jax
 
+# %%
 # check available devices
 import jax
 
-print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+# %%
+print(f"jax backend {jax.default_backend()}")
 jax.devices()
 
+# %% [markdown]
 # # 🦎 Online linear regression with a non-stationary environment 🦎
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb)
 
+# %% [markdown]
 # We implement an online learning non-stationary linear regression problem.
 #
 # We go there progressively by showing how a linear regression problem can be cast
@@ -56,61 +58,81 @@ jax.devices()
 # - WAX-ML modules: `OnlineSupervisedLearner`, `Lag`, `GymFeedBack`
 # - WAX-ML helper functions: `unroll`, `jit_init_apply`
 
+# %%
 # %pylab inline
 
+# %%
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import optax
 from matplotlib import pyplot as plt
 
+# %%
 from wax.compile import jit_init_apply
 from wax.modules import OnlineSupervisedLearner
 
+# %% [markdown]
 # ## Static Linear Regression
 
+# %% [markdown]
 # First, let's implement a simple linear regression
 
+# %% [markdown]
 # ### Generate data
 
+# %% [markdown]
 # Let's generate a batch of data:
 
+# %%
 seq = hk.PRNGSequence(42)
 X = jax.random.normal(next(seq), (100, 3))
 w_true = jnp.ones(3)
 
+# %% [markdown]
 # ### Define the model
 
+# %% [markdown]
 # We use the basic module `hk.Linear` which is a linear layer.
 # By default, it initializes the weights with random values from the truncated normal,
 # with a standard deviation of $1 / \sqrt{N}$ (See https://arxiv.org/abs/1502.03167v3)
 # where $N$ is the size of the inputs.
 
 
+# %%
 @jit_init_apply
 @hk.transform_with_state
 def linear_model(x):
     return hk.Linear(output_size=1, with_bias=False)(x)
 
 
+# %% [markdown]
 # ### Run the model
 
+# %% [markdown]
 # Let's run the model using WAX-ML `unroll` on the batch of data.
 
+# %%
 from wax.unroll import unroll
 
+# %%
 params, state = linear_model.init(next(seq), X[0])
 linear_model.apply(params, state, None, X[0])
 
+# %%
 Y_pred = unroll(linear_model, rng=next(seq))(X)
 
+# %%
 Y_pred.shape
 
 
+# %% [markdown]
 # ### Check cost
 
+# %% [markdown]
 # Let's look at the mean squared error for this non-trained model.
 
+# %%
 noise = jax.random.normal(next(seq), (100,))
 Y = X.dot(w_true) + noise
 L = ((Y - Y_pred) ** 2).sum(axis=1)
@@ -118,53 +140,68 @@ mean_loss = L.mean()
 assert mean_loss > 0
 
 
+# %% [markdown]
 # Let's look at the regret (cumulative sum of the loss) for the non-trained model.
 
+# %%
 plt.plot(L.cumsum())
 plt.title("Regret")
 
+# %% [markdown]
 # As expected, we have a linear regret when we did not train the model!
 
+# %% [markdown]
 # ## Online Linear Regression
 
 
+# %% [markdown]
 # We will now start training the model online.
 # For a review on online-learning methods see [1]
 #
 #
 # [1] [Elad Hazan, Introduction to Online Convex Optimization](https://arxiv.org/abs/1909.05207)
 
+# %% [markdown]
 # ### Define an optimizer
 
+# %%
 opt = optax.sgd(1e-3)
 
 
+# %% [markdown]
 # ### Define a loss
 
+# %% [markdown]
 # Since we are doing online learning, we need to define a local loss function:
 # $$
 # \ell_t(y, w, x) = \lVert y_t -  w \cdot x_t \rVert^2
 # $$
 
 
+# %%
 def linear_model(x):
     return hk.Linear(output_size=1, with_bias=False)(x)
 
 
+# %%
 def loss(y_pred, y):
     return jnp.mean(jnp.square(y_pred - y))
 
 
+# %% [markdown]
 # ### Define a learning strategy
 
 
+# %%
 def learner(x, y):
     return OnlineSupervisedLearner(linear_model, opt, loss)(x, y)
 
 
+# %% [markdown]
 # ### Generate data
 
 
+# %%
 def generate_many_observations(T=300, sigma=1.0e-2, rng=None):
     rng = jax.random.PRNGKey(42) if rng is None else rng
     X = jax.random.normal(rng, (T, 3))
@@ -175,18 +212,23 @@ def generate_many_observations(T=300, sigma=1.0e-2, rng=None):
     return (X, Y)
 
 
+# %%
 T = 3000
 X, Y = generate_many_observations(T)
 
+# %% [markdown]
 # ### Unroll the learner
 
+# %%
 (output, info) = unroll(learner, rng=next(seq))(X, Y)
 
+# %% [markdown]
 # ### Plot the regret
 
+# %% [markdown]
 # Let's look at the loss and regret over time.
 
-# +
+# %%
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 axs[0].plot(info.loss.cumsum())
 axs[0].set_title("Regret")
@@ -194,11 +236,10 @@ axs[0].set_title("Regret")
 axs[1].plot(info.params["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 
-
-# -
-
+# %% [markdown]
 # We have sub-linear regret!
 
+# %% [markdown]
 # ##  Online learning with Gym
 #
 # Now we will recast the online linear regression learning task as a reinforcement learning task
@@ -208,16 +249,20 @@ axs[1].set_title("Weight[0,0]")
 # - obserbations (`obs`) : pairs  `(x, y)` of features and labels
 # - raw observations (`raw_obs`): pairs `(x, noise)`  of features and noise.
 
+# %% [markdown]
 # ### Linear regression agent
 
+# %% [markdown]
 # In WAX-ML, an agent is a simple function with the following API:
 # <div align="center">
 # <img src="../tikz/agent.png" alt="logo" width="20%"></img>
 # </div>
 
+# %% [markdown]
 # Let's define a simple linear regression agent with the elements we have defined so far.
 
 
+# %%
 def linear_regression_agent(obs):
     x, y = obs
 
@@ -232,13 +277,16 @@ def linear_regression_agent(obs):
     return OnlineSupervisedLearner(model, opt, loss)(x, y)
 
 
+# %% [markdown]
 # ### Linear regression environment
 
+# %% [markdown]
 # In WAX-ML, an environment is a simple function with the following API:
 # <div align="center">
 # <img src="../tikz/env.png" alt="logo" width="20%"></img>
 # </div>
 
+# %% [markdown]
 # Let's now define a linear regression environment that, for the moment,
 # have static weights.
 #
@@ -248,9 +296,11 @@ def linear_regression_agent(obs):
 # For the evaluation of the reward, we need the `Lag` module to evaluate the action of
 # the agent with the labels generated in the previous time step.
 
+# %%
 from wax.modules import Lag
 
 
+# %%
 def stationary_linear_regression_env(action, raw_obs):
     # Only the environment now the true value of the parameters
     w_true = -jnp.ones(3)
@@ -274,11 +324,13 @@ def stationary_linear_regression_env(action, raw_obs):
     return reward, obs, {}
 
 
+# %% [markdown]
 # ### Generate raw observation
 #
 # Let's define a function that generate the raw observation:
 
 
+# %%
 def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
     rng = jax.random.PRNGKey(42) if rng is None else rng
     X = jax.random.normal(rng, (T, 3))
@@ -286,8 +338,10 @@ def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
     return (X, noise)
 
 
+# %% [markdown]
 # ### Implement Feedback
 
+# %% [markdown]
 # We are now ready to set things up with the `GymFeedback` module implemented in WAX-ML.
 #
 # It implements the following feedback loop:
@@ -295,47 +349,58 @@ def generate_many_raw_observations(T=300, sigma=1.0e-2, rng=None):
 # <img src="../tikz/gymfeedback.png" alt="logo" width="50%"></img>
 # </div>
 
+# %% [markdown]
 # Equivalently, it can be described with the pair of `init` and `apply` functions:
 # <div align="center">
 # <img src="../tikz/gymfeedback_init_apply.png" alt="logo" width="100%"></img>
 # </div>
 
+# %%
 from wax.modules import GymFeedback
 
 
+# %%
 def gym_fun(raw_obs):
     return GymFeedback(
         linear_regression_agent, stationary_linear_regression_env, return_action=True
     )(raw_obs)
 
 
+# %% [markdown]
 # And now we can unroll it on a sequence of raw observations!
 
+# %%
 seq = hk.PRNGSequence(42)
 T = 3000
 raw_observations = generate_many_raw_observations(T)
 rng = next(seq)
 (gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(raw_observations)
 
+# %% [markdown]
 # Let's visualize the outputs.
 #
 #
 # We now use `pd.Series` to represent the reward sequence since its first value is Nan due to the use of the lag operator.
 
+# %%
 import pandas as pd
 
+# %%
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 pd.Series(gym_output.reward).cumsum().plot(ax=axs[0], title="Regret")
 axs[1].plot(info.params["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 
+# %% [markdown]
 # ## Non-stationary environment
 
+# %% [markdown]
 # Now, let's implement a non-stationary environment.
 #
 # We implement it so that the sign of the weight is reversed after 2000$ steps.
 
 
+# %%
 class NonStationaryEnvironment(hk.Module):
     def __call__(self, action, raw_obs):
         step = hk.get_state("step", [], init=lambda *_: 0)
@@ -372,16 +437,19 @@ class NonStationaryEnvironment(hk.Module):
         return reward, obs, {}
 
 
+# %% [markdown]
 # Now let's run a gym simulation to see how the agent adapt to the
 # change of environment.
 
 
+# %%
 def gym_fun(raw_obs):
     return GymFeedback(
         linear_regression_agent, NonStationaryEnvironment(), return_action=True
     )(raw_obs)
 
 
+# %%
 T = 6000
 raw_observations = generate_many_raw_observations(T)
 rng = jax.random.PRNGKey(42)
@@ -389,14 +457,17 @@ rng = jax.random.PRNGKey(42)
     raw_observations,
 )
 
+# %%
 import pandas as pd
 
+# %%
 fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 pd.Series(gym_output.reward).cumsum().plot(ax=axs[0], title="Regret")
 axs[1].plot(gym_info.agent.params["linear"]["w"][:, 0, 0])
 axs[1].set_title("Weight[0,0]")
 # plt.savefig("../_static/online_linear_regression_regret.png")
 
+# %% [markdown]
 # It adapts!
 #
 # The regret first converges, then jumps on step 2000 and finally readjusts to the new regime.

@@ -1,13 +1,12 @@
 ---
 jupyter:
   jupytext:
-    encoding: '# -*- coding: utf-8 -*-'
     formats: ipynb,py:light,md
     text_representation:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.17.2
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -73,7 +72,8 @@ from optax._src.base import OptState
 
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
-        time_series_model = lambda y, X: SNARIMAX(10)(y, X)
+        def time_series_model(y, X):
+            return SNARIMAX(10)(y, X)
 
     if opt is None:
         opt = optax.sgd(1.0e-3)
@@ -171,7 +171,7 @@ def scan_hparams_first_order():
     STEP_SIZE = jax.device_put(STEP_SIZE_idx.values)
 
     rng = jax.random.PRNGKey(42)
-    eps = sample_noise(rng)
+    eps = sample_noise_base(rng)
 
     res = {}
     for optimizer in tqdm(OPTIMIZERS):
@@ -193,7 +193,7 @@ def scan_hparams_first_order():
     BEST_STEP_SIZE = {}
     BEST_GYM = {}
 
-    for name, (gym, info) in res.items():
+    for name, (gym, _info) in res.items():
         loss = (
             pd.DataFrame(-gym.reward, columns=STEP_SIZE).iloc[LEARN_TIME_SLICE].mean()
         )
@@ -224,7 +224,7 @@ COLORS = sns.color_palette("hls")
 ```python
 def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
     plt.figure()
-    eps = sample_noise(CROSS_VAL_RNG)
+    eps = sample_noise_base(CROSS_VAL_RNG)
     CROSS_VAL_GYM = {}
     ax = None
 
@@ -238,7 +238,7 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
         ax = measure(gym.reward).plot(
             ax=ax,
             color=COLORS[i],
-            label=(f"(TRAIN) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"),
+            label=(f"(TRAIN) -  {name}    " rf"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"),
             style="--",
         )
 
@@ -262,7 +262,7 @@ def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
             color=COLORS[i],
             ylim=(MIN_ERR, MAX_ERR),
             label=(
-                f"(VALIDATE) -  {name}    " f"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"
+                f"(VALIDATE) -  {name}    " rf"-    $\eta$={BEST_STEP_SIZE[name]:.2e}"
             ),
         )
     plt.legend(bbox_to_anchor=(1.0, 1.0))
@@ -299,7 +299,7 @@ def scan_hparams_newton():
     sim = unroll_transform_with_state(gym_loop_scan_hparams)
 
     rng = jax.random.PRNGKey(42)
-    eps = sample_noise(rng)
+    eps = sample_noise_base(rng)
 
     params, state = sim.init(rng, eps)
     res_newton, state = sim.apply(params, state, rng, eps)
@@ -347,7 +347,7 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
     sim = unroll_transform_with_state(gym_loop)
 
     rng = jax.random.PRNGKey(44)
-    eps = sample_noise(rng)
+    eps = sample_noise_base(rng)
     params, state = sim.init(rng, eps)
     (gym, info), state = sim.apply(params, state, rng, eps)
 
@@ -356,7 +356,7 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
     ax = measure(BEST_NEWTON_GYM.reward).plot(
         ax=ax,
         color=COLORS[i],
-        label=f"(TRAIN) -  Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
+        label=rf"(TRAIN) -  Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
         ylim=(MIN_ERR, MAX_ERR),
         style="--",
     )
@@ -365,7 +365,7 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
         ax=ax,
         color=COLORS[i],
         ylim=(MIN_ERR, MAX_ERR),
-        label=f"(VALIDATE) - Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
+        label=rf"(VALIDATE) - Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
     )
     ax.legend(bbox_to_anchor=(1.0, 1.0))
     ax.plot()
@@ -400,7 +400,7 @@ def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
 
         for i, (name, gym) in enumerate(BEST_GYM.items()):
             MEASUR_FUNC(gym.reward).plot(
-                label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
+                label=rf"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
                 ylim=(MIN_ERR, MAX_ERR),
                 color=COLORS[i],
             )
@@ -409,7 +409,7 @@ def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
         (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
         gym = BEST_NEWTON_GYM
         MEASUR_FUNC(gym.reward).plot(
-            label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
+            label=rf"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",
             ylim=(MIN_ERR, MAX_ERR),
             color=COLORS[i],
         )
@@ -447,7 +447,7 @@ def build_env():
     return env
 
 
-def sample_noise(rng):
+def sample_noise_base(rng):
     eps = jax.random.normal(rng, (T, 20)) * 0.3
     return eps
 
@@ -496,7 +496,7 @@ def gym_loop_newton(eps):
 
 def run_fixed_setting():
     rng = jax.random.PRNGKey(42)
-    eps = sample_noise(rng)
+    eps = sample_noise_base(rng)
     sim = unroll_transform_with_state(gym_loop_newton)
     params, state = sim.init(rng, eps)
     (gym, info), state = sim.apply(params, state, rng, eps)
@@ -520,7 +520,6 @@ run_fixed_setting()
 let's build an environment corresponding to "setting 2" in [1]
 
 ```python
-from wax.modules import Counter
 
 
 def build_env():
@@ -544,7 +543,7 @@ def build_env():
     return env
 
 
-def sample_noise(rng):
+def sample_noise_uniform(rng):
     eps = jax.random.uniform(rng, (T, 20), minval=-0.5, maxval=0.5)
     return eps
 
@@ -601,7 +600,6 @@ use the 5000 to 10000 steps to optimize the hyper parameters.
 This allows us to evaluate how the models "over-optimize".
 
 ```python
-from wax.modules import Counter
 
 
 def build_env():
@@ -628,7 +626,7 @@ def build_env():
     return env
 
 
-def sample_noise(rng):
+def sample_noise_long(rng):
     eps = jax.random.uniform(rng, (Tlong, N_BATCH), minval=-0.5, maxval=0.5)
     return eps
 
@@ -720,13 +718,12 @@ run_fixed_setting()
 let's build an environment corresponding to "setting 4" in [1]
 
 ```python
-from wax.modules import Counter
 
 
 def build_env():
     def env(action, obs):
         y_pred, eps = action, obs
-        t = Counter()()
+        _ = Counter()()  # time step counter (unused in this context)
         ar_coefs = jnp.array([0.11, -0.5])
 
         ma_coefs = jnp.array([0.41, -0.39, -0.685, 0.1])
@@ -749,7 +746,7 @@ def build_env():
     return env
 
 
-def sample_noise(rng):
+def sample_noise_normal(rng):
     eps = jax.random.normal(rng, (T, N_BATCH)) * 0.3
     return eps
 

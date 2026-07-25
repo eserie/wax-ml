@@ -1,13 +1,12 @@
 ---
 jupyter:
   jupytext:
-    encoding: '# -*- coding: utf-8 -*-'
-    formats: ipynb,py,md
+    formats: ipynb,py:percent,md
     text_representation:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.17.2
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -17,7 +16,7 @@ jupyter:
 ```python
 # Uncomment to run the notebook in Colab
 # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# ! pip install -q --upgrade jax
 ```
 
 ```python
@@ -29,8 +28,9 @@ jupyter:
 import io
 import warnings
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, Optional, TypeVar
+from typing import Any, NamedTuple, TypeVar
 ```
 
 ```python
@@ -57,7 +57,7 @@ from wax.unroll import unroll
 ```
 
 ```python
-print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+print(f"jax backend {jax.default_backend()}")
 jax.devices()
 ```
 
@@ -147,7 +147,7 @@ raw_dataframe.describe().T.to_xarray()
 
 ```python
 stars = raw_dataframe.columns
-stars = sorted(list(set([i.split("_")[0] for i in stars])))
+stars = sorted({i.split("_")[0] for i in stars})
 print(f"The number of stars available is: {len(stars)}")
 print(f"star identifiers: {stars}")
 ```
@@ -332,12 +332,6 @@ def split_feature_target(
     rng=None,
 ) -> Pair:
     def prepare_xy(data):
-        buffer = Buffer(look_back + 1)(data)
-        x = buffer[:-1]
-        y = buffer[-1]
-        return x, y
-
-    def prepare_xy(data):
         y = Buffer(look_back)(data)
         x = Lag(1)(y)
         return x, y
@@ -350,7 +344,7 @@ def split_feature_target(
 
         B = x.shape[0]
         idx = jnp.arange(B)
-        idx = jax.random.shuffle(rng, idx)
+        idx = jax.random.permutation(rng, idx)
 
         x = x[idx]
         y = y[idx]
@@ -389,7 +383,7 @@ def split_feature_target(
 
 ```python
 def split_train_validation(
-    dataframe, train_size, look_back, scaler: Optional[Callable] = None
+    dataframe, train_size, look_back, scaler: Callable | None = None
 ) -> TrainSplit:
     # prepare scaler
     train_df = dataframe.iloc[:train_size]
@@ -551,10 +545,10 @@ def train_model(
         step, params, opt_state, rng, _ = train_state
         if rng is not None:
             (rng,) = jax.random.split(rng, 1)
-        l, grads = jax.value_and_grad(model_with_loss.apply)(params, rng, x, y)
+        loss, grads = jax.value_and_grad(model_with_loss.apply)(params, rng, x, y)
         grads, opt_state = opt.update(grads, opt_state)
         params = optax.apply_updates(params, grads)
-        return TrainState(step + 1, params, opt_state, rng, l)
+        return TrainState(step + 1, params, opt_state, rng, loss)
 
     # Initialize state.
     def init():
@@ -564,7 +558,7 @@ def train_model(
         return TrainState(0, params, opt_state, rng, jnp.inf)
 
     def _format_results(records):
-        records = {key: jnp.stack(l) for key, l in records.items()}
+        records = {key: jnp.stack(values) for key, values in records.items()}
         return records
 
     records = defaultdict(list)

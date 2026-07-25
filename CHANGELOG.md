@@ -1,6 +1,6 @@
 # Change log
 
-Best viewed [here](https://wax-ml.readthedocs.io/en/latest/changelog.html).
+Best viewed [here](https://eserie.github.io/wax-ml/changelog.html).
 
 
 <!--

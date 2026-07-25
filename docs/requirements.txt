@@ -1,1 +1,22 @@
-.[dev,complete,docs]
+# Requirements for building the documentation.
+#
+# The tutorials are executed at build time (see nb_execution_mode in conf.py), so
+# this must install the runtime extras they exercise, not just Sphinx.
+#
+# The documentation tooling -- Sphinx, MyST-NB, jupyter-cache -- lives in the "dev"
+# dependency group of pyproject.toml. Groups are a uv/PEP 735 notion that plain pip
+# cannot install, so they are repeated here for pip-based builders such as Read the
+# Docs. The GitHub Actions build uses uv and resolves them from the lock file instead.
+.[optional]
+
+sphinx>=8.1.3
+sphinx-autodoc-typehints>=3.0.1
+sphinx-rtd-theme>=3.0.2
+myst-nb>=1.2.0
+jupyter-cache>=1.0.0
+ipykernel>=6.29.5
+matplotlib>=3.10.3
+
+# Notebook 05 downloads its dataset directly. requests only reaches the environment
+# as a transitive dependency of pooch, so depend on it explicitly.
+requests>=2.32.0

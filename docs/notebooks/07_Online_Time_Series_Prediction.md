@@ -1,13 +1,12 @@
 ---
 jupyter:
   jupytext:
-    encoding: '# -*- coding: utf-8 -*-'
     formats: ipynb,py:light,md
     text_representation:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.17.2
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -127,7 +126,7 @@ eps = jax.random.normal(rng, (10,))
 params, state = sim.init(rng, y)
 (y_pred, _), state = sim.apply(params, state, rng, y)
 
-pd.Series((y - y_pred)).plot()
+pd.Series(y - y_pred).plot()
 ```
 
 ```python
@@ -315,7 +314,8 @@ from optax._src.base import OptState
 ```python
 def build_agent(time_series_model=None, opt=None, embargo=1):
     if time_series_model is None:
-        time_series_model = lambda y, X: SNARIMAX(10)(y, X)
+        def time_series_model(y, X):
+            return SNARIMAX(10)(y, X)
 
     if opt is None:
         opt = optax.sgd(1.0e-3)
@@ -661,7 +661,7 @@ for name, gym in BEST_GYM.items():
         .expanding()
         .mean()
         .plot(
-            label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.15)
+            label=rf"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.15)
         )
     )
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -764,7 +764,7 @@ print("Best newton parameters: ", STEP_SIZE, NEWTON_EPS)
 ```python
 for name, gym in BEST_GYM.items():
     pd.Series(-gym.reward).rolling(5000, min_periods=5000).mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.1)
+        label=rf"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.1)
     )
 
 gym = BEST_NEWTON_GYM
@@ -773,7 +773,7 @@ ax = (
     .rolling(5000, min_periods=5000)
     .mean()
     .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+        label=rf"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
     )
 )
 ax.legend(bbox_to_anchor=(1.0, 1.0))
@@ -783,7 +783,7 @@ plt.title("Rolling mean of loss (5000) time-steps")
 ```python
 for name, gym in BEST_GYM.items():
     pd.Series(-gym.reward).expanding().mean().plot(
-        label=f"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.15)
+        label=rf"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.15)
     )
 gym = BEST_NEWTON_GYM
 ax = (
@@ -791,7 +791,7 @@ ax = (
     .expanding()
     .mean()
     .plot(
-        label=f"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
+        label=rf"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}"
     )
 )
 ax.legend(bbox_to_anchor=(1.0, 1.0))

@@ -1,34 +1,36 @@
-# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py,md
+#     formats: ipynb,py:percent,md
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.14.5
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# +
+# %%
 # Uncomment to run the notebook in Colab
 # # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
-# -
+# # ! pip install -q --upgrade jax
 
+# %%
 # %matplotlib inline
 
 
+# %%
 import io
 import warnings
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, Optional, TypeVar
+from typing import Any, NamedTuple, TypeVar
 
+# %%
 import haiku as hk
 import jax
 import jax.numpy as jnp
@@ -42,19 +44,23 @@ import requests
 from sklearn.preprocessing import MinMaxScaler
 from tqdm.auto import tqdm
 
+# %%
 from wax.accessors import register_wax_accessors
 from wax.compile import jit_init_apply
 from wax.encode import Encoder
 from wax.modules import Buffer, FillNanInf, Lag, RollingMean
 from wax.unroll import unroll
 
-print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+# %%
+print(f"jax backend {jax.default_backend()}")
 jax.devices()
 
+# %% [markdown]
 # # 🔭 Reconstructing the light curve of stars with LSTM 🔭
 #
 # [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/05_reconstructing_the_light_curve_of_stars.ipynb)
 
+# %% [markdown]
 # Let's take a walk through the stars...
 #
 # This notebook is based on the study done in
@@ -75,11 +81,13 @@ jax.devices()
 #
 # The purpose of this notebook is only to demonstrate how WAX-ML can be used when applying a "standard" machine learning workflow, here LSTM, to analyze time series.
 
+# %% [markdown]
 # ## Download the data
 
+# %%
 register_wax_accessors()
 
-# + tags=["parameters"]
+# %% tags=["parameters"]
 # Parameters
 STAR = "007609553"
 SEQ_LEN = 64
@@ -91,8 +99,8 @@ RECORD_FREQ = 100
 TOTAL_LEN = None
 TRAIN_DATE = "2016"
 CACHE_DIR = Path("./cached_data/")
-# -
 
+# %%
 # %%time
 filename = CACHE_DIR / "kep_lightcurves.parquet"
 try:
@@ -115,36 +123,45 @@ except FileNotFoundError:
     print(f"data saved in {filename}")
 
 
+# %%
 # shortening of data to speed up the execution of the notebook in the CI
 if TOTAL_LEN:
     raw_dataframe = raw_dataframe.iloc[:TOTAL_LEN]
 
 
+# %% [markdown]
 # Let's visualize the description of this dataset:
 
+# %%
 raw_dataframe.describe().T.to_xarray()
 
 
+# %%
 stars = raw_dataframe.columns
-stars = sorted(list(set([i.split("_")[0] for i in stars])))
+stars = sorted({i.split("_")[0] for i in stars})
 print(f"The number of stars available is: {len(stars)}")
 print(f"star identifiers: {stars}")
 
+# %%
 dataframe = raw_dataframe[[i + "_rscl" for i in stars]].rename(
     columns=lambda c: c.replace("_rscl", "")
 )
 dataframe.columns.names = ["star"]
 dataframe.shape
 
+# %%
 if NUM_STARS:
     columns = dataframe.columns.tolist()
     columns.remove(STAR)
     dataframe = dataframe[[STAR] + columns[: NUM_STARS - 1]]
 
+# %% [markdown]
 # ## Rolling mean
 
+# %% [markdown]
 # We will smooth the data by applying a rolling mean with a window of 100 periods.
 
+# %% [markdown]
 # ### Count nan values
 #
 # But before since the dataset has some nan values, we will extract few statistics
@@ -154,55 +171,72 @@ if NUM_STARS:
 # option for the dataframe accessor `.wax.stream`.
 
 
+# %% [markdown]
 # Let's apply the `Buffer` module to the data:
 
+# %%
 buffer, _ = dataframe.wax.stream(format_outputs=False).apply(lambda x: Buffer(100)(x))
 
+# %%
 assert isinstance(buffer, jnp.ndarray)
 
+# %% [markdown]
 # Equivalently, we can use wax `unroll` function.
 
 
+# %%
 buffer = unroll(lambda x: Buffer(100)(x))(jax.device_put(dataframe.values))
 
+# %% [markdown]
 # Let's describe the statistic of nans with pandas:
 
+# %%
 count_nan = jnp.isnan(buffer).sum(axis=1)
 pd.DataFrame(onp.array(count_nan)).stack().describe().astype(int)
 
+# %% [markdown]
 # ### Computing the rolling mean
 
+# %% [markdown]
 # We will choose a `min_periods` of 5 in order to keep at leas 75% of the points.
 
+# %%
 # %%time
 dataframe_mean, _ = dataframe.wax.stream().apply(
     lambda x: RollingMean(100, min_periods=5)(x)
 )
 
+# %%
 dataframe.iloc[:, :2].plot()
 
+# %% [markdown]
 # ## Forecasting with Machine Learning
 #
 # We need two forecast in this data, if you look with attention you'll see micro holes and big holes.
 
 
+# %%
 T = TypeVar("T")
 
 
+# %%
 class Pair(NamedTuple):
     x: T
     y: T
 
 
+# %%
 class TrainSplit(NamedTuple):
     train: T
     validation: T
 
 
+# %%
 gg.theme_set(gg.theme_bw())
 warnings.filterwarnings("ignore")
 
 
+# %%
 plt.rcParams["figure.figsize"] = 18, 8
 fig, (ax, lax) = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 1]})
 dataframe.plot(ax=ax, title="raw data")
@@ -210,6 +244,7 @@ ax.legend(bbox_to_anchor=(0, 0, 1, 1), bbox_transform=lax.transAxes)
 lax.axis("off")
 
 
+# %%
 plt.rcParams["figure.figsize"] = 18, 8
 fig, (ax, lax) = plt.subplots(ncols=2, gridspec_kw={"width_ratios": [4, 1]})
 dataframe_mean.plot(ax=ax, title="Smoothed data")
@@ -217,11 +252,14 @@ ax.legend(bbox_to_anchor=(0, 0, 1, 1), bbox_transform=lax.transAxes)
 lax.axis("off")
 # -
 
+# %% [markdown]
 # ### Normalize data
 
+# %%
 dataframe_mean.stack().hist(bins=100, log=True)
 
 
+# %%
 def min_max_scaler(values: pd.DataFrame, output_format: str = "dataframe") -> Encoder:
     scaler = MinMaxScaler(feature_range=(0, 1))
     scaler.fit(values)
@@ -254,17 +292,22 @@ def min_max_scaler(values: pd.DataFrame, output_format: str = "dataframe") -> En
     return Encoder(encode, decode)
 
 
+# %% [markdown]
 # -
 
+# %%
 scaler = min_max_scaler(dataframe_mean)
 dataframe_normed = scaler.encode(dataframe_mean)
 assert (scaler.decode(dataframe_normed) - dataframe_mean).stack().abs().max() < 1.0e-4
 
+# %%
 dataframe_normed.stack().hist(bins=100)
 
+# %% [markdown]
 # ### Prepare train / validation datasets
 
 
+# %%
 def split_feature_target(
     dataframe,
     look_back=SEQ_LEN,
@@ -273,12 +316,6 @@ def split_feature_target(
     min_periods_ratio: float = 0.8,
     rng=None,
 ) -> Pair:
-    def prepare_xy(data):
-        buffer = Buffer(look_back + 1)(data)
-        x = buffer[:-1]
-        y = buffer[-1]
-        return x, y
-
     def prepare_xy(data):
         y = Buffer(look_back)(data)
         x = Lag(1)(y)
@@ -292,7 +329,7 @@ def split_feature_target(
 
         B = x.shape[0]
         idx = jnp.arange(B)
-        idx = jax.random.shuffle(rng, idx)
+        idx = jax.random.permutation(rng, idx)
 
         x = x[idx]
         y = y[idx]
@@ -323,13 +360,13 @@ def split_feature_target(
     return Pair(x, y)
 
 
-# +
+# %%
 # split_feature_target(dataframe)
-# -
 
 
+# %%
 def split_train_validation(
-    dataframe, train_size, look_back, scaler: Optional[Callable] = None
+    dataframe, train_size, look_back, scaler: Callable | None = None
 ) -> TrainSplit:
     # prepare scaler
     train_df = dataframe.iloc[:train_size]
@@ -358,19 +395,24 @@ def split_train_validation(
     return TrainSplit(train_xy, valid_xy)
 
 
+# %%
 TRAIN_SIZE
 
+# %%
 print(f"Look at star: {STAR}")
 train, valid = split_train_validation(dataframe_normed[[STAR]], TRAIN_SIZE, SEQ_LEN)
 
+# %%
 train[0].shape, train[1].shape, valid[0].shape, valid[1].shape
 
+# %%
 # TRAIN_SIZE, VALID_SIZE = len(train.x), len(valid.x)
 print(
     f"effective train_size = {len(train.x)}, " f"effective valid size= {len(valid.x)}"
 )
 
 
+# %%
 # Plot an observation/target pair.
 rng = jax.random.PRNGKey(42)
 batch_plot = jax.random.choice(rng, len(train[0]))
@@ -387,9 +429,11 @@ plot = (
 _ = plot.draw()
 
 
+# %% [markdown]
 # ### Dataset iterator
 
 
+# %%
 class Dataset:
     """An iterator over a numpy array, revealing batch_size elements at a time."""
 
@@ -414,7 +458,7 @@ class Dataset:
         return Pair(x, y)
 
 
-# + [markdown] colab_type="text" id="LZGw5Jdvjmqh"
+# %% [markdown] colab_type="text" id="LZGw5Jdvjmqh"
 # ### Training an LSTM
 #
 # To train the LSTM, we define a Haiku function which unrolls the LSTM over the input sequence, generating predictions for all output values. The LSTM always starts with its initial state at the start of the sequence.
@@ -422,7 +466,7 @@ class Dataset:
 # The Haiku function is then transformed into a pure function through `hk.transform`, and is trained with Adam on an L2 prediction loss.
 
 
-# + colab={} colab_type="code" id="nacnTj5ejIK5"
+# %% colab={} colab_type="code" id="nacnTj5ejIK5"
 def unroll_net(seqs: jnp.ndarray):
     """Unrolls an LSTM over seqs, mapping each output to a scalar."""
     # seqs is [T, B, F].
@@ -437,11 +481,11 @@ def unroll_net(seqs: jnp.ndarray):
     return hk.BatchApply(hk.Linear(1))(outs), state
 
 
-# + colab={} colab_type="code" id="nacnTj5ejIK5"
+# %% colab={} colab_type="code" id="nacnTj5ejIK5"
 model = jit_init_apply(hk.transform(unroll_net))
 
 
-# +
+# %%
 @jax.jit
 def loss(pred, y):
     return jnp.mean(jnp.square(pred - y))
@@ -452,7 +496,7 @@ def model_with_loss(x, y):
     return loss(pred, y)
 
 
-# + colab={} colab_type="code" id="nacnTj5ejIK5"
+# %% colab={} colab_type="code" id="nacnTj5ejIK5"
 class TrainState(NamedTuple):
     step: int
     params: Any
@@ -478,10 +522,10 @@ def train_model(
         step, params, opt_state, rng, _ = train_state
         if rng is not None:
             (rng,) = jax.random.split(rng, 1)
-        l, grads = jax.value_and_grad(model_with_loss.apply)(params, rng, x, y)
+        loss, grads = jax.value_and_grad(model_with_loss.apply)(params, rng, x, y)
         grads, opt_state = opt.update(grads, opt_state)
         params = optax.apply_updates(params, grads)
-        return TrainState(step + 1, params, opt_state, rng, l)
+        return TrainState(step + 1, params, opt_state, rng, loss)
 
     # Initialize state.
     def init():
@@ -491,7 +535,7 @@ def train_model(
         return TrainState(0, params, opt_state, rng, jnp.inf)
 
     def _format_results(records):
-        records = {key: jnp.stack(l) for key, l in records.items()}
+        records = {key: jnp.stack(values) for key, values in records.items()}
         return records
 
     records = defaultdict(list)
@@ -518,7 +562,7 @@ def train_model(
                 return train_state, _format_results(records)
 
 
-# + colab={} colab_type="code" id="AssgDctokbl5"
+# %% colab={} colab_type="code" id="AssgDctokbl5"
 # %%time
 train, valid = split_train_validation(dataframe_normed[[STAR]], TRAIN_SIZE, SEQ_LEN)
 train_ds = Dataset(train, BATCH_SIZE)
@@ -534,10 +578,10 @@ train_state, records = train_model(
     record_freq=RECORD_FREQ,
 )
 
-# +
+# %%
 # train_state.params
-# -
 
+# %%
 # Plot losses
 losses = pd.DataFrame(records)
 df = pd.melt(losses, id_vars=["step"], value_vars=["train_loss", "valid_loss"])
@@ -550,7 +594,7 @@ plot = (
 _ = plot.draw()
 
 
-# + [markdown] colab_type="text" id="yr7jrOL3ki-b"
+# %% [markdown] colab_type="text" id="yr7jrOL3ki-b"
 # ### Sampling
 #
 # The point of training models is so that they can make predictions! How can we generate predictions with the trained model?
@@ -558,7 +602,7 @@ _ = plot.draw()
 # If we're allowed to feed in the ground truth, we can just run the original model's `apply` function.
 
 
-# + colab={} colab_type="code" id="f2qETEqXLT1N"
+# %% colab={} colab_type="code" id="f2qETEqXLT1N"
 def plot_samples(truth: np.ndarray, prediction: np.ndarray) -> gg.ggplot:
     assert truth.shape == prediction.shape
     df = pd.DataFrame(
@@ -571,7 +615,7 @@ def plot_samples(truth: np.ndarray, prediction: np.ndarray) -> gg.ggplot:
     return plot
 
 
-# + colab={} colab_type="code" id="KOuK1egilGD0"
+# %% colab={} colab_type="code" id="KOuK1egilGD0"
 # Grab a sample from the validation set.
 sample_x, sample_y = next(valid_ds)
 sample_x = sample_x[:1]  # Shrink to batch-size 1.
@@ -584,16 +628,14 @@ plot = plot_samples(sample_y, predicted)
 plot.draw()
 del sample_x, predicted
 
-
-# -
-
+# %% [markdown]
 # ### Run autoregressively
 
-# + [markdown] colab_type="text" id="tDyGshz_lwrM"
+# %% [markdown] colab_type="text" id="tDyGshz_lwrM"
 # If we can't feed in the ground truth (because we don't have it), we can also run the model autoregressively.
 
 
-# + colab={} colab_type="code" id="Cg8oQ75Ulvld"
+# %% colab={} colab_type="code" id="Cg8oQ75Ulvld"
 def autoregressive_predict(
     trained_params: hk.Params,
     context: jnp.ndarray,
@@ -617,7 +659,7 @@ def autoregressive_predict(
     return outs
 
 
-# + colab={} colab_type="code" id="Cg8oQ75Ulvld"
+# %% colab={} colab_type="code" id="Cg8oQ75Ulvld"
 sample_x, sample_y = next(valid_ds)
 sample_x = sample_x[:1]  # Shrink to batch-size 1.
 sample_y = sample_y[:1]  # Shrink to batch-size 1.
@@ -628,22 +670,22 @@ print(f"context_length = {context_length}")
 # Cut the batch-size 1 context from the start of the sequence.
 context = sample_x[:, :context_length]
 
-# + colab={} colab_type="code" id="Cg8oQ75Ulvld"
+# %% colab={} colab_type="code" id="Cg8oQ75Ulvld"
 # %%time
 # We can reuse params we got from training for inference - as long as the
 # declaration order is the same.
 predicted = autoregressive_predict(train_state.params, context, SEQ_LEN, pbar=True)
-# -
 
+# %%
 sample_y.shape, predicted.shape
 
-# + colab={} colab_type="code" id="Cg8oQ75Ulvld"
+# %% colab={} colab_type="code" id="Cg8oQ75Ulvld"
 plot = plot_samples(sample_y, predicted)
 plot += gg.geom_vline(xintercept=context.shape[1], linetype="dashed")
 _ = plot.draw()
 
 
-# + [markdown] colab_type="text" id="qGkr2gf2oALo"
+# %% [markdown] colab_type="text" id="qGkr2gf2oALo"
 # #### Sharing parameters with a different function.
 #
 # Unfortunately, this is a bit slow - we're doing O(N^2) computation for a sequence of length N.
@@ -660,7 +702,7 @@ _ = plot.draw()
 # Here, we rely on method #2 to create a fast autoregressive prediction.
 
 
-# + colab_type="text" id="qGkr2gf2oALo"
+# %% colab_type="text" id="qGkr2gf2oALo"
 @hk.transform
 def fast_autoregressive_predict_fn(context, seq_len):
     """Given a context, autoregressively generate the rest of a sine wave."""
@@ -694,23 +736,23 @@ fast_autoregressive_predict = jax.jit(
     fast_autoregressive_predict_fn.apply, static_argnums=(3,)
 )
 
-# + colab={} colab_type="code" id="WdKcHr6_n_ba"
+# %% colab={} colab_type="code" id="WdKcHr6_n_ba"
 # %%time
 # Reuse the same context from the previous cell.
 predicted = fast_autoregressive_predict(train_state.params, None, context, SEQ_LEN)
 
 
-# + colab={} colab_type="code" id="WdKcHr6_n_ba"
+# %% colab={} colab_type="code" id="WdKcHr6_n_ba"
 # The plots should be equivalent!
 plot = plot_samples(sample_y, predicted)
 plot += gg.geom_vline(xintercept=context.shape[1], linetype="dashed")
 _ = plot.draw()
-# -
 
 
+# %% [markdown]
 # # Sample trajectories
 
-# + colab={} colab_type="code" id="WdKcHr6_n_ba"
+# %% colab={} colab_type="code" id="WdKcHr6_n_ba"
 sample_x, sample_y = next(valid_ds)
 sample_x = sample_x[:1]  # Shrink to batch-size 1.
 sample_y = sample_y[:1]  # Shrink to batch-size 1.
@@ -728,36 +770,42 @@ predicted = fast_autoregressive_predict(train_state.params, None, context, SEQ_L
 plot = plot_samples(sample_y, predicted)
 plot += gg.geom_vline(xintercept=context.shape[1], linetype="dashed")
 _ = plot.draw()
-# -
 
 
+# %% [markdown]
 # ## timeit
 
-# + colab={} colab_type="code" id="9S0tkPXGrU3a"
+# %% colab={} colab_type="code" id="9S0tkPXGrU3a"
 # %timeit autoregressive_predict(train_state.params, context, SEQ_LEN)
 # %timeit fast_autoregressive_predict(train_state.params, None, context, SEQ_LEN)
-# -
+# %% [markdown]
 # ## Train all stars
 
 
+# %% [markdown]
 # ### Training
 
 
+# %%
 def split_train_validation_date(dataframe, date, look_back) -> TrainSplit:
     train_size = len(dataframe.loc[:date])
     return split_train_validation(dataframe, train_size, look_back)
 
 
+# %%
 # %%time
 train, valid = split_train_validation_date(dataframe_normed, TRAIN_DATE, SEQ_LEN)
 print(f"effective train size = {train[0].shape[1]}")
 
+# %%
 train[0].shape, train[1].shape, valid[0].shape, valid[1].shape
 
+# %%
 train_ds = Dataset(train, BATCH_SIZE)
 valid_ds = Dataset(valid, BATCH_SIZE)
 # del train, valid  # Don't leak temporaries.
 
+# %%
 # %%time
 train_state, records = train_model(
     model_with_loss,
@@ -768,6 +816,7 @@ train_state, records = train_model(
     record_freq=RECORD_FREQ,
 )
 
+# %%
 # Plot losses
 losses = pd.DataFrame(records)
 df = pd.melt(losses, id_vars=["step"], value_vars=["train_loss", "valid_loss"])
@@ -779,9 +828,10 @@ plot = (
 )
 _ = plot.draw()
 
+# %% [markdown]
 # ### Sampling
 
-# +
+# %%
 # Grab a sample from the validation set.
 sample_x, sample_y = next(valid_ds)
 sample_x = sample_x[:1]  # Shrink to batch-size 1.
@@ -793,11 +843,11 @@ predicted, _ = model.apply(train_state.params, None, sample_x)
 
 plot = plot_samples(sample_y, predicted)
 _ = plot.draw()
-# -
 
+# %% [markdown]
 # ### Run autoregressively
 
-# +
+# %%
 # %%time
 sample_x, sample_y = next(valid_ds)
 sample_x = sample_x[:1]  # Shrink to batch-size 1.

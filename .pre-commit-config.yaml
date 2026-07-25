@@ -24,3 +24,12 @@ repos:
   hooks:
   - id: jupytext
     args: [--sync]
+
+# Notebook outputs are build artifacts, not sources: the documentation regenerates
+# them (see nb_execution_mode in docs/conf.py). Stripping them keeps diffs readable
+# and, above all, keeps machine-local paths out of the repository -- warning
+# tracebacks embed the absolute path of whoever ran the notebook.
+- repo: https://github.com/kynan/nbstripout
+  rev: 0.8.1
+  hooks:
+  - id: nbstripout

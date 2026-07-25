@@ -4,7 +4,7 @@ Contributing to Wax
 You can contribute to WAX-ML by asking questions, proposing practical use cases
 or by contributing to the code.
 You can have a look at our
-[Developer Documentation](https://wax-ml.readthedocs.io/en/latest/developer.html).
+[Developer Documentation](https://eserie.github.io/wax-ml/developer.html).
 
 `WAX-ML` contributing guidelines are a fork of
 [Astropy's CONTRIBUTING](https://github.com/astropy/astropy/blob/main/CONTRIBUTING.md)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -7,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.14.5
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -17,14 +16,14 @@
 # + colab={"base_uri": "https://localhost:8080/"} id="2b295407-92c4-4818-bfb9-f445f6967f10" outputId="dc6c8e1b-2875-4287-d83a-4bdc4c9db80a"
 # Uncomment to run the notebook in Colab
 # # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# # ! pip install -q --upgrade jax
 
 # + id="ff30291d"
 # check available devices
 import jax
 
 # + colab={"base_uri": "https://localhost:8080/"} id="a3cdb104" outputId="a6f395c3-6ee3-4fe5-ce39-a02617a129ca"
-print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+print(f"jax backend {jax.default_backend()}")
 jax.devices()
 
 # + [markdown] id="1fa1808c"
@@ -124,7 +123,7 @@ type(df_ewma_wax_no_format)
 # Let's check the device on which the calculation was performed (if you have GPU available, this should be `GpuDevice` otherwise it will be `CpuDevice`):
 
 # + colab={"base_uri": "https://localhost:8080/"} id="38d3970c-04a5-4deb-93b3-a4f5f899e8f1" outputId="ba287d55-719a-47de-f959-9223effbe7a6"
-df_ewma_wax_no_format.device()
+df_ewma_wax_no_format.device
 
 # + [markdown] id="784ee16e"
 # Now we will see how to break down WAX-ML one-liners `<dataset>.ewm(...).mean()` or `<dataset>.stream(...).apply(...)` into 3 steps:
@@ -198,7 +197,7 @@ transform_dataset, jxs = stream.prepare(dataset, my_ewma_on_dataset)
 outputs = unroll(transform_dataset)(jxs)
 
 # + colab={"base_uri": "https://localhost:8080/"} id="3862a486-a5a2-4aa9-967a-59ebc32a18e1" outputId="b54b4e2c-a0ab-4a43-d331-d6b3d90707c6"
-outputs.device()
+outputs.device
 
 # + [markdown] id="b73f3252"
 # Once it has been compiled and "traced" by JAX, the function is much faster to execute:
@@ -270,7 +269,7 @@ outputs = transform_dataset(jxs)
 _ = outputs.block_until_ready()
 
 # + colab={"base_uri": "https://localhost:8080/"} id="e5b786b7-ecaf-4280-894b-aa8f65a0b78f" outputId="2e3c126e-9c9d-49b4-caa5-67f215944188"
-outputs.device()
+outputs.device
 
 # + [markdown] id="6fa51498"
 # ## Step(3) (format)
@@ -307,13 +306,13 @@ except RuntimeError as err:
 # Let's check that our data is on the GPUs:
 
 # + colab={"base_uri": "https://localhost:8080/"} id="d6f00e5d-1b85-483d-9856-35de3a954b13" outputId="9d5d0ec1-4899-4d8e-d9f6-2232321ec42a"
-tree_leaves(jnp_data)[0].device()
+tree_leaves(jnp_data)[0].device
 
 # + colab={"base_uri": "https://localhost:8080/"} id="6f89fc7c-4824-4858-aee8-6fff7834c70c" outputId="5b5304de-0694-4944-92f1-63eee852ebf6"
-tree_leaves(jnp_index)[0].device()
+tree_leaves(jnp_index)[0].device
 
 # + colab={"base_uri": "https://localhost:8080/"} id="ba2471ef-51e4-49f2-863c-aabafd401cbf" outputId="e6afa394-3e1b-4b9b-aea6-9dfe0d60ab86"
-jxs.device()
+jxs.device
 
 # + colab={"base_uri": "https://localhost:8080/"} id="6c35bd5d-0113-455d-bd56-f7c31bf6c736" outputId="fda693e8-723e-436d-84f6-68a49a510be9"
 # %%time
@@ -339,7 +338,7 @@ if GPU_AVAILABLE:
     outputs = transform_dataset(jxs)
 
 # + colab={"base_uri": "https://localhost:8080/"} id="944dcb8e-211c-4b39-b854-12118fe775ed" outputId="fbeeab1e-e245-4d85-ad5c-09530ec7d331"
-outputs.device()
+outputs.device
 
 # + colab={"base_uri": "https://localhost:8080/"} id="de99ee71-4e02-4843-9e6e-39d831f9697e" outputId="4262991e-c488-4296-849d-b111e288c203"
 # %%timeit

@@ -2,7 +2,7 @@ name: Docs
 
 on:
   # Trigger the workflow on push or pull request,
-  # but only for the master branch
+  # but only for the main branch
   push:
     branches:
       - main
@@ -10,39 +10,94 @@ on:
     branches:
       - main
 
+# Required by actions/deploy-pages: it mints an id-token to prove to the Pages
+# service that the artifact came from this workflow run.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deployments race; queue rather than cancel so a merged push is not
+# dropped, and the published site always reflects the newest completed build.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   documentation:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # The tutorials are executed as part of the build; they train models on real data
+    # at full size, so this needs far more headroom than a prose-only documentation
+    # job. Only a cold cache pays that price: once the cache is warm a build costs
+    # about as much as the prose it renders.
+    timeout-minutes: 60
     strategy:
       matrix:
-        python-version: [ 3.9 ]
+        python-version: [ "3.12" ]
     steps:
       - name: Cancel previous
-        uses: styfle/cancel-workflow-action@0.7.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
-        if: ${{github.ref != 'refs/head/master'}}
-      - uses: actions/checkout@v2
+        if: ${{ github.ref != 'refs/heads/main' }}
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          python -m pip install --upgrade pip wheel
-          echo "::set-output name=dir::$(pip cache dir)"
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py', '**/requirements.txt', '**/test-requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+        run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r docs/requirements.txt
+        run: uv sync --extra optional
+
+      # Executing a notebook is the expensive part of this build. jupyter-cache keys
+      # its entries on notebook content, so a run that changes only prose replays the
+      # stored outputs instead of retraining. The key carries the notebook hashes and
+      # falls back to the most recent cache, which stays valid for the untouched ones.
+      - name: Notebook execution cache
+        uses: actions/cache@v4
+        with:
+          path: .jupyter_cache
+          key: ${{ runner.os }}-jupyter-cache-${{ hashFiles('docs/notebooks/*.ipynb') }}
+          restore-keys: |
+            ${{ runner.os }}-jupyter-cache-
+
+      # Notebook 05 downloads its dataset from a third-party repository and caches it
+      # locally. Persisting that cache keeps the build from depending on a remote host
+      # being reachable on every run.
+      - name: Notebook dataset cache
+        uses: actions/cache@v4
+        with:
+          path: docs/notebooks/cached_data
+          key: ${{ runner.os }}-notebook-data-v1
+
+      - name: Check that no notebook output was committed
+        run: uv run make check-notebooks
+
       - name: Build documentation
-        run: make docs
+        run: uv run make docs
+
+      # Sphinx puts assets in _static and _images. Pages serves the uploaded artifact
+      # as-is rather than running Jekyll, but .nojekyll costs nothing and removes any
+      # doubt about underscore-prefixed directories being dropped.
+      - name: Disable Jekyll processing
+        run: touch docs/_build/html/.nojekyll
+
+      - name: Upload documentation artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+  # Publishing is a separate job so that a pull request still builds and validates the
+  # documentation without deploying it.
+  deploy:
+    needs: documentation
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

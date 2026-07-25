@@ -1,13 +1,12 @@
 ---
 jupyter:
   jupytext:
-    encoding: '# -*- coding: utf-8 -*-'
-    formats: ipynb,py,md
+    formats: ipynb,py:percent,md
     text_representation:
       extension: .md
       format_name: markdown
       format_version: '1.3'
-      jupytext_version: 1.14.5
+      jupytext_version: 1.17.2
   kernelspec:
     display_name: Python 3 (ipykernel)
     language: python
@@ -17,7 +16,7 @@ jupyter:
 ```python
 # Uncomment to run the notebook in Colab
 # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# ! pip install -q --upgrade jax jaxlib==0.1.70+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+# ! pip install -q --upgrade jax
 ```
 
 ```python
@@ -26,7 +25,7 @@ import jax
 ```
 
 ```python
-print("jax backend {}".format(jax.lib.xla_bridge.get_backend().platform))
+print(f"jax backend {jax.default_backend()}")
 jax.devices()
 ```
 
@@ -109,7 +108,7 @@ _ = air_temp_ewma.mean(1).plot()
 
 On small data, WAX-ML's EWMA is slower than Pandas' because of the expensive data conversion steps.
 WAX-ML's accessors are interesting to use on large data loads
-(See our [three-steps_workflow](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html))
+(See our [three-steps_workflow](https://eserie.github.io/wax-ml/notebooks/04_The_three_steps_workflow.html))
 
 ## Apply a custom function to a Dataset
 

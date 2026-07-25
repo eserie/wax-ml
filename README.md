@@ -5,7 +5,7 @@
 # WAX-ML: A Python library for machine-learning and feedback loops on streaming data
 
 ![Continuous integration](https://github.com/eserie/wax-ml/actions/workflows/tests.yml/badge.svg)
-[![Documentation Status](https://readthedocs.org/projects/wax-ml/badge/?version=latest)](https://wax-ml.readthedocs.io/en/latest/)
+[![Documentation](https://github.com/eserie/wax-ml/actions/workflows/docs.yml/badge.svg)](https://eserie.github.io/wax-ml/)
 [![PyPI version](https://badge.fury.io/py/wax-ml.svg)](https://badge.fury.io/py/wax-ml)
 [![Codecov](https://codecov.io/gh/eserie/wax-ml/branch/main/graph/badge.svg)](https://codecov.io/gh/eserie/wax-ml)
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
@@ -14,8 +14,8 @@
 
 [**Quickstart**](#quickstart-colab-in-the-cloud)
 | [**Install guide**](#installation)
-| [**Change logs**](https://wax-ml.readthedocs.io/en/latest/changelog.html)
-| [**Reference docs**](https://wax-ml.readthedocs.io/en/latest/)
+| [**Change logs**](https://eserie.github.io/wax-ml/changelog.html)
+| [**Reference docs**](https://eserie.github.io/wax-ml/)
 
 ## Introduction
 
@@ -98,7 +98,7 @@ For now, WAX-ML contains:
 
 - ready-to-use exponential moving average filter that we exposed with two APIs:
     - one for JAX users: as Haiku modules (`EWMA`, ... see the complete list in our
-    [API documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)
+    [API documentation](https://eserie.github.io/wax-ml/wax.modules.html)
     ).
     - a second one for pandas and xarray users: with drop-in replacement of pandas
       `ewm` accessor.
@@ -197,21 +197,21 @@ WAX-ML is not a framework but either a set of tools that aim to complement
 
 Jump right in using a notebook in your browser, connected to a Google Cloud GPU or
 simply read our notebook in the
-[documentation](https://wax-ml.readthedocs.io/en/latest/).
+[documentation](https://eserie.github.io/wax-ml/).
 
 Here are some starter notebooks:
 - 〰 Compute exponential moving averages with xarray and pandas accessors 〰 : [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/01_demo_EWMA.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/01_demo_EWMA.html)
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/01_demo_EWMA.html)
 - ⏱ Synchronize data streams ⏱ : [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/02_Synchronize_data_streams.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/02_Synchronize_data_streams.html)
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/02_Synchronize_data_streams.html)
 - 🌡 Binning temperatures 🌡 : [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/03_ohlc_temperature.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/03_ohlc_temperature.html)
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/03_ohlc_temperature.html)
 - 🎛 The three steps workflow 🎛 : [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html)
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/04_The_three_steps_workflow.html)
 - 🔭 Reconstructing the light curve of stars with LSTM 🔭: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/05_reconstructing_the_light_curve_of_stars.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/05_reconstructing_the_light_curve_of_stars.html)
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/05_reconstructing_the_light_curve_of_stars.html)
 - 🦎 Online linear regression with a non-stationary environment 🦎: [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/06_Online_Linear_Regression.html)
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/06_Online_Linear_Regression.html)
 
 
 ## ⏱ Synchronize streams ⏱
@@ -240,7 +240,7 @@ to not let any "future" information pass through and thus guaranty a data proces
 causality.
 
 The buffering mechanism used in the case of higher frequencies works with a fixed buffer size
-(see the WAX-ML module [`wax.modules.Buffer`](https://wax-ml.readthedocs.io/en/latest/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
+(see the WAX-ML module [`wax.modules.Buffer`](https://eserie.github.io/wax-ml/_autosummary/wax.modules.buffer.html#module-wax.modules.buffer)
 to allow the use of JAX / XLA optimizations and efficient processing.
 
 ### Example
@@ -344,7 +344,7 @@ Then run the "one-liner" syntax:
 ## Implemented modules
 
 We have some modules (inherited from Haiku modules) ready to be used in `wax.modules`
-(see our [api documentation](https://wax-ml.readthedocs.io/en/latest/wax.modules.html)).
+(see our [api documentation](https://eserie.github.io/wax-ml/wax.modules.html)).
 
 They can be considered as "building blocks" that can be reused to build more advanced programs to run on streaming data.
 
@@ -436,13 +436,13 @@ _ = output.isel(lat=0, lon=0).drop(["lat", "lon"]).to_pandas().plot(figsize=(12,
 <img src="docs/_static/my_custom_function_on_dataset.png" alt="logo" width="60%"></img>
 </div>
 
-You can see our [Documentation](https://wax-ml.readthedocs.io/en/latest/) for examples with
+You can see our [Documentation](https://eserie.github.io/wax-ml/) for examples with
 EWMA or Binning on the air temperature dataset.
 
 
 ### ⚡ Performance on big dataframes ⚡
 
-Check out our [Documentation](https://wax-ml.readthedocs.io/en/latest/) to
+Check out our [Documentation](https://eserie.github.io/wax-ml/) to
 see how you can use our "3-step workflow" to speed things up!
 
 
@@ -455,7 +455,7 @@ The use of JAX allows for leveraging hardware accelerators that optimize program
 With WAX-ML, you can already compute an exponential moving average on a dataframe with 1 million rows with a 3x to 100x speedup
 (depending on the data container you use and speed measurement methodology) compared to
 pandas implementation.  (See our notebook in the
-[Quick Start Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/04_The_three_steps_workflow.html)
+[Quick Start Documentation](https://eserie.github.io/wax-ml/notebooks/04_The_three_steps_workflow.html)
 or in
 [Colaboratory](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/04_The_three_steps_workflow.ipynb)
 ).
@@ -511,7 +511,7 @@ after transformation by Haiku transformation, by a pair of pure functions
 We have made concrete use of this feedback mechanism in this notebook where
 we give an example of online linear regression in a non-stationary environment:
 - 🦎: [online learning example ![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/eserie/wax-ml/blob/main/docs/notebooks/06_Online_Linear_Regression.ipynb),
-  [Open in Documentation](https://wax-ml.readthedocs.io/en/latest/notebooks/06_Online_Linear_Regression.html) 🦎
+  [Open in Documentation](https://eserie.github.io/wax-ml/notebooks/06_Online_Linear_Regression.html) 🦎
 
 Here is an illustrative plot of the final result of the study:
 
@@ -672,7 +672,7 @@ evolve.
 
 You can contribute to WAX-ML by asking questions, proposing practical use cases, or by contributing to the code or the documentation.  You can have a look at our [Contributing
 Guidelines](https://github.com/eserie/wax-ml/CONTRIBUTING.md) and [Developer
-Documentation](https://wax-ml.readthedocs.io/en/latest/developer.html) .
+Documentation](https://eserie.github.io/wax-ml/developer.html) .
 
 We maintain a "WAX-ML Enhancement Proposals" in
 [WEP.md](https://github.com/eserie/wax-ml/WEP.md) file.
@@ -751,4 +751,4 @@ If you use WAX-ML, please cite our [paper](http://arxiv.org/abs/2106.06524) usin
 ## Reference documentation
 
 For details about the WAX-ML API, see the
-[reference documentation](https://wax-ml.readthedocs.io/en/latest/).
+[reference documentation](https://eserie.github.io/wax-ml/).

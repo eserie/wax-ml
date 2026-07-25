@@ -14,3 +14,29 @@ docs/_autosummary
 coverage.xml
 htmlcov/
 venv
+docs/notebooks/_tmp/
+docs/notebooks/cached_data/
+contextify*
+
+# Agent runtime artifacts (local orchestration, not shared)
+.runtime/
+.beads/
+.cosmon/
+
+# Claude Code local config (user-private, not shared)
+CLAUDE.local.md
+.claude/commands/
+.gitleaks.toml
+
+# Demo notebooks are generated from their jupytext .py source (make notebooks)
+notebooks/*.ipynb
+
+# LaTeX build artifacts
+*.synctex.gz
+*.aux
+*.log
+*.fls
+*.fdb_latexmk
+
+# Notebook execution cache (see nb_execution_cache_path in docs/conf.py)
+.jupyter_cache/

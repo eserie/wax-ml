@@ -21,7 +21,6 @@
 
 # -- Path setup --------------------------------------------------------------
 
-import inspect
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -29,9 +28,9 @@ import inspect
 #
 import os
 import sys
+from pathlib import Path
 
 # -- Options for LaTeX output ------------------------------------------------
-from typing import Dict, Set
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -99,8 +98,7 @@ language = 'en'
 # The suffix(es) of source filenames.
 # Note: important to list ipynb before md here: we have both md and ipynb
 # copies of each notebook, and myst will choose which to convert based on
-# the order in the source_suffix list. Notebooks which are not executed have
-# outputs stored in ipynb but not in md, so we must convert the ipynb.
+# the order in the source_suffix list. The ipynb is the one myst-nb executes.
 source_suffix = ['.rst', '.ipynb', '.md']
 
 
@@ -178,17 +176,33 @@ html_static_path = ["_static"]
 
 
 # -- Options for myst ----------------------------------------------
-jupyter_execute_notebooks = "force"
-execution_allow_errors = False
-execution_fail_on_error = True  # Requires https://github.com/executablebooks/MyST-NB/pull/296
+# Notebook outputs are build artifacts: they are stripped from the repository by
+# the nbstripout pre-commit hook and regenerated here. "cache" executes a notebook
+# only when its code changes, and reuses the stored result otherwise, so a rebuild
+# that touches no code is nearly free.
+#
+# These options are named nb_execution_* since MyST-NB v0.14. The unprefixed
+# spellings used before that release are silently ignored, so do not reintroduce
+# them: an option that does nothing is worse than no option at all.
+nb_execution_mode = "cache"
 
-# Notebook cell execution timeout; defaults to 30.
-execution_timeout = 100
+# Anchored on this file rather than left relative: MyST-NB resolves a relative path
+# against the working directory, which differs between `make docs` (runs from docs/)
+# and `make docs-fast` (runs from the repository root).
+#
+# The cache sits at the repository root, outside the Sphinx source directory, for two
+# reasons. Inside docs/ Sphinx would pick up the executed notebooks it stores as source
+# documents and warn that they belong to no toctree, which fails the build under Read
+# the Docs' fail_on_warning. And outside docs/_build, `make clean` cannot throw away
+# hours of execution.
+nb_execution_cache_path = str(Path(__file__).parent.parent / ".jupyter_cache")
 
-# List of patterns, relative to source directory, that match notebook
-# files that will not be executed.
-import glob
-execution_excludepatterns = list(glob.glob("notebooks/*"))
+# The tutorials train models on real data; the default 30s is far too short.
+nb_execution_timeout = 900
+
+# A tutorial that raises is a broken tutorial: fail the build rather than publish it.
+nb_execution_allow_errors = False
+nb_execution_raise_on_error = True
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -196,7 +210,7 @@ execution_excludepatterns = list(glob.glob("notebooks/*"))
 htmlhelp_basename = "WAXdoc"
 
 
-latex_elements: Dict = {
+latex_elements: dict = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
@@ -327,14 +341,14 @@ numpydoc_xref_param_type = False
 #  should not have any spaces. Together with the intersphinx extension, you can
 #  map to links in any documentation. The default is an empty dict.  This
 #  option depends on the numpydoc_xref_param_type option being True.
-numpydoc_xref_aliases: Dict = {}
+numpydoc_xref_aliases: dict = {}
 
 #  Words not to cross-reference. Most likely, these are common words used in
 #  parameter type descriptions that may be confused for classes of the same
 #  name. For example: {'type', 'optional', 'default'}. The default is an empty
 #  set.
 
-numpydoc_xref_ignore: Set = set([])
+numpydoc_xref_ignore: set = set([])
 
 #  Deprecated since version edit: your HTML template instead Whether to insert
 #  an edit link after docstrings.

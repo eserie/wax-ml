@@ -194,9 +194,14 @@ class StreamingProfiler:
         """Start profiling a computation step."""
         return ProfilerContext(self, module_name)
 
-    def record_metrics(self, module_name: str, execution_time: float,
-                      input_data: Any = None, output_data: Any = None,
-                      jit_compilation: bool = False) -> None:
+    def record_metrics(
+        self,
+        module_name: str,
+        execution_time: float,
+        input_data: Any = None,
+        output_data: Any = None,
+        jit_compilation: bool = False,
+    ) -> None:
         """Record performance metrics for a computation step."""
         if not self.enabled:
             return
@@ -481,21 +486,23 @@ class ProfilerContext:
         self.jit_compilation = occurred
 
 
-def profile_streaming(profiler: StreamingProfiler | None = None,
-                     module_name: str | None = None,
-                     enable_detailed_tracking: bool = True):
+def profile_streaming(
+    profiler: StreamingProfiler | None = None,
+    module_name: str | None = None,
+    enable_detailed_tracking: bool = True,
+):
     """Decorator for adding performance profiling to streaming functions.
-    
+
     Example:
         profiler = StreamingProfiler()
-        
+
         @profile_streaming(profiler, "ewma_module")
-        @streaming_transform_with_state  
+        @streaming_transform_with_state
         def ewma_processor(x):
             return EWMA(alpha=0.1)(x)
-        
+
         # ... run computations ...
-        
+
         results = profiler.finalize()
         print(results.get_summary())
     """

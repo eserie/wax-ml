@@ -223,8 +223,9 @@ class HierarchicalGraphAnalyzer:
         else:
             return "unknown"
 
-    def _infer_parent_relationship(self, node_id: str, node: PipelineNode,
-                                 all_nodes: dict[str, PipelineNode]) -> str | None:
+    def _infer_parent_relationship(
+        self, node_id: str, node: PipelineNode, all_nodes: dict[str, PipelineNode]
+    ) -> str | None:
         """Infer parent relationship based on naming patterns and structure."""
         # Look for hierarchical naming patterns (e.g., "module.submodule")
         if "." in node_id:
@@ -235,9 +236,11 @@ class HierarchicalGraphAnalyzer:
 
         # Look for module containers
         for other_id, other_node in all_nodes.items():
-            if (other_id != node_id and
-                other_node.module_type == "Module" and
-                node_id.startswith(other_id)):
+            if (
+                other_id != node_id
+                and other_node.module_type == "Module"
+                and node_id.startswith(other_id)
+            ):
                 return other_id
 
         return None
@@ -305,10 +308,13 @@ class GraphvizNestedRenderer:
         self.config = config or NestedGraphConfig()
 
         if not HAS_GRAPHVIZ:
-            warnings.warn("Graphviz not available. Install with: pip install graphviz", stacklevel=2)
+            warnings.warn(
+                "Graphviz not available. Install with: pip install graphviz", stacklevel=2
+            )
 
-    def render_hierarchical_graph(self, hierarchy: dict[str, GraphHierarchy],
-                                output_path: str | None = None) -> str:
+    def render_hierarchical_graph(
+        self, hierarchy: dict[str, GraphHierarchy], output_path: str | None = None
+    ) -> str:
         """Render hierarchical graph using Graphviz clusters.
 
         Args:
@@ -349,9 +355,13 @@ class GraphvizNestedRenderer:
         else:
             return str(dot.source)
 
-    def _render_hierarchy_recursive(self, dot: graphviz.Digraph,
-                                  hierarchy: dict[str, GraphHierarchy],
-                                  parent_id: str | None, level: int) -> None:
+    def _render_hierarchy_recursive(
+        self,
+        dot: graphviz.Digraph,
+        hierarchy: dict[str, GraphHierarchy],
+        parent_id: str | None,
+        level: int,
+    ) -> None:
         """Recursively render hierarchy with clusters."""
         # Get nodes at current level with specified parent
         current_nodes = [
@@ -902,9 +912,13 @@ class NestedGraphVisualizer:
         self.cytoscape_renderer = CytoscapeNestedRenderer(self.config)
         self.d3_renderer = D3NestedRenderer(self.config)
 
-    def visualize_computation_graph(self, streaming_fn: Any, input_example: Any,
-                                  backend: str = "graphviz",
-                                  output_path: str | None = None) -> str:
+    def visualize_computation_graph(
+        self,
+        streaming_fn: Any,
+        input_example: Any,
+        backend: str = "graphviz",
+        output_path: str | None = None,
+    ) -> str:
         """Visualize computation graph with nested structure.
 
         Args:
@@ -938,8 +952,9 @@ class NestedGraphVisualizer:
         else:
             raise ValueError(f"Unknown backend: {backend}")
 
-    def display_in_jupyter(self, streaming_fn: Any, input_example: Any,
-                          backend: str = "cytoscape") -> None:
+    def display_in_jupyter(
+        self, streaming_fn: Any, input_example: Any, backend: str = "cytoscape"
+    ) -> None:
         """Display nested graph in Jupyter notebook.
 
         Args:
@@ -994,10 +1009,13 @@ class NestedGraphVisualizer:
 
 
 # Convenience functions
-def visualize_nested_graph(streaming_fn: Any, input_example: Any,
-                          backend: str = "cytoscape",
-                          output_path: str | None = None,
-                          config: NestedGraphConfig = None) -> str:
+def visualize_nested_graph(
+    streaming_fn: Any,
+    input_example: Any,
+    backend: str = "cytoscape",
+    output_path: str | None = None,
+    config: NestedGraphConfig = None,
+) -> str:
     """Convenience function for nested graph visualization.
 
     Args:
@@ -1014,9 +1032,12 @@ def visualize_nested_graph(streaming_fn: Any, input_example: Any,
     return visualizer.visualize_computation_graph(streaming_fn, input_example, backend, output_path)
 
 
-def display_nested_graph_jupyter(streaming_fn: Any, input_example: Any,
-                                backend: str = "cytoscape",
-                                config: NestedGraphConfig = None) -> None:
+def display_nested_graph_jupyter(
+    streaming_fn: Any,
+    input_example: Any,
+    backend: str = "cytoscape",
+    config: NestedGraphConfig = None,
+) -> None:
     """Display nested graph in Jupyter notebook.
 
     Args:

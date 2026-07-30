@@ -75,7 +75,7 @@ class OHLC(nn.Module):
         current_open = open_val.value
         current_high = high_val.value
         current_low = low_val.value
-        current_close = close_val.value
+        # The previous close is never needed: CLOSE is always the latest input.
 
         # Determine if this is the first valid input or a reset
         is_first_or_reset = should_reset | jnp.isnan(current_open)

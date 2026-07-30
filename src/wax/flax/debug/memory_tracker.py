@@ -202,8 +202,9 @@ class MemoryTracker:
         # Note: This is a simplified approach. In practice, you'd need more
         # sophisticated hooking into JAX's array creation pipeline
 
-    def take_snapshot(self, module_name: str = "unknown",
-                     state: Any = None, force: bool = False) -> MemorySnapshot:
+    def take_snapshot(
+        self, module_name: str = "unknown", state: Any = None, force: bool = False
+    ) -> MemorySnapshot:
         """Take a memory usage snapshot."""
         if not self.enabled:
             return None
@@ -388,8 +389,7 @@ class MemoryTracker:
             x_mean = sum(x_values) / n
             y_mean = sum(memory_values) / n
 
-            numerator = sum((x_values[i] - x_mean) * (memory_values[i] - y_mean)
-                          for i in range(n))
+            numerator = sum((x_values[i] - x_mean) * (memory_values[i] - y_mean) for i in range(n))
             denominator = sum((x_values[i] - x_mean) ** 2 for i in range(n))
 
             if denominator > 0:
@@ -420,12 +420,18 @@ class MemoryTracker:
                     total_leaked=sum(s.jax_arrays_size_mb for s in recent_snapshots[-3:]) / 3,
                     first_step=recent_snapshots[0].step,
                     last_step=recent_snapshots[-1].step,
-                    affected_modules=list(set(s.module_name for s in recent_snapshots))
+                    affected_modules=list(set(s.module_name for s in recent_snapshots)),
                 )
 
-    def _record_memory_leak(self, leak_type: str, growth_rate: float,
-                           total_leaked: float, first_step: int, last_step: int,
-                           affected_modules: list[str]):
+    def _record_memory_leak(
+        self,
+        leak_type: str,
+        growth_rate: float,
+        total_leaked: float,
+        first_step: int,
+        last_step: int,
+        affected_modules: list[str],
+    ):
         """Record a detected memory leak."""
         # Determine severity
         if total_leaked > 100:  # > 100 MB
@@ -615,21 +621,23 @@ class MemoryTracker:
         self.enabled = False
 
 
-def track_memory_usage(tracker: MemoryTracker | None = None,
-                      module_name: str | None = None,
-                      detailed_state_analysis: bool = True):
+def track_memory_usage(
+    tracker: MemoryTracker | None = None,
+    module_name: str | None = None,
+    detailed_state_analysis: bool = True,
+):
     """Decorator for adding memory tracking to streaming functions.
-    
+
     Example:
         tracker = MemoryTracker(enable_detailed_tracking=True)
-        
+
         @track_memory_usage(tracker, "ewma_module")
         @streaming_transform_with_state
         def ewma_processor(x):
             return EWMA(alpha=0.1)(x)
-        
+
         # ... run computations ...
-        
+
         print(tracker.generate_memory_report())
     """
     if tracker is None:

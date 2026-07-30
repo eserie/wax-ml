@@ -65,10 +65,13 @@ class HierarchicalStateMachine(nn.Module):
         state_names = list(self.state_modules.keys())
         num_states = len(state_names)
         self.coordination_state = self.variable(
-            'state', 'coordination',
-            lambda: {'num_active_states': num_states,
-                    'state_priorities': jnp.ones(num_states),
-                    'last_updates': jnp.zeros(num_states, dtype=jnp.int32)}
+            "state",
+            "coordination",
+            lambda: {
+                "num_active_states": num_states,
+                "state_priorities": jnp.ones(num_states),
+                "last_updates": jnp.zeros(num_states, dtype=jnp.int32),
+            },
         )
         # Store the state name mapping as a class attribute (not in state)
         self.state_name_list = state_names
@@ -100,8 +103,9 @@ class HierarchicalStateMachine(nn.Module):
 
         return ordered
 
-    def coordinate_states(self, state_outputs: dict[StateName, Any],
-                         coordination_info: dict) -> dict[StateName, Any]:
+    def coordinate_states(
+        self, state_outputs: dict[StateName, Any], coordination_info: dict
+    ) -> dict[StateName, Any]:
         """Coordinate state outputs and handle interactions."""
         if self.coordination_strategy == "sequential":
             # Sequential coordination - later states can see earlier outputs
@@ -160,8 +164,9 @@ class HierarchicalStateMachine(nn.Module):
 
         return levels
 
-    def _get_higher_level_states(self, state_name: StateName,
-                                levels: dict[int, list[StateName]]) -> list[StateName]:
+    def _get_higher_level_states(
+        self, state_name: StateName, levels: dict[int, list[StateName]]
+    ) -> list[StateName]:
         """Get states at higher hierarchy levels."""
         current_level = None
         for level, states in levels.items():
@@ -176,8 +181,9 @@ class HierarchicalStateMachine(nn.Module):
 
         return higher_states
 
-    def _apply_hierarchical_influence(self, lower_output: Any, higher_output: Any,
-                                    lower_state: StateName, higher_state: StateName) -> Any:
+    def _apply_hierarchical_influence(
+        self, lower_output: Any, higher_output: Any, lower_state: StateName, higher_state: StateName
+    ) -> Any:
         """Apply influence from higher-level state to lower-level state."""
         # Simple influence mechanism - can be made more sophisticated
         if isinstance(lower_output, dict) and isinstance(higher_output, dict):
@@ -188,8 +194,9 @@ class HierarchicalStateMachine(nn.Module):
             for key in influenced:
                 if key in higher_output and isinstance(influenced[key], int | float | jnp.ndarray):
                     # Blend with higher-level signal
-                    influenced[key] = (1 - influence_factor) * influenced[key] + \
-                                    influence_factor * higher_output.get(key, 0)
+                    influenced[key] = (1 - influence_factor) * influenced[
+                        key
+                    ] + influence_factor * higher_output.get(key, 0)
 
             return influenced
         else:
@@ -282,8 +289,9 @@ class AttentionBasedStateSelector(nn.Module):
         self.buffer_pointer.value = (pointer + 1) % self.max_history_length
         self.buffer_size.value = min(size + 1, self.max_history_length)
 
-    def get_relevant_states(self, current_state: Any,
-                           top_k: int = 5) -> tuple[jnp.ndarray, jnp.ndarray]:
+    def get_relevant_states(
+        self, current_state: Any, top_k: int = 5
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
         """Get most relevant historical states using attention."""
         # Encode current state as query
         if isinstance(current_state, dict):
@@ -477,9 +485,12 @@ class CompositeStateManager(nn.Module):
 
 # Decorator functions for convenient usage
 
-def streaming_state_machine(state_modules: Mapping[StateName, nn.Module],
-                           dependencies: Mapping[StateName, list[StateName]] | None = None,
-                           coordination_strategy: str = "sequential"):
+
+def streaming_state_machine(
+    state_modules: Mapping[StateName, nn.Module],
+    dependencies: Mapping[StateName, list[StateName]] | None = None,
+    coordination_strategy: str = "sequential",
+):
     """Decorator for creating hierarchical state machines.
 
     Example:
@@ -505,9 +516,7 @@ def streaming_state_machine(state_modules: Mapping[StateName, nn.Module],
     return decorator
 
 
-def streaming_attention_state(embed_dim: int = 64,
-                             num_heads: int = 4,
-                             max_history: int = 100):
+def streaming_attention_state(embed_dim: int = 64, num_heads: int = 4, max_history: int = 100):
     """Decorator for attention-based state selection.
 
     Example:
@@ -535,8 +544,7 @@ def streaming_attention_state(embed_dim: int = 64,
     return decorator
 
 
-def streaming_compose_states(*state_modules: nn.Module,
-                           strategy: str = "pipeline"):
+def streaming_compose_states(*state_modules: nn.Module, strategy: str = "pipeline"):
     """Decorator for composing multiple state patterns.
 
     Example:

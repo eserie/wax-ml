@@ -49,7 +49,7 @@ class TestDebugHook:
         assert hook.name == "test_hook"
         assert hook.condition == condition
         assert hook.action == "log"
-        assert hook.enabled == True
+        assert hook.enabled
         assert hook.hit_count == 0
         assert len(hook.events) == 0
 
@@ -64,8 +64,8 @@ class TestDebugHook:
         hook_true = DebugHook("true_hook", always_true)
         hook_false = DebugHook("false_hook", always_false)
 
-        assert hook_true.check_condition(1, {}, 1.0, 2.0) == True
-        assert hook_false.check_condition(1, {}, 1.0, 2.0) == False
+        assert hook_true.check_condition(1, {}, 1.0, 2.0)
+        assert not hook_false.check_condition(1, {}, 1.0, 2.0)
 
     def test_hook_trigger_and_events(self):
         """Test hook triggering and event recording."""
@@ -92,7 +92,7 @@ class TestDebugHook:
         assert event.module_name == "test_module"
         assert event.input_data == 6.0
         assert event.output_data == 12.0
-        assert event.metadata["test"] == True
+        assert event.metadata["test"]
 
     def test_hook_max_events(self):
         """Test hook event limit enforcement."""
@@ -115,7 +115,7 @@ class TestStreamingDebugger:
         """Test debugger initialization."""
         debugger = StreamingDebugger()
 
-        assert debugger.enabled == True
+        assert debugger.enabled
         assert debugger.current_step == 0
         assert len(debugger.hooks) == 0
         assert len(debugger.global_events) == 0
@@ -188,7 +188,7 @@ class TestStreamingProfiler:
         """Test profiler initialization."""
         profiler = StreamingProfiler()
 
-        assert profiler.enabled == True
+        assert profiler.enabled
         assert profiler.step_count == 0
         assert len(profiler.metrics) == 0
 
@@ -196,7 +196,7 @@ class TestStreamingProfiler:
         """Test profiler context manager."""
         profiler = StreamingProfiler()
 
-        with profiler.start_step("test_module") as ctx:
+        with profiler.start_step("test_module"):
             time.sleep(0.001)  # Small delay to measure
 
         assert profiler.step_count == 1
@@ -263,8 +263,10 @@ class TestStreamingProfiler:
         # Should generate some recommendations
         assert len(recommendations) > 0
         # Check for specific types of recommendations
-        assert any("memory" in rec.lower() or "variance" in rec.lower() or "time" in rec.lower()
-                  for rec in recommendations)
+        assert any(
+            "memory" in rec.lower() or "variance" in rec.lower() or "time" in rec.lower()
+            for rec in recommendations
+        )
 
     def test_profiler_finalize(self):
         """Test profiler finalization and result generation."""
@@ -290,7 +292,7 @@ class TestMemoryTracker:
         """Test memory tracker initialization."""
         tracker = MemoryTracker()
 
-        assert tracker.enabled == True
+        assert tracker.enabled
         assert tracker.step_count == 0
         assert len(tracker.snapshots) == 0
 
@@ -341,7 +343,7 @@ class TestMemoryTracker:
 
         # Force a few snapshots
         for i in range(3):
-            snapshot = tracker.take_snapshot(f"module_{i}", force=True)
+            tracker.take_snapshot(f"module_{i}", force=True)
 
         summary = tracker.get_memory_summary()
 
@@ -416,30 +418,30 @@ class TestDebugConditions:
         """Test value threshold condition."""
         condition = value_threshold(5.0)
 
-        assert condition(1, {}, 10.0, None) == True
-        assert condition(1, {}, 3.0, None) == False
+        assert condition(1, {}, 10.0, None)
+        assert not condition(1, {}, 3.0, None)
 
     def test_step_interval_condition(self):
         """Test step interval condition."""
         condition = step_interval(5)
 
-        assert condition(5, {}, None, None) == True
-        assert condition(10, {}, None, None) == True
-        assert condition(3, {}, None, None) == False
-        assert condition(7, {}, None, None) == False
+        assert condition(5, {}, None, None)
+        assert condition(10, {}, None, None)
+        assert not condition(3, {}, None, None)
+        assert not condition(7, {}, None, None)
 
     def test_state_change_detector(self):
         """Test state change detection condition."""
         condition = state_change_detector("value", tolerance=0.1)
 
         # First call should not trigger (no previous value)
-        assert condition(1, {"value": 1.0}, None, None) == False
+        assert not condition(1, {"value": 1.0}, None, None)
 
         # Small change should not trigger
-        assert condition(2, {"value": 1.05}, None, None) == False
+        assert not condition(2, {"value": 1.05}, None, None)
 
         # Large change should trigger
-        assert condition(3, {"value": 1.5}, None, None) == True
+        assert condition(3, {"value": 1.5}, None, None)
 
 
 class TestIntegration:

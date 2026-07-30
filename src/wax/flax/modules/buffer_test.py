@@ -203,11 +203,9 @@ class TestFlaxBuffer:
         flax_params, flax_state = flax_unroll_fn.init(rng, data)
         flax_outputs, flax_final_state = flax_unroll_fn.apply(flax_params, flax_state, rng, data)
 
-        # Compare outputs (allowing for initialization differences)
-        # The final buffers should be identical even if intermediate states differ
-        output_diff = jnp.abs(haiku_outputs - flax_outputs)
-        max_diff = jnp.nanmax(output_diff)
-
+        # Compare outputs (allowing for initialization differences):
+        # the final buffers should be identical even if intermediate states differ,
+        # so only the last row is compared.
         # Check if final outputs (last row) are identical
         final_output_diff = jnp.abs(haiku_outputs[-1] - flax_outputs[-1])
         final_max_diff = jnp.nanmax(final_output_diff)

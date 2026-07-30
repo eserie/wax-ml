@@ -254,11 +254,16 @@ class TestConditionalStateUpdate:
             increment = jax.lax.cond(
                 should_reset,
                 lambda: 0.0,  # Reset to 0 (simplified)
-                lambda: 1.0  # Normal increment
+                lambda: 1.0,  # Normal increment
             )
 
             count = counter()  # Counter doesn't take arguments
-            return {"count": count, "input": x, "reset": should_reset}
+            return {
+                "count": count,
+                "increment": increment,
+                "input": x,
+                "reset": should_reset,
+            }
 
         # Test with reset pattern
         rng = jax.random.PRNGKey(42)
@@ -282,7 +287,12 @@ class TestConditionalStateUpdate:
         assert outputs[0]["count"] > 0  # First increment
         assert outputs[1]["count"] > outputs[0]["count"]  # Second increment
         assert outputs[2]["reset"]  # Reset triggered
-        # After reset, counting should restart
+
+        # The conditional branch is selected by the reset predicate: a reset step
+        # yields a zero increment, a normal step yields one.
+        assert outputs[2]["increment"] == 0.0
+        assert outputs[0]["increment"] == 1.0
+        assert outputs[3]["increment"] == 1.0
 
 
 class TestStreamingStateMachine:
@@ -443,9 +453,8 @@ class TestStreamingStateIntegration:
                 "volatility": volatility,
                 "avg_volume": avg_volume,
                 "should_trade": should_trade,
-                "signal": signal
+                "signal": signal,
             }
-
 
         # Test the integrated system
         rng = jax.random.PRNGKey(42)

@@ -41,6 +41,17 @@ class TestModernVisualizationImports:
                 quick_streaming_plot,
             )
 
+            # All exported names must be importable and usable
+            for exported in (
+                AnimatedPipelineFlow,
+                InteractiveParameterControls,
+                InteractivePipelineGraph,
+                StreamingDataVisualizer,
+                quick_pipeline_viz,
+                quick_streaming_plot,
+            ):
+                assert callable(exported)
+
             # Test basic instantiation without dependencies
             config = JupyterVizConfig()
             assert config.plotly_theme == "plotly_white"
@@ -64,6 +75,16 @@ class TestModernVisualizationImports:
                 create_bokeh_streaming_demo,
                 display_bokeh_visualization,
             )
+
+            # All exported names must be importable and usable
+            for exported in (
+                BokehHeatmapVisualizer,
+                BokehMultiPanelDashboard,
+                BokehStreamingPlot,
+                create_bokeh_streaming_demo,
+                display_bokeh_visualization,
+            ):
+                assert callable(exported)
 
             # Test basic instantiation without dependencies
             config = BokehVizConfig()
@@ -247,6 +268,7 @@ class TestIntegrationWithExistingComponents:
 
             # Should not raise error with valid tracker
             # (actual visualization may fail without Bokeh)
+            assert callable(create_bokeh_streaming_demo)
 
         except ImportError:
             # Expected if Bokeh not available
@@ -265,7 +287,10 @@ class TestIntegrationWithExistingComponents:
             from wax.flax.visualization import quick_pipeline_viz, quick_streaming_plot
 
             # These should handle missing dependencies gracefully
-            # In a real Jupyter environment with dependencies, they would create visualizations
+            # In a real Jupyter environment with dependencies, they would create
+            # visualizations
+            assert callable(quick_pipeline_viz)
+            assert callable(quick_streaming_plot)
 
         except ImportError:
             # Expected if Plotly/ipywidgets not available

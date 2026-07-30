@@ -56,8 +56,14 @@ class TestTechnicalIndicators:
         final_output = outputs[-1]
 
         # Should have all expected fields
-        expected_fields = ["price", "upper_band", "lower_band", "center_line",
-                          "band_position", "band_width"]
+        expected_fields = [
+            "price",
+            "upper_band",
+            "lower_band",
+            "center_line",
+            "band_position",
+            "band_width",
+        ]
         for field in expected_fields:
             assert field in final_output
             assert jnp.isfinite(final_output[field])
@@ -93,8 +99,7 @@ class TestTechnicalIndicators:
         final_output = outputs[-1]
 
         # Should have all expected fields
-        expected_fields = ["price", "macd", "signal", "histogram",
-                          "fast_ema", "slow_ema"]
+        expected_fields = ["price", "macd", "signal", "histogram", "fast_ema", "slow_ema"]
         for field in expected_fields:
             assert field in final_output
             assert jnp.isfinite(final_output[field])
@@ -135,8 +140,14 @@ class TestEventDrivenComposition:
         assert len(outputs) == len(prices)
 
         for output in outputs:
-            expected_fields = ["price", "volume", "momentum", "volatility",
-                              "breakout_strength", "is_breakout"]
+            expected_fields = [
+                "price",
+                "volume",
+                "momentum",
+                "volatility",
+                "breakout_strength",
+                "is_breakout",
+            ]
             for field in expected_fields:
                 assert field in output
 
@@ -301,8 +312,12 @@ class TestOnlineLearningComposition:
 
             # Check auxiliary outputs
             aux = output["aux"]
-            expected_aux_fields = ["price_component", "volume_component",
-                                  "price_signal", "volume_signal"]
+            expected_aux_fields = [
+                "price_component",
+                "volume_component",
+                "price_signal",
+                "volume_signal",
+            ]
             for field in expected_aux_fields:
                 assert field in aux
                 assert jnp.isfinite(aux[field])
@@ -360,8 +375,13 @@ class TestCompleteSystemComposition:
         assert -0.1 <= final_output["final_position"] <= 0.1  # Max 10% position
 
         # All numeric outputs should be finite
-        numeric_fields = ["technical_signal", "raw_signal", "risk_adjusted_signal",
-                         "final_position", "volatility"]
+        numeric_fields = [
+            "technical_signal",
+            "raw_signal",
+            "risk_adjusted_signal",
+            "final_position",
+            "volatility",
+        ]
         for field in numeric_fields:
             assert jnp.isfinite(final_output[field])
 

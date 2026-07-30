@@ -105,7 +105,6 @@ class TestFlaxCounter:
             output, current_state = tf.apply(flax_params, current_state, None)
             flax_outputs.append(output)
         flax_outputs = jnp.array(flax_outputs)
-        flax_final_state = current_state
 
         # Compare outputs (allowing for initialization differences)
         # Flax initializes differently, so outputs may be offset by 1
@@ -157,12 +156,12 @@ class TestFlaxHasChanged:
 
         # Apply with same value
         output, new_state = tf.apply(params, state, None, x1)
-        assert output == False  # Same value, no change
+        assert not bool(output)  # Same value, no change
 
         # Apply with different value
         x2 = jnp.array(2.0)
         output, new_state = tf.apply(params, new_state, None, x2)
-        assert output == True  # Different value, changed
+        assert bool(output)  # Different value, changed
 
     def test_has_changed_sequence(self):
         """Test HasChanged over a sequence."""
@@ -198,11 +197,11 @@ class TestFlaxHasChanged:
 
         # Same array
         output, state = tf.apply(params, state, None, x2)
-        assert output == False
+        assert not bool(output)
 
         # Different array
         output, state = tf.apply(params, state, None, x3)
-        assert output == True
+        assert bool(output)
 
     def test_has_changed_numerical_consistency_with_haiku(self):
         """Test numerical consistency with Haiku implementation."""
@@ -239,8 +238,8 @@ class TestFlaxHasChanged:
         # Index 2 (1.0->2.0) and index 4 (2.0->3.0) should be True in both
         change_indices = [2, 4]
         for idx in change_indices:
-            assert haiku_outputs[idx] == True, f"Haiku should detect change at index {idx}"
-            assert flax_outputs[idx] == True, f"Flax should detect change at index {idx}"
+            assert bool(haiku_outputs[idx]), f"Haiku should detect change at index {idx}"
+            assert bool(flax_outputs[idx]), f"Flax should detect change at index {idx}"
 
 
 class TestFlaxFillNanInf:
@@ -393,15 +392,15 @@ class TestSimpleModulesAutonomous:
 
         # Same value should return False
         output, state = tf.apply(params, state, None, jnp.array(1.0))
-        assert output == False
+        assert not bool(output)
 
         # Different value should return True
         output, state = tf.apply(params, state, None, jnp.array(2.0))
-        assert output == True
+        assert bool(output)
 
         # Same new value should return False
         output, state = tf.apply(params, state, None, jnp.array(2.0))
-        assert output == False
+        assert not bool(output)
 
     def test_fill_nan_inf_autonomous(self):
         """Test fill_nan_inf behavior independently."""

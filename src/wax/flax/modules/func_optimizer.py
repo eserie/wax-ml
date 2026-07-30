@@ -83,10 +83,10 @@ class FuncOptimizer(nn.Module):
                 train_params, non_train_params = self.update_params.partition_params(init_params)
                 trainable_params.value = train_params
 
-                # Store non-trainable parameters separately
-                non_trainable_params = self.variable(
-                    "non_trainable_params", "params", lambda: non_train_params
-                )
+                # Store non-trainable parameters separately. The call is made for
+                # its side effect: it registers the collection on the module, which
+                # is later read back through ``self.variables``.
+                self.variable("non_trainable_params", "params", lambda: non_train_params)
             else:
                 # Function doesn't have parameters, create dummy parameters
                 trainable_params.value = {}

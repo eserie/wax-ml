@@ -128,17 +128,6 @@ class OnlineOptimizer(nn.Module):
             trainable = {}
             non_trainable = {}
 
-            def partition_fn(path, value):
-                # Convert path to string representation
-                path_str = "/".join(str(p) for p in path)
-                module_name = path[0] if path else ""
-                param_name = path[-1] if len(path) > 1 else path[0] if path else ""
-
-                if self.params_predicate(module_name, param_name, value):
-                    return "trainable"
-                else:
-                    return "non_trainable"
-
             from flax.traverse_util import flatten_dict, unflatten_dict
 
             flat_params = flatten_dict(params, sep="/")

@@ -37,6 +37,7 @@ import threading
 import time
 import warnings
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -79,14 +80,12 @@ except ImportError:
 
 try:
     import ipywidgets as widgets
-    from IPython.display import HTML, clear_output, display
+    from IPython.display import display
 
     HAS_WIDGETS = True
 except ImportError:
     widgets = None
     display = None
-    HTML = None
-    clear_output = None
     HAS_WIDGETS = False
 
 try:
@@ -397,7 +396,7 @@ class InteractiveParameterControls:
     def __init__(self, config: JupyterVizConfig = None):
         self.config = config or JupyterVizConfig()
         self.controls: dict[str, Any] = {}
-        self.callbacks: list[callable] = []
+        self.callbacks: list[Callable[[dict[str, Any]], None]] = []
 
         if not HAS_WIDGETS:
             warnings.warn(
@@ -476,7 +475,7 @@ class InteractiveParameterControls:
         """Get current parameter values."""
         return {name: widget.value for name, widget in self.controls.items()}
 
-    def add_callback(self, callback: callable) -> None:
+    def add_callback(self, callback: Callable[[dict[str, Any]], None]) -> None:
         """Add a callback function that gets called when parameters change."""
         self.callbacks.append(callback)
 
@@ -494,9 +493,9 @@ class AnimatedPipelineFlow:
 
     def __init__(self, config: JupyterVizConfig = None):
         self.config = config or JupyterVizConfig()
-        self.animation_fig = None
+        self.animation_fig: FigureWidget | None = None
         self.is_animating = False
-        self._animation_thread = None
+        self._animation_thread: threading.Thread | None = None
 
         if not HAS_PLOTLY:
             warnings.warn("Plotly not available. Install with: pip install plotly", stacklevel=2)

@@ -69,12 +69,10 @@ except ImportError:
 
 # IPython for display
 try:
-    from IPython.display import HTML, SVG, display
+    import IPython.display as ipython_display
     HAS_IPYTHON = True
 except ImportError:
-    HTML = None
-    SVG = None
-    display = None
+    ipython_display = None
     HAS_IPYTHON = False
 
 from .computation_graph import ComputationGraphRenderer, PipelineEdge, PipelineNode
@@ -349,7 +347,7 @@ class GraphvizNestedRenderer:
             dot.render(output_path, cleanup=True)
             return f"{output_path}.{self.config.graphviz_format}"
         else:
-            return dot.source
+            return str(dot.source)
 
     def _render_hierarchy_recursive(self, dot: graphviz.Digraph,
                                   hierarchy: dict[str, GraphHierarchy],
@@ -638,7 +636,7 @@ class CytoscapeNestedRenderer:
 
     def _convert_to_cytoscape_format(self, hierarchy: dict[str, GraphHierarchy]) -> list[dict[str, Any]]:
         """Convert hierarchy to Cytoscape.js format."""
-        elements = []
+        elements: list[dict[str, Any]] = []
 
         # Add nodes
         for node in hierarchy.values():
@@ -959,10 +957,10 @@ class NestedGraphVisualizer:
             # Display SVG directly
             with open(result) as f:
                 svg_content = f.read()
-            display(SVG(svg_content))
+            ipython_display.display(ipython_display.SVG(svg_content))
         else:
             # Display HTML content
-            display(HTML(result))
+            ipython_display.display(ipython_display.HTML(result))
 
     def get_hierarchy_summary(self, streaming_fn: Any, input_example: Any) -> dict[str, Any]:
         """Get summary of hierarchical structure.
@@ -979,8 +977,8 @@ class NestedGraphVisualizer:
         # Calculate statistics
         total_nodes = len(hierarchy)
         max_level = self.analyzer.get_max_level()
-        node_types = defaultdict(int)
-        nodes_per_level = defaultdict(int)
+        node_types: defaultdict[str, int] = defaultdict(int)
+        nodes_per_level: defaultdict[int, int] = defaultdict(int)
 
         for node in hierarchy.values():
             node_types[node.node_type] += 1

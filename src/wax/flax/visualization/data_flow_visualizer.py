@@ -44,13 +44,11 @@ try:
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     import numpy as np
-    from matplotlib.patches import Rectangle
 
     HAS_MATPLOTLIB = True
 except ImportError:
     plt = None
     animation = None
-    Rectangle = None
     np = None
     HAS_MATPLOTLIB = False
 
@@ -275,7 +273,7 @@ class DataFlowVisualizer:
         ax4.set_ylabel("Points/sec")
 
         # Set up real-time data structures
-        plot_data = {
+        plot_data: dict[str, Any] = {
             "steps": [],
             "values": defaultdict(list),
             "sizes": defaultdict(list),
@@ -411,7 +409,7 @@ class DataFlowVisualizer:
         ax1.set_ylabel("Value")
 
         # Group by module and plot
-        module_data = defaultdict(list)
+        module_data: defaultdict[str, list[tuple[int, float]]] = defaultdict(list)
         for dp in recent_data:
             if isinstance(dp.value, int | float | jnp.ndarray) and jnp.isscalar(dp.value):
                 module_data[dp.module_name].append((dp.step, float(dp.value)))
@@ -430,14 +428,14 @@ class DataFlowVisualizer:
         ax2.set_xlabel("Step")
         ax2.set_ylabel("Size")
 
-        size_data = defaultdict(list)
+        size_data: defaultdict[str, list[tuple[int, int]]] = defaultdict(list)
         for dp in recent_data:
             size = jnp.prod(jnp.array(dp.shape)) if dp.shape else 1
             size_data[dp.module_name].append((dp.step, int(size)))
 
-        for module_name, data_points in size_data.items():
-            if data_points:
-                steps_mod, sizes_mod = zip(*data_points, strict=False)
+        for module_name, size_points in size_data.items():
+            if size_points:
+                steps_mod, sizes_mod = zip(*size_points, strict=False)
                 ax2.plot(steps_mod, sizes_mod, marker="s", label=module_name, alpha=0.7)
 
         ax2.legend()

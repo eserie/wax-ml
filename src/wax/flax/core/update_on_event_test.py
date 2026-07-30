@@ -132,8 +132,8 @@ class TestUpdateOnEvent:
         @update_on_event(event_fn=market_hours)
         def trading_signal(time_price):
             """Trading signal that only updates during market hours."""
-            # Extract time and price (simplified - in real case this would be structured)
-            time = time_price  # Simplified: just use the input as time
+            # Extract price (simplified - in real case the input would be structured
+            # and would carry the time alongside the price)
             price = time_price * 100  # Simulate price
 
             # Signal processing

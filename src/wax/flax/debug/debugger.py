@@ -93,8 +93,15 @@ class DebugHook:
             print(f"Warning: Debug condition error in hook '{self.name}': {e}")
             return False
 
-    def trigger(self, step: int, module_name: str, state: Any,
-               input_data: Any, output: Any, metadata: dict[str, Any] | None = None):
+    def trigger(
+        self,
+        step: int,
+        module_name: str,
+        state: Any,
+        input_data: Any,
+        output: Any,
+        metadata: dict[str, Any] | None = None,
+    ):
         """Trigger the debug hook action."""
         self.hit_count += 1
 
@@ -242,8 +249,14 @@ class StreamingDebugger:
         hook = DebugHook(name=f"perf_{name}", condition=slow_condition, action="alert")
         return self.add_hook(hook)
 
-    def step(self, module_name: str, state: Any, input_data: Any, output: Any,
-            execution_time: float | None = None) -> None:
+    def step(
+        self,
+        module_name: str,
+        state: Any,
+        input_data: Any,
+        output: Any,
+        execution_time: float | None = None,
+    ) -> None:
         """Process a debugging step."""
         if not self.enabled:
             return
@@ -383,15 +396,17 @@ class StreamingDebugger:
                 raise ValueError(f"Unsupported export format: {format}")
 
 
-def debug_streaming(debugger: StreamingDebugger | None = None,
-                   module_name: str | None = None,
-                   enable_timing: bool = True):
+def debug_streaming(
+    debugger: StreamingDebugger | None = None,
+    module_name: str | None = None,
+    enable_timing: bool = True,
+):
     """Decorator for adding debugging to streaming functions.
-    
+
     Example:
         debugger = StreamingDebugger()
         debugger.add_breakpoint("high_value", lambda step, state, inp, out: inp > 100)
-        
+
         @debug_streaming(debugger, "my_module")
         @streaming_transform_with_state
         def my_streaming_fn(x):

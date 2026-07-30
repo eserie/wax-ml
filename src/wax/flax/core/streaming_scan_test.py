@@ -203,7 +203,8 @@ class TestStreamingScan:
             buffer = Buffer(maxlen=2)
             ewma = EWMA(alpha=0.5)
 
-            buffered = buffer(x)
+            # The buffer is exercised for its state; only the EWMA is returned.
+            buffer(x)
             smoothed = ewma(x)
 
             return smoothed

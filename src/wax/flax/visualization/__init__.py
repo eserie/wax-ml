@@ -33,83 +33,6 @@ from .interactive_dashboard import (
     launch_monitoring_server,
 )
 
-# Jupyter-specific visualizations (optional imports)
-try:
-    from .jupyter_viz import (
-        JupyterVizConfig,
-        InteractivePipelineGraph,
-        StreamingDataVisualizer,
-        InteractiveParameterControls,
-        AnimatedPipelineFlow,
-        create_pipeline_dashboard as create_jupyter_dashboard,
-        display_pipeline_dashboard,
-        quick_pipeline_viz,
-        quick_streaming_plot,
-    )
-    
-    _jupyter_exports = [
-        "JupyterVizConfig",
-        "InteractivePipelineGraph", 
-        "StreamingDataVisualizer",
-        "InteractiveParameterControls",
-        "AnimatedPipelineFlow",
-        "create_jupyter_dashboard",
-        "display_pipeline_dashboard",
-        "quick_pipeline_viz",
-        "quick_streaming_plot",
-    ]
-except ImportError:
-    _jupyter_exports = []
-
-try:
-    from .bokeh_viz import (
-        BokehVizConfig,
-        BokehStreamingPlot,
-        BokehHeatmapVisualizer,
-        BokehMultiPanelDashboard,
-        create_bokeh_streaming_demo,
-        display_bokeh_visualization,
-    )
-    
-    _bokeh_exports = [
-        "BokehVizConfig",
-        "BokehStreamingPlot",
-        "BokehHeatmapVisualizer", 
-        "BokehMultiPanelDashboard",
-        "create_bokeh_streaming_demo",
-        "display_bokeh_visualization",
-    ]
-except ImportError:
-    _bokeh_exports = []
-
-# Nested graph visualizations (advanced graph visualization)
-try:
-    from .nested_graph_viz import (
-        NestedGraphConfig,
-        GraphHierarchy,
-        HierarchicalGraphAnalyzer,
-        GraphvizNestedRenderer,
-        CytoscapeNestedRenderer,
-        D3NestedRenderer,
-        NestedGraphVisualizer,
-        visualize_nested_graph,
-        display_nested_graph_jupyter,
-    )
-    
-    _nested_graph_exports = [
-        "NestedGraphConfig",
-        "GraphHierarchy",
-        "HierarchicalGraphAnalyzer",
-        "GraphvizNestedRenderer",
-        "CytoscapeNestedRenderer", 
-        "D3NestedRenderer",
-        "NestedGraphVisualizer",
-        "visualize_nested_graph",
-        "display_nested_graph_jupyter",
-    ]
-except ImportError:
-    _nested_graph_exports = []
-
 __all__ = [
     "ComputationGraphRenderer",
     "PipelineNode",
@@ -124,4 +47,81 @@ __all__ = [
     "DashboardConfig",
     "create_pipeline_dashboard",
     "launch_monitoring_server",
-] + _jupyter_exports + _bokeh_exports + _nested_graph_exports
+]
+
+# Jupyter-specific visualizations (optional imports)
+try:
+    from .jupyter_viz import (
+        AnimatedPipelineFlow,
+        InteractiveParameterControls,
+        InteractivePipelineGraph,
+        JupyterVizConfig,
+        StreamingDataVisualizer,
+        create_pipeline_dashboard as create_jupyter_dashboard,
+        display_pipeline_dashboard,
+        quick_pipeline_viz,
+        quick_streaming_plot,
+    )
+except ImportError:
+    pass
+else:
+    __all__ += [
+        "JupyterVizConfig",
+        "InteractivePipelineGraph",
+        "StreamingDataVisualizer",
+        "InteractiveParameterControls",
+        "AnimatedPipelineFlow",
+        "create_jupyter_dashboard",
+        "display_pipeline_dashboard",
+        "quick_pipeline_viz",
+        "quick_streaming_plot",
+    ]
+
+try:
+    from .bokeh_viz import (
+        BokehHeatmapVisualizer,
+        BokehMultiPanelDashboard,
+        BokehStreamingPlot,
+        BokehVizConfig,
+        create_bokeh_streaming_demo,
+        display_bokeh_visualization,
+    )
+except ImportError:
+    pass
+else:
+    __all__ += [
+        "BokehVizConfig",
+        "BokehStreamingPlot",
+        "BokehHeatmapVisualizer",
+        "BokehMultiPanelDashboard",
+        "create_bokeh_streaming_demo",
+        "display_bokeh_visualization",
+    ]
+
+# Nested graph visualizations (advanced graph visualization)
+try:
+    from .nested_graph_viz import (
+        CytoscapeNestedRenderer,
+        D3NestedRenderer,
+        GraphHierarchy,
+        GraphvizNestedRenderer,
+        HierarchicalGraphAnalyzer,
+        NestedGraphConfig,
+        NestedGraphVisualizer,
+        display_nested_graph_jupyter,
+        visualize_nested_graph,
+    )
+except ImportError:
+    pass
+else:
+    __all__ += [
+        "NestedGraphConfig",
+        "GraphHierarchy",
+        "HierarchicalGraphAnalyzer",
+        "GraphvizNestedRenderer",
+        "CytoscapeNestedRenderer",
+        "D3NestedRenderer",
+        "NestedGraphVisualizer",
+        "visualize_nested_graph",
+        "display_nested_graph_jupyter",
+    ]

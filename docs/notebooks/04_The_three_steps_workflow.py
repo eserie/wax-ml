@@ -63,7 +63,6 @@ jax.devices()
 import numpy as onp
 import pandas as pd
 import xarray as xr
-
 from wax.accessors import register_wax_accessors
 from wax.format import format_dataframe
 from wax.modules import EWMA

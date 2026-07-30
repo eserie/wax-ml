@@ -66,7 +66,6 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
-
 from wax.modules import (
     ARMA,
     SNARIMAX,
@@ -314,6 +313,7 @@ from optax._src.base import OptState
 ```python
 def build_agent(time_series_model=None, opt=None, embargo=1):
     if time_series_model is None:
+
         def time_series_model(y, X):
             return SNARIMAX(10)(y, X)
 
@@ -661,7 +661,8 @@ for name, gym in BEST_GYM.items():
         .expanding()
         .mean()
         .plot(
-            label=rf"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}", ylim=(0.09, 0.15)
+            label=rf"{name}    -    $\eta$={BEST_STEP_SIZE[name]:.2e}",
+            ylim=(0.09, 0.15),
         )
     )
 ax.legend(bbox_to_anchor=(1.0, 1.0))

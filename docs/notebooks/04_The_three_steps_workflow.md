@@ -69,7 +69,6 @@ Let's illustrate how to reimplement WAX-ML EWMA yourself with the WAX-ML 3-step 
 import numpy as onp
 import pandas as pd
 import xarray as xr
-
 from wax.accessors import register_wax_accessors
 from wax.format import format_dataframe
 from wax.modules import EWMA

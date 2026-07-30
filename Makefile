@@ -39,8 +39,14 @@ isort:
 black:
 	python -m black $(PACKAGE_NAME)
 
+# ruff is this project's formatter (see [tool.ruff] in pyproject.toml), and the
+# sources are written to it: ruff rewrites 24 files, black 93. The autoflake, isort
+# and black targets above are kept for anyone who still reaches for them, but they
+# are no longer what "formatted" means here -- running them would reformat most of
+# the tree to a competing style.
 .PHONY: format-package
-format-package: autoflake isort black
+format-package:
+	python -m ruff format $(PACKAGE_NAME)
 
 .PHONY: format-notebooks
 format-notebooks :

@@ -42,7 +42,6 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from tqdm.auto import tqdm
-
 from wax.modules import ARMA, SNARIMAX, GymFeedback, OnlineOptimizer, UpdateParams, VMap
 from wax.modules.lag import tree_lag
 from wax.modules.vmap import add_batch
@@ -72,6 +71,7 @@ from optax._src.base import OptState
 
 def build_agent(time_series_model=None, opt=None):
     if time_series_model is None:
+
         def time_series_model(y, X):
             return SNARIMAX(10)(y, X)
 

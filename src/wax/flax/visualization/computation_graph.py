@@ -35,7 +35,7 @@ import tempfile
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol, cast
 
 import jax
 import jax.numpy as jnp
@@ -53,13 +53,11 @@ try:
     import matplotlib.patches as patches
     import matplotlib.pyplot as plt
     import networkx as nx
-    from matplotlib.patches import FancyBboxPatch
 
     HAS_MATPLOTLIB = True
 except ImportError:
     plt = None
     patches = None
-    FancyBboxPatch = None
     nx = None
     HAS_MATPLOTLIB = False
 
@@ -98,6 +96,16 @@ class PipelineNode:
             if module_name.lower() in self.module_type.lower():
                 self.color = color
                 break
+
+
+class FlaxTransformed(Protocol):
+    """Structural type of an object exposing the Flax ``init``/``apply`` pair."""
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def init(self, rngs: Any, *args: Any, **kwargs: Any) -> Any: ...
+
+    def apply(self, variables: Any, *args: Any, **kwargs: Any) -> Any: ...
 
 
 @dataclass
@@ -148,7 +156,7 @@ class ComputationGraphRenderer:
         self.graph_metadata: dict[str, Any] = {}
 
     def analyze_streaming_function(
-        self, streaming_fn: Callable, input_example: Any, rng_key: jax.random.PRNGKey | None = None
+        self, streaming_fn: Callable, input_example: Any, rng_key: jax.Array | None = None
     ) -> "ComputationGraphRenderer":
         """Analyze a streaming function to extract computation graph.
 
@@ -167,7 +175,9 @@ class ComputationGraphRenderer:
             # Try to extract module structure from function
             if hasattr(streaming_fn, "init") and hasattr(streaming_fn, "apply"):
                 # This is a Flax transformed function
-                self._analyze_flax_function(streaming_fn, input_example, rng_key)
+                self._analyze_flax_function(
+                    cast(FlaxTransformed, streaming_fn), input_example, rng_key
+                )
             else:
                 # Try to analyze as a regular function
                 self._analyze_function_structure(streaming_fn, input_example)
@@ -180,7 +190,7 @@ class ComputationGraphRenderer:
         return self
 
     def _analyze_flax_function(
-        self, streaming_fn: Callable, input_example: Any, rng_key: jax.random.PRNGKey
+        self, streaming_fn: FlaxTransformed, input_example: Any, rng_key: jax.Array
     ):
         """Analyze a Flax transformed streaming function."""
         try:
@@ -286,7 +296,7 @@ class ComputationGraphRenderer:
     def _get_shape(self, data: Any) -> tuple:
         """Get shape of data."""
         if hasattr(data, "shape"):
-            return data.shape
+            return tuple(data.shape)
         elif isinstance(data, list | tuple):
             return (len(data),)
         elif isinstance(data, dict):
@@ -299,7 +309,7 @@ class ComputationGraphRenderer:
         if not self.include_parameters:
             return {}
 
-        simplified = {}
+        simplified: dict[str, Any] = {}
         for key, value in params.items():
             if isinstance(value, jnp.ndarray):
                 simplified[key] = f"shape={value.shape}"
@@ -406,7 +416,7 @@ class ComputationGraphRenderer:
         # Draw nodes
         for node_id, node in self.nodes.items():
             x, y = pos[node_id]
-            bbox = FancyBboxPatch(
+            bbox = patches.FancyBboxPatch(
                 (x - 0.1, y - 0.05),
                 0.2,
                 0.1,

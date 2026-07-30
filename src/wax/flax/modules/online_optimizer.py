@@ -79,7 +79,9 @@ class OnlineOptimizer(nn.Module):
             OptInfo containing loss, auxiliary data, gradients, and parameters
         """
         # Initialize model parameters and state if needed
-        model_vars = self.variable("model_vars", "vars", lambda: {})
+        # Holds the wrapped model's own variable collections, keyed by collection
+        # name ("params", "state", ...); empty until the model has been initialized.
+        model_vars: nn.Variable[dict[str, Any]] = self.variable("model_vars", "vars", lambda: {})
 
         # Check if model is a TransformedWithState or regular function
         if hasattr(self.model, "init") and hasattr(self.model, "apply"):

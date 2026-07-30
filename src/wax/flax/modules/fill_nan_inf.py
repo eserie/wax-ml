@@ -13,7 +13,7 @@
 # limitations under the License.
 """Flax-based FillNanInf module."""
 
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 import flax.linen as nn
 import jax.numpy as jnp
@@ -45,7 +45,7 @@ class FillNanInf(nn.Module):
                 x, nan=self.fill_value, posinf=self.fill_value, neginf=self.fill_value
             )
 
-        return tree_map(fill_nan, input)
+        return cast(T, tree_map(fill_nan, input))
 
 
 def create_fill_nan_inf(fill_value: Any = 0.0) -> FillNanInf:

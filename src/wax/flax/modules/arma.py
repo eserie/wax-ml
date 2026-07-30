@@ -13,6 +13,8 @@
 # limitations under the License.
 """Flax-based ARMA module for Autoregressive Moving Average filtering."""
 
+from typing import cast
+
 import flax.linen as nn
 import jax.numpy as jnp
 
@@ -38,7 +40,7 @@ class ARMA(nn.Module):
     alpha: jnp.ndarray  # AR coefficients
     beta: jnp.ndarray  # MA coefficients
 
-    def setup(self):
+    def setup(self) -> None:
         """Setup the ARMA module."""
         # Validate coefficients
         if self.alpha.ndim != 1:
@@ -76,7 +78,9 @@ class ARMA(nn.Module):
         # Autoregressive component: sum(alpha[i] * y[t-i])
         if len(self.alpha) > 0:
             # Get previous outputs from AR buffer (placeholder initialization)
-            ar_history = self.ar_buffer(jnp.zeros_like(output))  # Get current state
+            # Get current state; the buffer is built with return_state left at
+            # its default (False), so the call yields the array alone.
+            ar_history = cast(jnp.ndarray, self.ar_buffer(jnp.zeros_like(output)))
 
             # Compute AR contribution
             ar_contribution = jnp.sum(self.alpha * ar_history)
@@ -85,7 +89,7 @@ class ARMA(nn.Module):
         # Moving average component: sum(beta[j] * eps[t-j])
         if len(self.beta) > 0:
             # Get previous inputs from MA buffer
-            ma_history = self.ma_buffer(eps)
+            ma_history = cast(jnp.ndarray, self.ma_buffer(eps))
 
             # Compute MA contribution
             ma_contribution = jnp.sum(self.beta * ma_history)

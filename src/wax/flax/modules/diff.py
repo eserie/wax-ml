@@ -13,6 +13,8 @@
 # limitations under the License.
 """Flax-based Diff module for computing differences on sequential data."""
 
+from typing import cast
+
 import flax.linen as nn
 import jax.numpy as jnp
 
@@ -28,7 +30,7 @@ class Diff(nn.Module):
 
     periods: int = 1
 
-    def setup(self):
+    def setup(self) -> None:
         """Setup the Diff module."""
         assert self.periods == 1, "periods > 1 not implemented."
 
@@ -44,8 +46,10 @@ class Diff(nn.Module):
         Returns:
             Difference between current and lagged values
         """
-        # Get buffer with current and previous values
-        buffer = self.buffer(input)
+        # Get buffer with current and previous values. The buffer is built with
+        # return_state left at its default (False), so it hands back the array
+        # alone rather than the (array, state) pair.
+        buffer = cast(jnp.ndarray, self.buffer(input))
 
         # Compute difference: current (last) - lagged (first)
         diff = buffer[-1] - buffer[0]

@@ -14,6 +14,7 @@
 """Flax-based SNARIMAX module for adaptive ARMA forecasting."""
 
 from collections.abc import Callable
+from typing import cast
 
 import flax.linen as nn
 import jax.numpy as jnp
@@ -32,9 +33,10 @@ class SNARIMAX(nn.Module):
 
     lags_x: int = 1  # Number of autoregressive lags for x
     lags_y: int = 1  # Number of moving average lags for y (prediction errors)
-    regressor: Callable | None = None  # Optional regressor function
+    # The regressor maps a feature matrix to predictions, so it yields an array.
+    regressor: Callable[..., jnp.ndarray] | None = None
 
-    def setup(self):
+    def setup(self) -> None:
         """Setup the SNARIMAX module."""
         # Create buffers for lagged values
         if self.lags_x > 0:
@@ -44,6 +46,7 @@ class SNARIMAX(nn.Module):
             self.buffer_y = Buffer(maxlen=self.lags_y, fill_value=0.0)
 
         # Create regressor if not provided
+        self.regressor_fn: Callable[..., jnp.ndarray]
         if self.regressor is None:
             # Default to a simple linear layer
             self.regressor_fn = nn.Dense(features=1, use_bias=True)
@@ -71,7 +74,8 @@ class SNARIMAX(nn.Module):
 
         # Add lagged x values (autoregressive component)
         if self.lags_x > 0:
-            x_lagged = self.buffer_x(x)
+            # buffer_x is built with return_state left at its default (False).
+            x_lagged = cast(jnp.ndarray, self.buffer_x(x))
             # Flatten the lagged values and add to features
             features.append(x_lagged.flatten())
 
@@ -80,7 +84,7 @@ class SNARIMAX(nn.Module):
             # Compute prediction error if y is provided
             # For now, use a simple prediction (can be improved with actual model output)
             prediction_error = y - x  # Simple error approximation
-            y_lagged = self.buffer_y(prediction_error)
+            y_lagged = cast(jnp.ndarray, self.buffer_y(prediction_error))
             # Flatten the lagged values and add to features
             features.append(y_lagged.flatten())
 
@@ -118,7 +122,7 @@ class SNARIMAX(nn.Module):
 def create_snarimax(
     lags_x: int = 1,
     lags_y: int = 1,
-    regressor: Callable | None = None,
+    regressor: Callable[..., jnp.ndarray] | None = None,
 ) -> SNARIMAX:
     """Factory function to create SNARIMAX module.
 

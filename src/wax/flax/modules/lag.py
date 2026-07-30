@@ -13,6 +13,8 @@
 # limitations under the License.
 """Flax-based Lag (delay) operator module."""
 
+from typing import cast
+
 import flax.linen as nn
 import jax.numpy as jnp
 from jax.tree_util import tree_map
@@ -31,7 +33,7 @@ class Lag(nn.Module):
     fill_value: float = jnp.nan
     return_state: bool = False
 
-    def setup(self):
+    def setup(self) -> None:
         """Setup the Lag module by creating internal buffer."""
         # Create internal buffer with size lag+1 to store current + lag previous values
         self.buffer = Buffer(
@@ -47,13 +49,15 @@ class Lag(nn.Module):
         Returns:
             Value from `lag` steps ago (or fill_value if not enough history)
         """
-        # Use internal Buffer to maintain the buffer
+        # Use internal Buffer to maintain the buffer. The buffer was created with
+        # this module's own `return_state`, so each branch below knows exactly
+        # which of the two shapes the call returns.
         if self.return_state:
-            buffer, buffer_state = self.buffer(input)
+            buffer, buffer_state = cast(tuple[jnp.ndarray, BufferState], self.buffer(input))
             # Return the oldest value (first element) and state
             return buffer[0], buffer_state
         else:
-            buffer = self.buffer(input)
+            buffer = cast(jnp.ndarray, self.buffer(input))
             # Return the oldest value (first element)
             return buffer[0]
 

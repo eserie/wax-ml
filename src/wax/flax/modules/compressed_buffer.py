@@ -55,12 +55,12 @@ Implementation optimizations for JAX/Flax:
 """
 
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import jax.numpy as jnp
 from flax import linen as nn
 
-from ..core.streaming_transforms import streaming_transform_with_state
+from ..core.streaming_transforms import StreamingTransform, streaming_transform_with_state
 from .buffer import Buffer
 from .ewma import EWMA
 
@@ -92,10 +92,10 @@ class CompressedBuffer(nn.Module):
     compression_params: dict[str, Any] | None = None
     fill_value: float = 0.0
 
-    def setup(self):
+    def setup(self) -> None:
         """Initialize compression strategy and internal storage."""
         # Default compression parameters
-        default_params = {
+        default_params: dict[str, dict[str, Any]] = {
             "ewma": {"alpha": 0.1},
             "quantile": {"percentiles": [0.1, 0.25, 0.5, 0.75, 0.9]},
             "downsample": {"factor": 2},
@@ -122,16 +122,20 @@ class CompressedBuffer(nn.Module):
         else:
             raise ValueError(f"Unknown compression strategy: {self.compression}")
 
-    def _setup_ewma_compression(self, params):
+    def _setup_ewma_compression(self, params: dict[str, Any]) -> None:
         """Setup EWMA-based compression."""
         alpha = params.get("alpha", 0.1)
         self.ewma = EWMA(alpha=alpha)
 
         # Store compressed representation
-        self.compressed_state = self.variable('state', 'compressed', lambda: 0.0)
-        self.count = self.variable('state', 'count', lambda: 0)
+        # Starts out as the Python scalar 0.0 and is replaced by the EWMA output
+        # (an array) from the first update onwards.
+        self.compressed_state: nn.Variable[float | jnp.ndarray] = self.variable(
+            'state', 'compressed', lambda: 0.0
+        )
+        self.count: nn.Variable[int] = self.variable('state', 'count', lambda: 0)
 
-    def _setup_quantile_compression(self, params):
+    def _setup_quantile_compression(self, params: dict[str, Any]) -> None:
         """Setup quantile-based compression."""
         percentiles = params.get("percentiles", [0.25, 0.5, 0.75])
         self.percentiles = jnp.array(percentiles)
@@ -141,13 +145,15 @@ class CompressedBuffer(nn.Module):
 
         # Store quantile estimates
         num_quantiles = len(percentiles)
-        self.quantile_estimates = self.variable(
+        self.quantile_estimates: nn.Variable[jnp.ndarray] = self.variable(
             'state', 'quantiles',
             lambda: jnp.full(num_quantiles, self.fill_value)
         )
-        self.update_count = self.variable('state', 'update_count', lambda: 0)
+        self.update_count: nn.Variable[int] = self.variable(
+            'state', 'update_count', lambda: 0
+        )
 
-    def _setup_downsample_compression(self, params):
+    def _setup_downsample_compression(self, params: dict[str, Any]) -> None:
         """Setup downsampling-based compression."""
         factor = params.get("factor", 2)
         self.downsample_factor = factor
@@ -157,15 +163,17 @@ class CompressedBuffer(nn.Module):
         self.downsampled_buffer = Buffer(maxlen=compressed_maxlen, fill_value=self.fill_value)
 
         # Counter for downsampling
-        self.sample_counter = self.variable('state', 'sample_counter', lambda: 0)
+        self.sample_counter: nn.Variable[int] = self.variable(
+            'state', 'sample_counter', lambda: 0
+        )
 
-    def _setup_sketching_compression(self, params):
+    def _setup_sketching_compression(self, params: dict[str, Any]) -> None:
         """Setup sketching-based compression."""
         num_hashes = params.get("num_hashes", 4)
         num_buckets = params.get("num_buckets", 1024)
 
         # Count-Min sketch structure
-        self.sketch = self.variable(
+        self.sketch: nn.Variable[jnp.ndarray] = self.variable(
             'state', 'sketch',
             lambda: jnp.zeros((num_hashes, num_buckets))
         )
@@ -173,12 +181,12 @@ class CompressedBuffer(nn.Module):
         self.num_buckets = num_buckets
 
         # Hash parameters (simple linear congruential parameters)
-        self.hash_params = self.variable(
+        self.hash_params: nn.Variable[jnp.ndarray] = self.variable(
             'state', 'hash_params',
             lambda: jnp.array([[31, 17], [37, 23], [41, 29], [43, 31]])[:num_hashes]
         )
 
-    def _setup_no_compression(self, params):
+    def _setup_no_compression(self, params: dict[str, Any]) -> None:
         """Setup no compression (regular buffer)."""
         self.uncompressed_buffer = Buffer(maxlen=self.maxlen, fill_value=self.fill_value)
 
@@ -198,7 +206,9 @@ class CompressedBuffer(nn.Module):
     def _ewma_update(self, x: jnp.ndarray) -> jnp.ndarray:
         """Update EWMA compressed representation."""
         # Update EWMA
-        compressed_value = self.ewma(x)
+        # EWMA is built with return_info left at its default (False), so the call
+        # yields the smoothed array alone.
+        compressed_value = cast(jnp.ndarray, self.ewma(x))
 
         # Store in compressed state
         self.compressed_state.value = compressed_value
@@ -209,7 +219,8 @@ class CompressedBuffer(nn.Module):
     def _quantile_update(self, x: jnp.ndarray) -> jnp.ndarray:
         """Update quantile-based compression."""
         # Add to quantile buffer
-        buffered_values = self.quantile_buffer(x)
+        # The buffer is built with return_state left at its default (False).
+        buffered_values = cast(jnp.ndarray, self.quantile_buffer(x))
 
         # Update quantiles periodically
         update_count = self.update_count.value
@@ -244,10 +255,12 @@ class CompressedBuffer(nn.Module):
 
         # Only store every nth sample
         if counter % self.downsample_factor == 0:
-            downsampled_data = self.downsampled_buffer(x)
+            downsampled_data = cast(jnp.ndarray, self.downsampled_buffer(x))
         else:
             # Return current buffer state without update
-            downsampled_data = self.downsampled_buffer.variables['state']['buffer']
+            downsampled_data = cast(
+                jnp.ndarray, self.downsampled_buffer.variables['state']['buffer']
+            )
 
         self.sample_counter.value = counter + 1
         return downsampled_data
@@ -274,12 +287,12 @@ class CompressedBuffer(nn.Module):
 
     def _no_compression_update(self, x: jnp.ndarray) -> jnp.ndarray:
         """Update without compression."""
-        return self.uncompressed_buffer(x)
+        return cast(jnp.ndarray, self.uncompressed_buffer(x))
 
     def get_memory_usage(self) -> dict[str, int]:
         """Get estimated memory usage in bytes."""
         # Use compression params or defaults for calculations
-        default_params = {
+        default_params: dict[str, dict[str, Any]] = {
             "ewma": {"alpha": 0.1},
             "quantile": {"percentiles": [0.1, 0.25, 0.5, 0.75, 0.9]},
             "downsample": {"factor": 2},
@@ -346,7 +359,7 @@ class HierarchicalBuffer(nn.Module):
     long_compression: CompressionStrategy = "quantile"
     fill_value: float = 0.0
 
-    def setup(self):
+    def setup(self) -> None:
         """Initialize hierarchical buffer levels."""
         # Recent buffer: no compression, high resolution
         self.recent_buffer = Buffer(maxlen=self.recent_maxlen, fill_value=self.fill_value)
@@ -368,13 +381,17 @@ class HierarchicalBuffer(nn.Module):
         )
 
         # Update counters for medium/long buffer updates
-        self.medium_update_counter = self.variable('state', 'medium_counter', lambda: 0)
-        self.long_update_counter = self.variable('state', 'long_counter', lambda: 0)
+        self.medium_update_counter: nn.Variable[int] = self.variable(
+            'state', 'medium_counter', lambda: 0
+        )
+        self.long_update_counter: nn.Variable[int] = self.variable(
+            'state', 'long_counter', lambda: 0
+        )
 
     def __call__(self, x: jnp.ndarray) -> dict[str, jnp.ndarray]:
         """Update hierarchical buffer and return all levels."""
         # Always update recent buffer
-        recent_data = self.recent_buffer(x)
+        recent_data = cast(jnp.ndarray, self.recent_buffer(x))
 
         # Update medium buffer every few steps
         medium_counter = self.medium_update_counter.value
@@ -382,8 +399,10 @@ class HierarchicalBuffer(nn.Module):
             medium_data = self.medium_buffer(x)
         else:
             # Return current medium buffer state
+            # Step 0 always updates (0 % 5 == 0), so the stored state is an array
+            # by the time this branch is reached, never the initial Python scalar.
             if hasattr(self.medium_buffer, 'compressed_state'):
-                medium_data = self.medium_buffer.compressed_state.value
+                medium_data = cast(jnp.ndarray, self.medium_buffer.compressed_state.value)
             else:
                 medium_data = jnp.array(0.0)
 
@@ -393,8 +412,9 @@ class HierarchicalBuffer(nn.Module):
             long_data = self.long_buffer(x)
         else:
             # Return current long buffer state
+            # Same reasoning as the medium level: step 0 always updates.
             if hasattr(self.long_buffer, 'compressed_state'):
-                long_data = self.long_buffer.compressed_state.value
+                long_data = cast(jnp.ndarray, self.long_buffer.compressed_state.value)
             else:
                 long_data = jnp.array(0.0)
 
@@ -409,7 +429,7 @@ class HierarchicalBuffer(nn.Module):
             "input": x
         }
 
-    def get_total_memory_usage(self) -> dict[str, int]:
+    def get_total_memory_usage(self) -> dict[str, float]:
         """Get total memory usage across all levels."""
         recent_usage = self.recent_maxlen * 8  # Full precision
 
@@ -449,7 +469,8 @@ class HierarchicalBuffer(nn.Module):
 
 def streaming_compressed_memory(maxlen: int = 10000,
                                 compression: CompressionStrategy = "ewma",
-                                compression_params: dict[str, Any] | None = None):
+                                compression_params: dict[str, Any] | None = None
+                                ) -> Callable[[Callable], StreamingTransform]:
     """Decorator for memory-efficient streaming with compression.
     
     Example:
@@ -458,7 +479,7 @@ def streaming_compressed_memory(maxlen: int = 10000,
             # Process with compressed memory for very long sequences
             pass
     """
-    def decorator(fn: Callable) -> Callable:
+    def decorator(fn: Callable) -> StreamingTransform:
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
             compressed_buffer = CompressedBuffer(
@@ -481,7 +502,8 @@ def streaming_hierarchical_memory(recent_maxlen: int = 100,
                                   medium_maxlen: int = 1000,
                                   long_maxlen: int = 10000,
                                   medium_compression: CompressionStrategy = "ewma",
-                                  long_compression: CompressionStrategy = "quantile"):
+                                  long_compression: CompressionStrategy = "quantile"
+                                  ) -> Callable[[Callable], StreamingTransform]:
     """Decorator for hierarchical memory management.
     
     Example:
@@ -497,7 +519,7 @@ def streaming_hierarchical_memory(recent_maxlen: int = 100,
             # Process with multi-resolution memory
             pass
     """
-    def decorator(fn: Callable) -> Callable:
+    def decorator(fn: Callable) -> StreamingTransform:
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
             hierarchical_buffer = HierarchicalBuffer(

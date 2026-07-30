@@ -95,7 +95,7 @@ class HierarchicalState(StreamingStatePattern):
 
     def execute_in_order(self, inputs: dict[str, Any]) -> dict[str, Any]:
         """Execute modules in dependency order."""
-        outputs = {}
+        outputs: dict[str, Any] = {}
 
         # Simple topological execution - can be enhanced with proper sorting
         for name, module in self.modules.items():
@@ -249,7 +249,7 @@ class StreamingStateMachine(StreamingStatePattern):
 
 
 # Streaming state pattern decorators
-def hierarchical_composition(**modules):
+def hierarchical_composition(**modules) -> Callable[[Callable], "StreamingTransform"]:
     """Decorator for creating hierarchical streaming compositions.
 
     Example:
@@ -261,7 +261,7 @@ def hierarchical_composition(**modules):
             return smoothed - jnp.mean(buffered)
     """
 
-    def decorator(fn: Callable) -> Callable:
+    def decorator(fn: Callable) -> "StreamingTransform":
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
             hierarchy = HierarchicalState(modules)
@@ -272,7 +272,9 @@ def hierarchical_composition(**modules):
     return decorator
 
 
-def conditional_update(condition_fn: Callable[..., bool], reset_on_condition: bool = False):
+def conditional_update(
+    condition_fn: Callable[..., bool], reset_on_condition: bool = False
+) -> Callable[[Callable], "StreamingTransform"]:
     """Decorator for conditional state updates.
 
     Example:
@@ -282,7 +284,7 @@ def conditional_update(condition_fn: Callable[..., bool], reset_on_condition: bo
             return counter(1)  # Increment only when x > threshold
     """
 
-    def decorator(fn: Callable) -> Callable:
+    def decorator(fn: Callable) -> "StreamingTransform":
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
             # Create a simple module that wraps the function
@@ -303,7 +305,7 @@ def state_machine(
     states: dict[str, Callable],
     transitions: dict[str, dict[str, Callable[..., bool]]],
     initial_state: str,
-):
+) -> Callable[[Callable], "StreamingTransform"]:
     """Decorator for finite state machine-based streaming.
 
     Example:
@@ -316,7 +318,7 @@ def state_machine(
             pass  # Logic handled by state machine
     """
 
-    def decorator(fn: Callable) -> Callable:
+    def decorator(fn: Callable) -> "StreamingTransform":
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
             # Convert functions to modules

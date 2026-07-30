@@ -171,7 +171,7 @@ def scan_hparams_first_order():
     STEP_SIZE = jax.device_put(STEP_SIZE_idx.values)
 
     rng = jax.random.PRNGKey(42)
-    eps = sample_noise_base(rng)
+    eps = sample_noise(rng)
 
     res = {}
     for optimizer in tqdm(OPTIMIZERS):
@@ -224,7 +224,7 @@ COLORS = sns.color_palette("hls")
 ```python
 def cross_validate_first_order(BEST_STEP_SIZE, BEST_GYM):
     plt.figure()
-    eps = sample_noise_base(CROSS_VAL_RNG)
+    eps = sample_noise(CROSS_VAL_RNG)
     CROSS_VAL_GYM = {}
     ax = None
 
@@ -299,7 +299,7 @@ def scan_hparams_newton():
     sim = unroll_transform_with_state(gym_loop_scan_hparams)
 
     rng = jax.random.PRNGKey(42)
-    eps = sample_noise_base(rng)
+    eps = sample_noise(rng)
 
     params, state = sim.init(rng, eps)
     res_newton, state = sim.apply(params, state, rng, eps)
@@ -347,7 +347,7 @@ def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
     sim = unroll_transform_with_state(gym_loop)
 
     rng = jax.random.PRNGKey(44)
-    eps = sample_noise_base(rng)
+    eps = sample_noise(rng)
     params, state = sim.init(rng, eps)
     (gym, info), state = sim.apply(params, state, rng, eps)
 
@@ -456,6 +456,13 @@ MIN_ERR = 0.09
 MAX_ERR = 0.15
 LEARN_TIME_SLICE = slice(int(T / 2), T)
 env = build_env()
+
+# The analysis functions above read `env`, `sample_noise` and `LEARN_TIME_SLICE`
+# from the module scope: each setting rebinds the three together. The noise
+# sampler is part of the setting, not a detail -- setting 3 runs over `Tlong`
+# steps, so evaluating it with setting 1's `T`-step sampler leaves
+# `LEARN_TIME_SLICE = slice(Tlong / 2, None)` pointing past the end of the run.
+sample_noise = sample_noise_base
 ```
 
 ```python
@@ -496,7 +503,7 @@ def gym_loop_newton(eps):
 
 def run_fixed_setting():
     rng = jax.random.PRNGKey(42)
-    eps = sample_noise_base(rng)
+    eps = sample_noise(rng)
     sim = unroll_transform_with_state(gym_loop_newton)
     params, state = sim.init(rng, eps)
     (gym, info), state = sim.apply(params, state, rng, eps)
@@ -552,6 +559,7 @@ MIN_ERR = 0.0833
 MAX_ERR = 0.15
 LEARN_TIME_SLICE = slice(int(T / 2), T)
 env = build_env()
+sample_noise = sample_noise_uniform
 ```
 
 ```python
@@ -636,6 +644,7 @@ MIN_ERR = 0.0833
 MAX_ERR = 0.12
 LEARN_TIME_SLICE = slice(int(T / 2), T)
 env = build_env()
+sample_noise = sample_noise_long
 ```
 
 ```python
@@ -672,6 +681,7 @@ Let us check this:
 ```python
 LEARN_TIME_SLICE = slice(int(Tlong / 2), None)
 env = build_env()
+sample_noise = sample_noise_long
 ```
 
 ```python
@@ -755,6 +765,7 @@ MIN_ERR = 0.09
 MAX_ERR = 0.3
 LEARN_TIME_SLICE = slice(int(T / 2), T)
 env = build_env()
+sample_noise = sample_noise_normal
 ```
 
 

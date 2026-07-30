@@ -13,18 +13,17 @@
 # limitations under the License.
 """Utilities for handling Flax state in streaming modules."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from flax import linen as nn
-from flax.core import FrozenDict
 
-from .transform import flax_transform_with_state
+from .transform import FlaxTransformed, flax_transform_with_state
 
 
 def apply_with_state(
-    module: nn.Module, variables: FrozenDict, *args, **kwargs
-) -> tuple[Any, FrozenDict]:
+    module: nn.Module, variables: Mapping[str, Any], *args, **kwargs
+) -> tuple[Any, Mapping[str, Any]]:
     """Apply a Flax module with proper state handling.
 
     This function automatically handles mutable state collections for streaming modules.
@@ -36,7 +35,10 @@ def apply_with_state(
         **kwargs: Keyword arguments to pass to module
 
     Returns:
-        Tuple of (output, new_variables)
+        Tuple of (output, new_variables).  ``new_variables`` is whatever
+        ``Module.apply`` hands back for the mutable collections -- a
+        ``FrozenDict`` or a plain ``dict`` depending on the Flax version --
+        or the ``variables`` passed in when nothing is mutable.
     """
     # Determine which collections are mutable
     mutable_collections = []
@@ -56,7 +58,9 @@ def apply_with_state(
         return output, variables
 
 
-def create_streaming_module_wrapper(module_class: type[nn.Module]) -> Callable:
+def create_streaming_module_wrapper(
+    module_class: type[nn.Module],
+) -> Callable[..., FlaxTransformed]:
     """Create a streaming wrapper for a Flax module that handles state properly.
 
     Args:
@@ -85,7 +89,7 @@ class StreamingModuleWrapper(nn.Module):
         return self.wrapped_module(*args, **kwargs)
 
 
-def make_streaming_compatible(module: nn.Module) -> flax_transform_with_state:
+def make_streaming_compatible(module: nn.Module) -> FlaxTransformed:
     """Make any Flax module streaming-compatible.
 
     Args:

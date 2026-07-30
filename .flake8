@@ -1,0 +1,26 @@
+# flake8 configuration.
+#
+# These settings used to live in setup.cfg, which was removed when the project
+# moved to pyproject.toml. flake8 reads neither pyproject.toml nor an absent
+# setup.cfg, so it silently fell back to its defaults -- a 79 column limit and
+# every check enabled -- and reported thousands of violations against code that
+# had never been written to that standard. Restored here verbatim.
+#
+# The line length matches [tool.ruff] in pyproject.toml, so the two linters agree.
+[flake8]
+ignore =
+    E203,
+    E501,
+    W503,
+    C901,
+    # `def f(self) -> None: ...` on one line is the standard spelling of a
+    # Protocol member and an overload stub. flake8 predates that idiom.
+    E701,
+    E704,
+    # Spacing around arithmetic operators: purely cosmetic, and the formatter
+    # owns it.
+    E226,
+select = B,C,E,F
+max-line-length = 100
+max-complexity = 15
+exclude = docs

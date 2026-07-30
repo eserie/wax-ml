@@ -13,7 +13,6 @@
 # limitations under the License.
 """Implement difference of values on sequential data."""
 
-
 import haiku as hk
 
 from wax.modules.buffer import Buffer

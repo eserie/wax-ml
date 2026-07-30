@@ -89,7 +89,7 @@ class MemoryLeak:
     """Detected memory leak information."""
 
     leak_type: str  # 'growing_arrays', 'accumulating_state', 'python_objects'
-    severity: str   # 'low', 'medium', 'high', 'critical'
+    severity: str  # 'low', 'medium', 'high', 'critical'
     growth_rate_mb_per_step: float
     total_leaked_mb: float
     first_detected_step: int
@@ -102,14 +102,15 @@ class MemoryLeak:
 class MemoryTracker:
     """Comprehensive memory tracker for streaming computations."""
 
-    def __init__(self,
-                 enable_detailed_tracking: bool = True,
-                 enable_jax_tracking: bool = True,
-                 enable_gc_monitoring: bool = True,
-                 snapshot_interval: int = 10,
-                 leak_detection_threshold_mb: float = 10.0,
-                 max_snapshots: int = 1000):
-
+    def __init__(
+        self,
+        enable_detailed_tracking: bool = True,
+        enable_jax_tracking: bool = True,
+        enable_gc_monitoring: bool = True,
+        snapshot_interval: int = 10,
+        leak_detection_threshold_mb: float = 10.0,
+        max_snapshots: int = 1000,
+    ):
         self.enable_detailed_tracking = enable_detailed_tracking
         self.enable_jax_tracking = enable_jax_tracking
         self.enable_gc_monitoring = enable_gc_monitoring
@@ -168,34 +169,38 @@ class MemoryTracker:
             # Track array creation
             array_id = id(arr)
             self.tracked_arrays[array_id] = {
-                'creation_time': time.time(),
-                'creation_step': self.step_count,
-                'size_bytes': arr.nbytes,
-                'shape': arr.shape,
-                'dtype': arr.dtype
+                "creation_time": time.time(),
+                "creation_step": self.step_count,
+                "size_bytes": arr.nbytes,
+                "shape": arr.shape,
+                "dtype": arr.dtype,
             }
 
             # Use weak reference to track when array is garbage collected
             def cleanup_callback(ref):
                 if array_id in self.tracked_arrays:
                     array_info = self.tracked_arrays.pop(array_id)
-                    self.array_lifecycle['destroyed'].append({
-                        'array_id': array_id,
-                        'destruction_time': time.time(),
-                        'destruction_step': self.step_count,
-                        'lifetime_steps': self.step_count - array_info['creation_step'],
-                        'size_bytes': array_info['size_bytes']
-                    })
+                    self.array_lifecycle["destroyed"].append(
+                        {
+                            "array_id": array_id,
+                            "destruction_time": time.time(),
+                            "destruction_step": self.step_count,
+                            "lifetime_steps": self.step_count - array_info["creation_step"],
+                            "size_bytes": array_info["size_bytes"],
+                        }
+                    )
 
             self._tracked_array_ids.add(weakref.ref(arr, cleanup_callback))
 
-            self.array_lifecycle['created'].append({
-                'array_id': array_id,
-                'creation_time': time.time(),
-                'creation_step': self.step_count,
-                'size_bytes': arr.nbytes,
-                'shape': arr.shape
-            })
+            self.array_lifecycle["created"].append(
+                {
+                    "array_id": array_id,
+                    "creation_time": time.time(),
+                    "creation_step": self.step_count,
+                    "size_bytes": arr.nbytes,
+                    "shape": arr.shape,
+                }
+            )
 
             return arr
 
@@ -219,6 +224,7 @@ class MemoryTracker:
             # System memory information
             try:
                 import psutil
+
                 process = psutil.Process()
                 memory_info = process.memory_info()
                 system_memory = psutil.virtual_memory()
@@ -233,12 +239,12 @@ class MemoryTracker:
 
             # JAX arrays tracking
             jax_arrays_count = len(self.tracked_arrays)
-            jax_arrays_size_mb = sum(
-                info['size_bytes'] for info in self.tracked_arrays.values()
-            ) / 1024 / 1024
+            jax_arrays_size_mb = (
+                sum(info["size_bytes"] for info in self.tracked_arrays.values()) / 1024 / 1024
+            )
 
             # Device memory (simplified - would need JAX device memory API)
-            device_memory_mb = {'cpu': process_memory_mb}  # Simplified
+            device_memory_mb = {"cpu": process_memory_mb}  # Simplified
 
             # Python objects memory
             python_objects_mb = 0.0
@@ -251,10 +257,10 @@ class MemoryTracker:
 
             # GC information
             gc_objects_count = len(gc.get_objects()) if self.enable_gc_monitoring else 0
-            if hasattr(gc, 'get_stats'):
+            if hasattr(gc, "get_stats"):
                 try:
                     gc_stats = gc.get_stats()
-                    gc_collections = sum(stat.get('collections', 0) for stat in gc_stats)
+                    gc_collections = sum(stat.get("collections", 0) for stat in gc_stats)
                 except Exception:
                     gc_collections = 0
             else:
@@ -289,7 +295,9 @@ class MemoryTracker:
                 memory_delta_mb=memory_delta_mb,
                 arrays_delta_count=arrays_delta_count,
                 gc_collections=gc_collections,
-                weak_refs_count=len(self._tracked_array_ids) if hasattr(self, '_tracked_array_ids') else 0
+                weak_refs_count=len(self._tracked_array_ids)
+                if hasattr(self, "_tracked_array_ids")
+                else 0,
             )
 
             self.snapshots.append(snapshot)
@@ -317,22 +325,22 @@ class MemoryTracker:
         try:
             if isinstance(state, dict):
                 # Handle Flax variable collections
-                if 'params' in state:
-                    parameters_mb = self._calculate_tree_memory(state['params'])
+                if "params" in state:
+                    parameters_mb = self._calculate_tree_memory(state["params"])
 
-                if 'state' in state:
+                if "state" in state:
                     # This includes buffers and other state variables
-                    state_dict = state['state']
+                    state_dict = state["state"]
                     state_variables_mb = self._calculate_tree_memory(state_dict)
 
                     # Try to separate buffers from other state
                     for key, value in state_dict.items():
-                        if 'buffer' in key.lower():
+                        if "buffer" in key.lower():
                             buffers_mb += self._calculate_tree_memory(value)
 
                 # Handle other state structures
                 for key, value in state.items():
-                    if key not in ['params', 'state']:
+                    if key not in ["params", "state"]:
                         state_variables_mb += self._calculate_tree_memory(value)
             else:
                 state_variables_mb = self._calculate_tree_memory(state)
@@ -349,19 +357,19 @@ class MemoryTracker:
 
         def accumulate_memory(x):
             nonlocal total_bytes
-            if hasattr(x, 'nbytes'):
+            if hasattr(x, "nbytes"):
                 total_bytes += x.nbytes
             elif isinstance(x, (int, float)):
                 total_bytes += 8  # Approximate
             elif isinstance(x, str):
-                total_bytes += len(x.encode('utf-8'))
+                total_bytes += len(x.encode("utf-8"))
             return x
 
         try:
             jax.tree_util.tree_map(accumulate_memory, tree)
         except Exception:
             # If tree mapping fails, estimate based on type
-            if hasattr(tree, 'nbytes'):
+            if hasattr(tree, "nbytes"):
                 total_bytes = tree.nbytes
             elif isinstance(tree, dict):
                 total_bytes = sum(sys.getsizeof(v) for v in tree.values())
@@ -406,7 +414,7 @@ class MemoryTracker:
                             total_leaked=total_growth,
                             first_step=recent_snapshots[0].step,
                             last_step=recent_snapshots[-1].step,
-                            affected_modules=list(set(s.module_name for s in recent_snapshots))
+                            affected_modules=list(set(s.module_name for s in recent_snapshots)),
                         )
 
         # Check for growing JAX arrays
@@ -446,17 +454,21 @@ class MemoryTracker:
         # Generate recommendations
         recommendations = []
         if leak_type == "growing_memory":
-            recommendations.extend([
-                "Check for accumulating state in streaming modules",
-                "Verify that temporary variables are being garbage collected",
-                "Consider using in-place operations where possible"
-            ])
+            recommendations.extend(
+                [
+                    "Check for accumulating state in streaming modules",
+                    "Verify that temporary variables are being garbage collected",
+                    "Consider using in-place operations where possible",
+                ]
+            )
         elif leak_type == "growing_arrays":
-            recommendations.extend([
-                "Check for arrays being created but not released",
-                "Verify JAX array lifecycle in streaming operations",
-                "Consider reusing arrays or using array views"
-            ])
+            recommendations.extend(
+                [
+                    "Check for arrays being created but not released",
+                    "Verify JAX array lifecycle in streaming operations",
+                    "Consider reusing arrays or using array views",
+                ]
+            )
 
         leak = MemoryLeak(
             leak_type=leak_type,
@@ -467,7 +479,7 @@ class MemoryTracker:
             last_detected_step=last_step,
             affected_modules=affected_modules,
             description=f"{leak_type} detected: {total_leaked:.1f} MB leaked over {last_step - first_step} steps",
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
         self.detected_leaks.append(leak)
@@ -489,7 +501,7 @@ class MemoryTracker:
                 "session": {
                     "duration_seconds": time.time() - self.session_start_time,
                     "total_snapshots": len(self.snapshots),
-                    "total_steps": self.step_count
+                    "total_steps": self.step_count,
                 },
                 "current_usage": {
                     "process_memory_mb": latest.process_memory_mb,
@@ -497,7 +509,7 @@ class MemoryTracker:
                     "jax_arrays_size_mb": latest.jax_arrays_size_mb,
                     "state_variables_mb": latest.state_variables_mb,
                     "parameters_mb": latest.parameters_mb,
-                    "buffers_mb": latest.buffers_mb
+                    "buffers_mb": latest.buffers_mb,
                 },
                 "statistics": {
                     "peak_memory_mb": max(process_memories),
@@ -505,13 +517,15 @@ class MemoryTracker:
                     "avg_memory_mb": sum(process_memories) / len(process_memories),
                     "total_growth_mb": latest.process_memory_mb - first.process_memory_mb,
                     "peak_arrays_count": max(array_counts),
-                    "avg_arrays_count": sum(array_counts) / len(array_counts)
+                    "avg_arrays_count": sum(array_counts) / len(array_counts),
                 },
                 "leaks": {
                     "total_detected": len(self.detected_leaks),
-                    "critical_leaks": sum(1 for leak in self.detected_leaks if leak.severity == "critical"),
-                    "high_leaks": sum(1 for leak in self.detected_leaks if leak.severity == "high")
-                }
+                    "critical_leaks": sum(
+                        1 for leak in self.detected_leaks if leak.severity == "critical"
+                    ),
+                    "high_leaks": sum(1 for leak in self.detected_leaks if leak.severity == "high"),
+                },
             }
 
     def get_module_memory_analysis(self, module_name: str) -> dict[str, Any]:
@@ -532,13 +546,13 @@ class MemoryTracker:
                     "current_mb": memory_values[-1],
                     "peak_mb": max(memory_values),
                     "avg_mb": sum(memory_values) / len(memory_values),
-                    "growth_mb": memory_values[-1] - memory_values[0]
+                    "growth_mb": memory_values[-1] - memory_values[0],
                 },
                 "state_memory": {
                     "current_mb": state_values[-1],
                     "peak_mb": max(state_values),
-                    "avg_mb": sum(state_values) / len(state_values)
-                }
+                    "avg_mb": sum(state_values) / len(state_values),
+                },
             }
 
     def generate_memory_report(self) -> str:
@@ -563,7 +577,9 @@ class MemoryTracker:
         current = summary["current_usage"]
         report.append("\n🔍 Current Memory Usage:")
         report.append(f"  Process Memory: {current['process_memory_mb']:.1f} MB")
-        report.append(f"  JAX Arrays: {current['jax_arrays_count']:,} ({current['jax_arrays_size_mb']:.1f} MB)")
+        report.append(
+            f"  JAX Arrays: {current['jax_arrays_count']:,} ({current['jax_arrays_size_mb']:.1f} MB)"
+        )
         report.append(f"  State Variables: {current['state_variables_mb']:.1f} MB")
         report.append(f"  Parameters: {current['parameters_mb']:.1f} MB")
         report.append(f"  Buffers: {current['buffers_mb']:.1f} MB")
@@ -650,14 +666,14 @@ def track_memory_usage(
         class MemoryWrapper:
             def __init__(self, original_fn):
                 self.original_fn = original_fn
-                self.__name__ = getattr(original_fn, '__name__', 'memory_wrapped')
+                self.__name__ = getattr(original_fn, "__name__", "memory_wrapped")
                 # Copy all attributes from original function except apply
-                for attr in ['init', '__call__']:
+                for attr in ["init", "__call__"]:
                     if hasattr(original_fn, attr):
                         setattr(self, attr, getattr(original_fn, attr))
 
                 # Create a wrapped apply method that includes memory tracking
-                if hasattr(original_fn, 'apply'):
+                if hasattr(original_fn, "apply"):
                     self.apply = self._create_memory_apply(original_fn.apply)
 
             def _create_memory_apply(self, original_apply):
@@ -684,4 +700,5 @@ def track_memory_usage(
                 return self.original_fn(*args, **kwargs)
 
         return MemoryWrapper(fn)
+
     return decorator

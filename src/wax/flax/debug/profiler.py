@@ -53,13 +53,13 @@ class PerformanceMetrics:
     step: int
     module_name: str
     execution_time: float  # seconds
-    memory_usage: float    # MB
-    memory_delta: float    # MB change from previous step
-    cpu_percent: float     # CPU usage percentage
+    memory_usage: float  # MB
+    memory_delta: float  # MB change from previous step
+    cpu_percent: float  # CPU usage percentage
     jit_compilation: bool  # Whether JIT compilation occurred
-    input_size: int        # Size of input data
-    output_size: int       # Size of output data
-    timestamp: float       # Unix timestamp
+    input_size: int  # Size of input data
+    output_size: int  # Size of output data
+    timestamp: float  # Unix timestamp
 
     # Advanced metrics
     cache_hits: int = 0
@@ -94,7 +94,9 @@ class ProfileResult:
             "session": {
                 "duration_seconds": self.session_duration,
                 "total_steps": self.total_steps,
-                "avg_throughput": self.total_steps / self.session_duration if self.session_duration > 0 else 0
+                "avg_throughput": self.total_steps / self.session_duration
+                if self.session_duration > 0
+                else 0,
             },
             "execution": {
                 "total_time": sum(execution_times),
@@ -102,31 +104,36 @@ class ProfileResult:
                 "median_time_ms": statistics.median(execution_times) * 1000,
                 "max_time_ms": max(execution_times) * 1000,
                 "min_time_ms": min(execution_times) * 1000,
-                "std_dev_ms": statistics.stdev(execution_times) * 1000 if len(execution_times) > 1 else 0
+                "std_dev_ms": statistics.stdev(execution_times) * 1000
+                if len(execution_times) > 1
+                else 0,
             },
             "memory": {
                 "peak_usage_mb": max(memory_usage),
                 "avg_usage_mb": statistics.mean(memory_usage),
                 "total_allocated": sum(m.memory_delta for m in self.metrics if m.memory_delta > 0),
-                "memory_efficiency": min(memory_usage) / max(memory_usage) if max(memory_usage) > 0 else 1.0
+                "memory_efficiency": min(memory_usage) / max(memory_usage)
+                if max(memory_usage) > 0
+                else 1.0,
             },
             "bottlenecks": len(self.bottlenecks),
             "jit_compilations": sum(1 for m in self.metrics if m.jit_compilation),
-            "recommendations": len(self.optimization_recommendations)
+            "recommendations": len(self.optimization_recommendations),
         }
 
 
 class StreamingProfiler:
     """Comprehensive performance profiler for streaming computations."""
 
-    def __init__(self,
-                 enable_memory_tracking: bool = True,
-                 enable_cpu_tracking: bool = True,
-                 enable_jit_tracking: bool = True,
-                 bottleneck_threshold_ms: float = 100.0,
-                 memory_leak_threshold_mb: float = 50.0,
-                 max_history: int = 10000):
-
+    def __init__(
+        self,
+        enable_memory_tracking: bool = True,
+        enable_cpu_tracking: bool = True,
+        enable_jit_tracking: bool = True,
+        bottleneck_threshold_ms: float = 100.0,
+        memory_leak_threshold_mb: float = 50.0,
+        max_history: int = 10000,
+    ):
         self.enable_memory_tracking = enable_memory_tracking
         self.enable_cpu_tracking = enable_cpu_tracking
         self.enable_jit_tracking = enable_jit_tracking
@@ -144,7 +151,9 @@ class StreamingProfiler:
         self.enabled = True
 
         # System monitoring
-        self.process = psutil.Process(os.getpid()) if enable_memory_tracking or enable_cpu_tracking else None
+        self.process = (
+            psutil.Process(os.getpid()) if enable_memory_tracking or enable_cpu_tracking else None
+        )
         self.last_memory_usage = 0.0
 
         # JIT compilation tracking
@@ -174,11 +183,13 @@ class StreamingProfiler:
 
                     if compilation_occurred:
                         self.jit_cache.add(fn_key)
-                        self.compilation_events.append({
-                            'timestamp': time.time(),
-                            'function': str(jitted_fn),
-                            'step': self.step_count
-                        })
+                        self.compilation_events.append(
+                            {
+                                "timestamp": time.time(),
+                                "function": str(jitted_fn),
+                                "step": self.step_count,
+                            }
+                        )
 
                     return jitted_fn(*fn_args, **fn_kwargs)
 
@@ -190,7 +201,7 @@ class StreamingProfiler:
         except Exception as e:
             print(f"Warning: Could not setup JIT tracking: {e}")
 
-    def start_step(self, module_name: str) -> 'ProfilerContext':
+    def start_step(self, module_name: str) -> "ProfilerContext":
         """Start profiling a computation step."""
         return ProfilerContext(self, module_name)
 
@@ -240,7 +251,7 @@ class StreamingProfiler:
                 input_size=input_size,
                 output_size=output_size,
                 timestamp=time.time(),
-                thread_count=threading.active_count()
+                thread_count=threading.active_count(),
             )
 
             self.metrics.append(metrics)
@@ -264,7 +275,7 @@ class StreamingProfiler:
             elif isinstance(data, (int, float)):
                 return 8  # Approximate size
             elif isinstance(data, str):
-                return len(data.encode('utf-8'))
+                return len(data.encode("utf-8"))
             else:
                 return 0
         except Exception:
@@ -273,17 +284,17 @@ class StreamingProfiler:
     def _record_bottleneck(self, metrics: PerformanceMetrics):
         """Record a performance bottleneck."""
         bottleneck = {
-            'step': metrics.step,
-            'module': metrics.module_name,
-            'execution_time_ms': metrics.execution_time * 1000,
-            'memory_usage_mb': metrics.memory_usage,
-            'input_size_bytes': metrics.input_size,
-            'output_size_bytes': metrics.output_size,
-            'timestamp': metrics.timestamp
+            "step": metrics.step,
+            "module": metrics.module_name,
+            "execution_time_ms": metrics.execution_time * 1000,
+            "memory_usage_mb": metrics.memory_usage,
+            "input_size_bytes": metrics.input_size,
+            "output_size_bytes": metrics.output_size,
+            "timestamp": metrics.timestamp,
         }
 
         # Store in result (we'll add this to ProfileResult later)
-        if not hasattr(self, '_bottlenecks'):
+        if not hasattr(self, "_bottlenecks"):
             self._bottlenecks = []
         self._bottlenecks.append(bottleneck)
 
@@ -307,7 +318,7 @@ class StreamingProfiler:
                 "min_time_ms": min(execution_times) * 1000,
                 "avg_memory_mb": statistics.mean(memory_usage),
                 "peak_memory_mb": max(memory_usage),
-                "jit_compilations": sum(1 for m in module_metrics if m.jit_compilation)
+                "jit_compilations": sum(1 for m in module_metrics if m.jit_compilation),
             }
 
     def detect_memory_leaks(self) -> list[dict[str, Any]]:
@@ -327,14 +338,16 @@ class StreamingProfiler:
                 growth = end_memory - start_memory
 
                 if growth > self.memory_leak_threshold_mb:
-                    return [{
-                        'type': 'memory_leak',
-                        'growth_mb': growth,
-                        'start_memory': start_memory,
-                        'end_memory': end_memory,
-                        'steps_analyzed': len(recent_metrics),
-                        'recommendation': 'Check for accumulating state or unreleased references'
-                    }]
+                    return [
+                        {
+                            "type": "memory_leak",
+                            "growth_mb": growth,
+                            "start_memory": start_memory,
+                            "end_memory": end_memory,
+                            "steps_analyzed": len(recent_metrics),
+                            "recommendation": "Check for accumulating state or unreleased references",
+                        }
+                    ]
 
             return []
 
@@ -403,26 +416,26 @@ class StreamingProfiler:
                 memory_usage = [m.memory_usage for m in self.metrics]
 
                 execution_stats = {
-                    'mean': statistics.mean(execution_times),
-                    'median': statistics.median(execution_times),
-                    'std_dev': statistics.stdev(execution_times) if len(execution_times) > 1 else 0,
-                    'min': min(execution_times),
-                    'max': max(execution_times)
+                    "mean": statistics.mean(execution_times),
+                    "median": statistics.median(execution_times),
+                    "std_dev": statistics.stdev(execution_times) if len(execution_times) > 1 else 0,
+                    "min": min(execution_times),
+                    "max": max(execution_times),
                 }
 
                 memory_stats = {
-                    'mean': statistics.mean(memory_usage),
-                    'median': statistics.median(memory_usage),
-                    'std_dev': statistics.stdev(memory_usage) if len(memory_usage) > 1 else 0,
-                    'min': min(memory_usage),
-                    'max': max(memory_usage)
+                    "mean": statistics.mean(memory_usage),
+                    "median": statistics.median(memory_usage),
+                    "std_dev": statistics.stdev(memory_usage) if len(memory_usage) > 1 else 0,
+                    "min": min(memory_usage),
+                    "max": max(memory_usage),
                 }
             else:
                 execution_stats = {}
                 memory_stats = {}
 
             # Collect bottlenecks
-            bottlenecks = getattr(self, '_bottlenecks', [])
+            bottlenecks = getattr(self, "_bottlenecks", [])
 
             # Generate recommendations
             recommendations = self.generate_optimization_recommendations()
@@ -434,7 +447,7 @@ class StreamingProfiler:
                 execution_stats=execution_stats,
                 memory_stats=memory_stats,
                 bottlenecks=bottlenecks,
-                optimization_recommendations=recommendations
+                optimization_recommendations=recommendations,
             )
 
     def reset(self) -> None:
@@ -447,7 +460,7 @@ class StreamingProfiler:
             self.last_memory_usage = 0.0
             self.jit_cache.clear()
             self.compilation_events.clear()
-            if hasattr(self, '_bottlenecks'):
+            if hasattr(self, "_bottlenecks"):
                 self._bottlenecks.clear()
 
     def enable(self) -> None:
@@ -478,7 +491,7 @@ class ProfilerContext:
             self.profiler.record_metrics(
                 module_name=self.module_name,
                 execution_time=execution_time,
-                jit_compilation=self.jit_compilation
+                jit_compilation=self.jit_compilation,
             )
 
     def set_jit_compilation(self, occurred: bool):
@@ -516,14 +529,14 @@ def profile_streaming(
         class ProfileWrapper:
             def __init__(self, original_fn):
                 self.original_fn = original_fn
-                self.__name__ = getattr(original_fn, '__name__', 'profile_wrapped')
+                self.__name__ = getattr(original_fn, "__name__", "profile_wrapped")
                 # Copy all attributes from original function except apply
-                for attr in ['init', '__call__']:
+                for attr in ["init", "__call__"]:
                     if hasattr(original_fn, attr):
                         setattr(self, attr, getattr(original_fn, attr))
 
                 # Create a wrapped apply method that includes profiling
-                if hasattr(original_fn, 'apply'):
+                if hasattr(original_fn, "apply"):
                     self.apply = self._create_profile_apply(original_fn.apply)
 
             def _create_profile_apply(self, original_apply):
@@ -543,7 +556,7 @@ def profile_streaming(
                             module_name=actual_module_name,
                             execution_time=0,  # Will be set by context manager
                             input_data=input_data,
-                            output_data=output_data
+                            output_data=output_data,
                         )
 
                         return result
@@ -554,6 +567,7 @@ def profile_streaming(
                 return self.original_fn(*args, **kwargs)
 
         return ProfileWrapper(fn)
+
     return decorator
 
 
@@ -572,8 +586,8 @@ def create_performance_report(profile_result: ProfileResult) -> str:
     report.append(f"  Throughput: {summary['session']['avg_throughput']:.1f} steps/second")
 
     # Execution performance
-    if 'execution' in summary:
-        exec_stats = summary['execution']
+    if "execution" in summary:
+        exec_stats = summary["execution"]
         report.append("\n⚡ Execution Performance:")
         report.append(f"  Average Time: {exec_stats['avg_time_ms']:.2f} ms")
         report.append(f"  Median Time: {exec_stats['median_time_ms']:.2f} ms")
@@ -581,8 +595,8 @@ def create_performance_report(profile_result: ProfileResult) -> str:
         report.append(f"  Std Deviation: {exec_stats['std_dev_ms']:.2f} ms")
 
     # Memory usage
-    if 'memory' in summary:
-        mem_stats = summary['memory']
+    if "memory" in summary:
+        mem_stats = summary["memory"]
         report.append("\n💾 Memory Usage:")
         report.append(f"  Peak Usage: {mem_stats['peak_usage_mb']:.1f} MB")
         report.append(f"  Average Usage: {mem_stats['avg_usage_mb']:.1f} MB")
@@ -590,11 +604,11 @@ def create_performance_report(profile_result: ProfileResult) -> str:
         report.append(f"  Memory Efficiency: {mem_stats['memory_efficiency']:.2f}")
 
     # Issues and optimizations
-    if summary.get('bottlenecks', 0) > 0:
+    if summary.get("bottlenecks", 0) > 0:
         report.append("\n🚨 Issues Detected:")
         report.append(f"  Bottlenecks: {summary['bottlenecks']}")
 
-    if summary.get('jit_compilations', 0) > 0:
+    if summary.get("jit_compilations", 0) > 0:
         report.append(f"  JIT Compilations: {summary['jit_compilations']}")
 
     # Recommendations

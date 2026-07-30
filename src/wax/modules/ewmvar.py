@@ -13,7 +13,6 @@
 # limitations under the License.
 """Compute exponentially weighted variance."""
 
-
 import haiku as hk
 import jax.numpy as jnp
 

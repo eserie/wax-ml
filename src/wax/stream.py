@@ -509,7 +509,7 @@ class Stream:
         np_data = encode_dataset(encoders, np_data)
 
         # convert to jax
-        if self.tensor_type == "jax" and not getattr(jax.config, 'jax_enable_x64', True):
+        if self.tensor_type == "jax" and not getattr(jax.config, "jax_enable_x64", True):
             # explicitly convert in onp.float32 and int32
             # berfore jax conversion to avoid jax warnings.
             def np_convert(x):
@@ -703,7 +703,9 @@ class Stream:
                         idx = vals
                         return (current_output[current_time_dim].value, idx)
 
-                    print(f"'{time_dim}'  return output: {as_list(output[time_dim].time, output, time_dim)}")
+                    print(
+                        f"'{time_dim}'  return output: {as_list(output[time_dim].time, output, time_dim)}"
+                    )
 
                 if self.ffills.get(time_dim, False):
                     # forward fill observation

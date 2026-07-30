@@ -46,9 +46,7 @@ class TestTechnicalIndicators:
         outputs = []
         current_state = state
         for price in prices:
-            output, current_state = bollinger_bands.apply(
-                params, current_state, None, price
-            )
+            output, current_state = bollinger_bands.apply(params, current_state, None, price)
             outputs.append(output)
 
         # Check outputs
@@ -69,7 +67,9 @@ class TestTechnicalIndicators:
             assert jnp.isfinite(final_output[field])
 
         # Band position should be between 0 and 1 (approximately)
-        assert 0.0 <= final_output["band_position"] <= 1.0 or jnp.isnan(final_output["band_position"])
+        assert 0.0 <= final_output["band_position"] <= 1.0 or jnp.isnan(
+            final_output["band_position"]
+        )
 
         # Upper band should be >= center line >= lower band
         assert final_output["upper_band"] >= final_output["center_line"]
@@ -89,9 +89,7 @@ class TestTechnicalIndicators:
         outputs = []
         current_state = state
         for price in trend_data:
-            output, current_state = macd_indicator.apply(
-                params, current_state, None, price
-            )
+            output, current_state = macd_indicator.apply(params, current_state, None, price)
             outputs.append(output)
 
         # Check outputs
@@ -184,9 +182,7 @@ class TestEventDrivenComposition:
         outputs = []
         current_state = state
         for price in low_vol_prices:
-            output, current_state = regime_aware_processor.apply(
-                params, current_state, None, price
-            )
+            output, current_state = regime_aware_processor.apply(params, current_state, None, price)
             outputs.append(output)
 
         # Should show low volatility characteristics
@@ -199,9 +195,7 @@ class TestEventDrivenComposition:
         outputs = []
         current_state = state
         for price in high_vol_prices:
-            output, current_state = regime_aware_processor.apply(
-                params, current_state, None, price
-            )
+            output, current_state = regime_aware_processor.apply(params, current_state, None, price)
             outputs.append(output)
 
         # Should eventually show higher volatility
@@ -352,10 +346,18 @@ class TestCompleteSystemComposition:
 
         # Should have all major system components
         expected_fields = [
-            "price", "volume", "bollinger", "macd",
-            "technical_signal", "momentum_signal", "macd_signal",
-            "raw_signal", "risk_adjusted_signal", "final_position",
-            "volatility", "is_high_volume"
+            "price",
+            "volume",
+            "bollinger",
+            "macd",
+            "technical_signal",
+            "momentum_signal",
+            "macd_signal",
+            "raw_signal",
+            "risk_adjusted_signal",
+            "final_position",
+            "volatility",
+            "is_high_volume",
         ]
 
         for field in expected_fields:
@@ -410,7 +412,9 @@ class TestCompleteSystemComposition:
         rng = jax.random.PRNGKey(42)
 
         # Initialize system
-        params, initial_state = complete_trading_system.init(rng, jnp.array(100.0), jnp.array(1000.0))
+        params, initial_state = complete_trading_system.init(
+            rng, jnp.array(100.0), jnp.array(1000.0)
+        )
 
         # Process several steps
         prices = [100.0, 101.0, 102.0]
@@ -427,7 +431,7 @@ class TestCompleteSystemComposition:
 
         # States should be different (indicating state updates)
         for i in range(1, len(states)):
-            assert str(states[i-1]) != str(states[i])
+            assert str(states[i - 1]) != str(states[i])
 
         # Final state should contain accumulated information
         # This is a conceptual test - in practice we'd check specific state values

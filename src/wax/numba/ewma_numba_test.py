@@ -115,9 +115,7 @@ def test_ewma_state():
     res1, state = ewma_apply(x[:T])
     res2, _ = ewma_apply(x[T:], state)
     res12 = np.concatenate([res1, res2])
-    df = pd.concat(
-        [pd.DataFrame(res_full), pd.DataFrame(res12)], axis=1, keys=["full", "12"]
-    )
+    df = pd.concat([pd.DataFrame(res_full), pd.DataFrame(res12)], axis=1, keys=["full", "12"])
     assert len(df)
 
     assert np.allclose(res_full, res12, equal_nan=True)

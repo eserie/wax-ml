@@ -69,11 +69,13 @@ class DebugEvent:
 class DebugHook:
     """Debug hook for monitoring streaming computations."""
 
-    def __init__(self,
-                 name: str,
-                 condition: DebugCondition | None = None,
-                 action: str = "log",  # 'log', 'break', 'capture', 'alert'
-                 max_events: int = 1000):
+    def __init__(
+        self,
+        name: str,
+        condition: DebugCondition | None = None,
+        action: str = "log",  # 'log', 'break', 'capture', 'alert'
+        max_events: int = 1000,
+    ):
         self.name = name
         self.condition = condition
         self.action = action
@@ -114,7 +116,7 @@ class DebugHook:
             input_data=self._safe_copy(input_data),
             output_data=self._safe_copy(output),
             metadata=metadata or {},
-            stack_trace=traceback.format_stack() if self.action == "break" else None
+            stack_trace=traceback.format_stack() if self.action == "break" else None,
         )
 
         self.events.append(event)
@@ -129,7 +131,7 @@ class DebugHook:
     def _deep_copy_state(self, state: Any) -> Any:
         """Create a deep copy of state for debugging."""
         try:
-            if hasattr(state, 'copy'):
+            if hasattr(state, "copy"):
                 return state.copy()
             elif isinstance(state, dict):
                 return {k: self._safe_copy(v) for k, v in state.items()}
@@ -170,17 +172,17 @@ class DebugHook:
         while True:
             try:
                 cmd = input("(debug) ").strip().lower()
-                if cmd in ['c', 'continue']:
+                if cmd in ["c", "continue"]:
                     break
-                elif cmd in ['s', 'state']:
+                elif cmd in ["s", "state"]:
                     print(f"State: {event.state_snapshot}")
-                elif cmd in ['i', 'input']:
+                elif cmd in ["i", "input"]:
                     print(f"Input: {event.input_data}")
-                elif cmd in ['o', 'output']:
+                elif cmd in ["o", "output"]:
                     print(f"Output: {event.output_data}")
-                elif cmd in ['h', 'help']:
+                elif cmd in ["h", "help"]:
                     print("Commands: (c)ontinue, (s)tate, (i)nput, (o)utput, (h)elp, (q)uit")
-                elif cmd in ['q', 'quit']:
+                elif cmd in ["q", "quit"]:
                     raise KeyboardInterrupt("Debug session terminated")
                 else:
                     print(f"Unknown command: {cmd}. Type 'h' for help.")
@@ -197,9 +199,12 @@ class DebugHook:
 class StreamingDebugger:
     """Comprehensive debugger for streaming computations."""
 
-    def __init__(self, enable_state_tracking: bool = True,
-                 enable_performance_tracking: bool = True,
-                 max_history: int = 1000):
+    def __init__(
+        self,
+        enable_state_tracking: bool = True,
+        enable_performance_tracking: bool = True,
+        max_history: int = 1000,
+    ):
         self.enable_state_tracking = enable_state_tracking
         self.enable_performance_tracking = enable_performance_tracking
         self.max_history = max_history
@@ -218,32 +223,37 @@ class StreamingDebugger:
         # Thread safety
         self._lock = threading.RLock()
 
-    def add_hook(self, hook: DebugHook) -> 'StreamingDebugger':
+    def add_hook(self, hook: DebugHook) -> "StreamingDebugger":
         """Add a debug hook."""
         with self._lock:
             self.hooks[hook.name] = hook
         return self
 
-    def remove_hook(self, name: str) -> 'StreamingDebugger':
+    def remove_hook(self, name: str) -> "StreamingDebugger":
         """Remove a debug hook."""
         with self._lock:
             self.hooks.pop(name, None)
         return self
 
-    def add_state_change_hook(self, name: str, condition: DebugCondition | None = None) -> 'StreamingDebugger':
+    def add_state_change_hook(
+        self, name: str, condition: DebugCondition | None = None
+    ) -> "StreamingDebugger":
         """Add hook for state changes."""
         hook = DebugHook(name=f"state_change_{name}", condition=condition, action="log")
         return self.add_hook(hook)
 
-    def add_breakpoint(self, name: str, condition: DebugCondition) -> 'StreamingDebugger':
+    def add_breakpoint(self, name: str, condition: DebugCondition) -> "StreamingDebugger":
         """Add conditional breakpoint."""
         hook = DebugHook(name=f"breakpoint_{name}", condition=condition, action="break")
         return self.add_hook(hook)
 
-    def add_performance_monitor(self, name: str, threshold_ms: float = 100.0) -> 'StreamingDebugger':
+    def add_performance_monitor(
+        self, name: str, threshold_ms: float = 100.0
+    ) -> "StreamingDebugger":
         """Add performance monitoring hook."""
+
         def slow_condition(step, state, input_data, output):
-            execution_times = self.performance_data.get('execution_time', [])
+            execution_times = self.performance_data.get("execution_time", [])
             return execution_times and execution_times[-1] * 1000 > threshold_ms
 
         hook = DebugHook(name=f"perf_{name}", condition=slow_condition, action="alert")
@@ -270,27 +280,29 @@ class StreamingDebugger:
 
             # Track performance data
             if self.enable_performance_tracking and execution_time is not None:
-                self.performance_data['execution_time'].append(execution_time)
-                self.performance_data['step'].append(self.current_step)
+                self.performance_data["execution_time"].append(execution_time)
+                self.performance_data["step"].append(self.current_step)
 
             # Check all hooks
             for hook in self.hooks.values():
                 if hook.check_condition(self.current_step, state, input_data, output):
                     metadata = {
-                        'execution_time_ms': execution_time * 1000 if execution_time else None,
-                        'session_time': time.time() - self.session_start_time
+                        "execution_time_ms": execution_time * 1000 if execution_time else None,
+                        "session_time": time.time() - self.session_start_time,
                     }
-                    hook.trigger(self.current_step, module_name, state, input_data, output, metadata)
+                    hook.trigger(
+                        self.current_step, module_name, state, input_data, output, metadata
+                    )
 
     def _safe_copy_state(self, state: Any) -> Any:
         """Safely copy state for history tracking."""
         try:
             if isinstance(state, dict):
                 # Handle Flax variable collections
-                if 'params' in state and 'state' in state:
+                if "params" in state and "state" in state:
                     return {
-                        'params_shapes': self._get_tree_shapes(state['params']),
-                        'state_values': self._safe_copy_tree(state['state'])
+                        "params_shapes": self._get_tree_shapes(state["params"]),
+                        "state_values": self._safe_copy_tree(state["state"]),
                     }
                 else:
                     return {k: self._safe_copy_tree(v) for k, v in state.items()}
@@ -301,8 +313,9 @@ class StreamingDebugger:
 
     def _get_tree_shapes(self, tree: Any) -> Any:
         """Get shapes of arrays in a tree structure."""
+
         def shape_fn(x):
-            if hasattr(x, 'shape'):
+            if hasattr(x, "shape"):
                 return x.shape
             else:
                 return type(x).__name__
@@ -328,30 +341,30 @@ class StreamingDebugger:
         with self._lock:
             hook_stats = {
                 name: {
-                    'hit_count': hook.hit_count,
-                    'enabled': hook.enabled,
-                    'events': len(hook.events)
+                    "hit_count": hook.hit_count,
+                    "enabled": hook.enabled,
+                    "events": len(hook.events),
                 }
                 for name, hook in self.hooks.items()
             }
 
             perf_summary = {}
-            if 'execution_time' in self.performance_data:
-                times = self.performance_data['execution_time']
+            if "execution_time" in self.performance_data:
+                times = self.performance_data["execution_time"]
                 perf_summary = {
-                    'total_steps': len(times),
-                    'avg_time_ms': sum(times) / len(times) * 1000 if times else 0,
-                    'max_time_ms': max(times) * 1000 if times else 0,
-                    'min_time_ms': min(times) * 1000 if times else 0
+                    "total_steps": len(times),
+                    "avg_time_ms": sum(times) / len(times) * 1000 if times else 0,
+                    "max_time_ms": max(times) * 1000 if times else 0,
+                    "min_time_ms": min(times) * 1000 if times else 0,
                 }
 
             return {
-                'session_duration': time.time() - self.session_start_time,
-                'total_steps': self.current_step,
-                'hooks': hook_stats,
-                'performance': perf_summary,
-                'state_history_length': len(self.state_history),
-                'global_events': len(self.global_events)
+                "session_duration": time.time() - self.session_start_time,
+                "total_steps": self.current_step,
+                "hooks": hook_stats,
+                "performance": perf_summary,
+                "state_history_length": len(self.state_history),
+                "global_events": len(self.global_events),
             }
 
     def clear_history(self) -> None:
@@ -377,20 +390,20 @@ class StreamingDebugger:
         with self._lock:
             if format == "dict":
                 return {
-                    'summary': self.get_summary(),
-                    'hooks': {
+                    "summary": self.get_summary(),
+                    "hooks": {
                         name: [
                             {
-                                'step': event.step,
-                                'timestamp': event.timestamp,
-                                'event_type': event.event_type,
-                                'metadata': event.metadata
+                                "step": event.step,
+                                "timestamp": event.timestamp,
+                                "event_type": event.event_type,
+                                "metadata": event.metadata,
                             }
                             for event in hook.events
                         ]
                         for name, hook in self.hooks.items()
                     },
-                    'performance_data': dict(self.performance_data)
+                    "performance_data": dict(self.performance_data),
                 }
             else:
                 raise ValueError(f"Unsupported export format: {format}")
@@ -422,14 +435,14 @@ def debug_streaming(
         class DebugWrapper:
             def __init__(self, original_fn):
                 self.original_fn = original_fn
-                self.__name__ = getattr(original_fn, '__name__', 'debug_wrapped')
+                self.__name__ = getattr(original_fn, "__name__", "debug_wrapped")
                 # Copy all attributes from original function except apply
-                for attr in ['init', '__call__']:
+                for attr in ["init", "__call__"]:
                     if hasattr(original_fn, attr):
                         setattr(self, attr, getattr(original_fn, attr))
 
                 # Create a wrapped apply method that includes debugging
-                if hasattr(original_fn, 'apply'):
+                if hasattr(original_fn, "apply"):
                     self.apply = self._create_debug_apply(original_fn.apply)
 
             def _create_debug_apply(self, original_apply):
@@ -455,7 +468,7 @@ def debug_streaming(
                         state=new_state,
                         input_data=input_data,
                         output=output,
-                        execution_time=execution_time
+                        execution_time=execution_time,
                     )
 
                     return result
@@ -466,25 +479,31 @@ def debug_streaming(
                 return self.original_fn(*args, **kwargs)
 
         return DebugWrapper(fn)
+
     return decorator
 
 
 # Convenience functions for common debug conditions
 
+
 def value_threshold(threshold: float, field: str = None) -> DebugCondition:
     """Create condition for value threshold."""
+
     def condition(step, state, input_data, output):
         value = input_data
         if field and isinstance(input_data, dict):
             value = input_data.get(field, 0)
         return float(value) > threshold
+
     return condition
 
 
 def step_interval(interval: int) -> DebugCondition:
     """Create condition for step intervals."""
+
     def condition(step, state, input_data, output):
         return step % interval == 0
+
     return condition
 
 
@@ -505,7 +524,7 @@ def state_change_detector(field: str, tolerance: float = 1e-6) -> DebugCondition
                 last_value = current_value
                 return False
 
-            if hasattr(current_value, '__len__'):
+            if hasattr(current_value, "__len__"):
                 change = jnp.linalg.norm(current_value - last_value)
             else:
                 change = abs(current_value - last_value)

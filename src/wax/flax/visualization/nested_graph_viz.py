@@ -44,6 +44,7 @@ from typing import Any
 # Graphviz imports with fallback
 try:
     import graphviz
+
     HAS_GRAPHVIZ = True
 except ImportError:
     graphviz = None
@@ -52,6 +53,7 @@ except ImportError:
 # NetworkX for graph analysis
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     nx = None
@@ -61,6 +63,7 @@ except ImportError:
 try:
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
+
     HAS_PLOTLY = True
 except ImportError:
     go = None
@@ -70,6 +73,7 @@ except ImportError:
 # IPython for display
 try:
     import IPython.display as ipython_display
+
     HAS_IPYTHON = True
 except ImportError:
     ipython_display = None
@@ -115,19 +119,21 @@ class NestedGraphConfig:
     auto_cluster: bool = True
 
     # Visual styling
-    node_colors: dict[str, str] = field(default_factory=lambda: {
-        "module": "#4CAF50",
-        "function": "#2196F3",
-        "buffer": "#FF9800",
-        "ewma": "#9C27B0",
-        "state": "#607D8B",
-        "input": "#FFC107",
-        "output": "#F44336"
-    })
+    node_colors: dict[str, str] = field(
+        default_factory=lambda: {
+            "module": "#4CAF50",
+            "function": "#2196F3",
+            "buffer": "#FF9800",
+            "ewma": "#9C27B0",
+            "state": "#607D8B",
+            "input": "#FFC107",
+            "output": "#F44336",
+        }
+    )
 
-    cluster_colors: list[str] = field(default_factory=lambda: [
-        "#E3F2FD", "#F3E5F5", "#E8F5E8", "#FFF8E1", "#FCE4EC", "#F1F8E9"
-    ])
+    cluster_colors: list[str] = field(
+        default_factory=lambda: ["#E3F2FD", "#F3E5F5", "#E8F5E8", "#FFF8E1", "#FCE4EC", "#F1F8E9"]
+    )
 
     # Interactive features
     enable_zoom: bool = True
@@ -147,7 +153,9 @@ class HierarchicalGraphAnalyzer:
         self.hierarchy: dict[str, GraphHierarchy] = {}
         self.levels: dict[int, list[str]] = defaultdict(list)
 
-    def analyze_streaming_function(self, streaming_fn: Any, input_example: Any) -> dict[str, GraphHierarchy]:
+    def analyze_streaming_function(
+        self, streaming_fn: Any, input_example: Any
+    ) -> dict[str, GraphHierarchy]:
         """Analyze streaming function to extract hierarchical structure.
 
         Args:
@@ -177,7 +185,9 @@ class HierarchicalGraphAnalyzer:
 
         return self.hierarchy
 
-    def _extract_hierarchy_from_nodes(self, nodes: dict[str, PipelineNode], edges: list[PipelineEdge]) -> None:
+    def _extract_hierarchy_from_nodes(
+        self, nodes: dict[str, PipelineNode], edges: list[PipelineEdge]
+    ) -> None:
         """Extract hierarchy from computation graph nodes."""
         # Create hierarchy nodes from pipeline nodes
         for node_id, node in nodes.items():
@@ -195,8 +205,8 @@ class HierarchicalGraphAnalyzer:
                     "module_type": node.module_type,
                     "parameters": node.parameters,
                     "input_shapes": node.input_shapes,
-                    "output_shapes": node.output_shapes
-                }
+                    "output_shapes": node.output_shapes,
+                },
             )
 
             self.hierarchy[node_id] = hierarchy_node
@@ -265,7 +275,7 @@ class HierarchicalGraphAnalyzer:
                     name=f"{node_type.title()} Components",
                     node_type="cluster",
                     level=0,
-                    properties={"cluster_type": node_type, "member_count": len(node_ids)}
+                    properties={"cluster_type": node_type, "member_count": len(node_ids)},
                 )
 
                 self.hierarchy[cluster_name] = cluster_node
@@ -329,8 +339,7 @@ class GraphvizNestedRenderer:
 
         # Create main graph
         dot = graphviz.Digraph(
-            engine=self.config.graphviz_engine,
-            format=self.config.graphviz_format
+            engine=self.config.graphviz_engine, format=self.config.graphviz_format
         )
 
         # Set graph attributes
@@ -339,7 +348,7 @@ class GraphvizNestedRenderer:
             dpi=str(self.config.graphviz_dpi),
             bgcolor="white",
             fontname="Arial",
-            fontsize="12"
+            fontsize="12",
         )
 
         # Render hierarchical structure
@@ -365,8 +374,7 @@ class GraphvizNestedRenderer:
         """Recursively render hierarchy with clusters."""
         # Get nodes at current level with specified parent
         current_nodes = [
-            h for h in hierarchy.values()
-            if h.parent == parent_id and h.level == level
+            h for h in hierarchy.values() if h.parent == parent_id and h.level == level
         ]
 
         for node in current_nodes:
@@ -381,7 +389,7 @@ class GraphvizNestedRenderer:
                         fillcolor=cluster_color,
                         label=node.name,
                         fontsize="14",
-                        fontweight="bold"
+                        fontweight="bold",
                     )
 
                     # Add the parent node itself
@@ -414,22 +422,18 @@ class GraphvizNestedRenderer:
             fillcolor=node_color,
             shape="box" if node.node_type == "module" else "ellipse",
             fontname="Arial",
-            fontsize="10"
+            fontsize="10",
         )
 
-    def _add_hierarchy_edges(self, dot: graphviz.Digraph, hierarchy: dict[str, GraphHierarchy]) -> None:
+    def _add_hierarchy_edges(
+        self, dot: graphviz.Digraph, hierarchy: dict[str, GraphHierarchy]
+    ) -> None:
         """Add edges between hierarchy nodes."""
         # For now, add parent-child edges
         for node in hierarchy.values():
             for child_id in node.children:
                 if child_id in hierarchy:
-                    dot.edge(
-                        node.node_id,
-                        child_id,
-                        style="dashed",
-                        color="gray",
-                        arrowhead="open"
-                    )
+                    dot.edge(node.node_id, child_id, style="dashed", color="gray", arrowhead="open")
 
 
 class CytoscapeNestedRenderer:
@@ -644,7 +648,9 @@ class CytoscapeNestedRenderer:
 
         return html_content
 
-    def _convert_to_cytoscape_format(self, hierarchy: dict[str, GraphHierarchy]) -> list[dict[str, Any]]:
+    def _convert_to_cytoscape_format(
+        self, hierarchy: dict[str, GraphHierarchy]
+    ) -> list[dict[str, Any]]:
         """Convert hierarchy to Cytoscape.js format."""
         elements: list[dict[str, Any]] = []
 
@@ -659,7 +665,7 @@ class CytoscapeNestedRenderer:
                     "type": node.node_type,
                     "color": node_color,
                     "properties": node.properties,
-                    "level": node.level
+                    "level": node.level,
                 }
             }
 
@@ -677,7 +683,7 @@ class CytoscapeNestedRenderer:
                         "id": f"{node.node_id}_{child_id}",
                         "source": node.node_id,
                         "target": child_id,
-                        "type": "hierarchy"
+                        "type": "hierarchy",
                     }
                 }
                 elements.append(edge)
@@ -885,18 +891,14 @@ class D3NestedRenderer:
                 "type": node.node_type,
                 "level": node.level,
                 "color": node_color,
-                "properties": node.properties
+                "properties": node.properties,
             }
             nodes.append(d3_node)
 
         # Add links
         for node in hierarchy.values():
             for child_id in node.children:
-                link = {
-                    "source": node.node_id,
-                    "target": child_id,
-                    "type": "hierarchy"
-                }
+                link = {"source": node.node_id, "target": child_id, "type": "hierarchy"}
                 links.append(link)
 
         return {"nodes": nodes, "links": links}
@@ -938,14 +940,14 @@ class NestedGraphVisualizer:
         elif backend == "cytoscape":
             html_content = self.cytoscape_renderer.render_interactive_graph(hierarchy)
             if output_path:
-                with open(output_path, 'w') as f:
+                with open(output_path, "w") as f:
                     f.write(html_content)
                 return output_path
             return html_content
         elif backend == "d3":
             html_content = self.d3_renderer.render_d3_graph(hierarchy)
             if output_path:
-                with open(output_path, 'w') as f:
+                with open(output_path, "w") as f:
                     f.write(html_content)
                 return output_path
             return html_content
@@ -968,7 +970,7 @@ class NestedGraphVisualizer:
 
         result = self.visualize_computation_graph(streaming_fn, input_example, backend)
 
-        if backend == "graphviz" and result.endswith('.svg'):
+        if backend == "graphviz" and result.endswith(".svg"):
             # Display SVG directly
             with open(result) as f:
                 svg_content = f.read()
@@ -1004,7 +1006,7 @@ class NestedGraphVisualizer:
             "max_hierarchy_level": max_level,
             "node_types": dict(node_types),
             "nodes_per_level": dict(nodes_per_level),
-            "hierarchy": hierarchy
+            "hierarchy": hierarchy,
         }
 
 

@@ -44,7 +44,7 @@ class TestHierarchicalState:
             return {
                 "buffered": buffered_data,
                 "smoothed": smoothed_data,
-                "combined": jnp.mean(buffered_data) + smoothed_data
+                "combined": jnp.mean(buffered_data) + smoothed_data,
             }
 
         # Initialize and test
@@ -83,7 +83,7 @@ class TestHierarchicalState:
                 "raw": x,
                 "buffered": buffered_data,
                 "smoothed": smoothed,
-                "combined": smoothed + jnp.mean(buffered_data)
+                "combined": smoothed + jnp.mean(buffered_data),
             }
 
             return result
@@ -126,10 +126,7 @@ class TestHierarchicalState:
             buffered = buffer(x)
             smoothed = ewma(x)
 
-            return {
-                "buffered_mean": jnp.mean(buffered),
-                "smoothed": smoothed
-            }
+            return {"buffered_mean": jnp.mean(buffered), "smoothed": smoothed}
 
         # Test the manual version works
         rng = jax.random.PRNGKey(42)
@@ -205,17 +202,13 @@ class TestConditionalStateUpdate:
             value_to_process = jax.lax.cond(
                 should_update,
                 lambda: x,
-                lambda: jnp.array(0.0)  # Pass zero when not updating
+                lambda: jnp.array(0.0),  # Pass zero when not updating
             )
 
             # Always call EWMA but with conditional input
             result = ewma(value_to_process)
 
-            return {
-                "ewma": result,
-                "input": x,
-                "updated": should_update
-            }
+            return {"ewma": result, "input": x, "updated": should_update}
 
         # Test sequence with positive and negative values
         rng = jax.random.PRNGKey(42)
@@ -374,8 +367,8 @@ class TestStreamingStateMachine:
                 lambda: jax.lax.cond(
                     jnp.abs(price - trend) > 2.0,
                     lambda: 2,  # trending
-                    lambda: 1   # volatile
-                )
+                    lambda: 1,  # volatile
+                ),
             )
 
             # Convert to string for output (post-JAX computation)
@@ -386,7 +379,7 @@ class TestStreamingStateMachine:
                 "regime": regime,
                 "volatility": price_volatility,
                 "trend": trend,
-                "price": price
+                "price": price,
             }
 
         # Test regime detection
@@ -445,7 +438,7 @@ class TestStreamingStateIntegration:
             signal = jax.lax.cond(
                 should_trade,
                 lambda: raw_signal,
-                lambda: jnp.array(0.0)  # No signal in low volatility
+                lambda: jnp.array(0.0),  # No signal in low volatility
             )
 
             return {
@@ -458,9 +451,7 @@ class TestStreamingStateIntegration:
 
         # Test the integrated system
         rng = jax.random.PRNGKey(42)
-        params, state = adaptive_trading_system.init(
-            rng, jnp.array(100.0), jnp.array(1000.0)
-        )
+        params, state = adaptive_trading_system.init(rng, jnp.array(100.0), jnp.array(1000.0))
 
         # Simulate market data with varying volatility
         prices = [100.0, 101.0, 99.0, 102.0, 98.0, 105.0, 95.0, 110.0]
@@ -501,11 +492,7 @@ class TestStreamingStateIntegration:
 
             # Conditional computation
             should_output = count > 2
-            result = jax.lax.cond(
-                should_output,
-                lambda: jnp.mean(buffered),
-                lambda: x
-            )
+            result = jax.lax.cond(should_output, lambda: jnp.mean(buffered), lambda: x)
 
             return {"result": result, "count": count}
 

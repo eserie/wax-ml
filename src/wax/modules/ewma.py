@@ -102,9 +102,7 @@ class EWMA(hk.Module):
         self.initial_value = initial_value
         self.return_info = return_info
 
-    def __call__(
-        self, x: jnp.ndarray
-    ) -> jnp.ndarray | tuple[jnp.ndarray, dict[str, jnp.ndarray]]:
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray | tuple[jnp.ndarray, dict[str, jnp.ndarray]]:
         """Compute EWMA.
 
         Args:

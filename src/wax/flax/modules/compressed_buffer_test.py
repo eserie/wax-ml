@@ -32,9 +32,7 @@ class TestCompressedBuffer:
     def test_ewma_compression(self):
         """Test EWMA compression strategy."""
         buffer = CompressedBuffer(
-            maxlen=1000,
-            compression="ewma",
-            compression_params={"alpha": 0.1}
+            maxlen=1000, compression="ewma", compression_params={"alpha": 0.1}
         )
 
         rng = jax.random.PRNGKey(42)
@@ -46,8 +44,8 @@ class TestCompressedBuffer:
 
         outputs = []
         for x in sequence:
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
             outputs.append(output)
 
         # EWMA should show smoothed progression
@@ -56,7 +54,7 @@ class TestCompressedBuffer:
 
         # Should be monotonically increasing but smoothed
         for i in range(1, len(outputs)):
-            assert outputs[i] >= outputs[i-1]  # Generally increasing
+            assert outputs[i] >= outputs[i - 1]  # Generally increasing
 
         # Final output should be less than final input (due to smoothing)
         assert outputs[-1] < sequence[-1]
@@ -66,7 +64,7 @@ class TestCompressedBuffer:
         buffer = CompressedBuffer(
             maxlen=100,
             compression="quantile",
-            compression_params={"percentiles": [0.25, 0.5, 0.75]}
+            compression_params={"percentiles": [0.25, 0.5, 0.75]},
         )
 
         rng = jax.random.PRNGKey(42)
@@ -78,8 +76,8 @@ class TestCompressedBuffer:
 
         outputs = []
         for x in test_data:
-            output, new_vars = buffer.apply(current_vars, jnp.array(x), mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, jnp.array(x), mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
             outputs.append(output)
 
         # Final quantiles should be computed
@@ -100,9 +98,7 @@ class TestCompressedBuffer:
     def test_downsample_compression(self):
         """Test downsampling compression."""
         buffer = CompressedBuffer(
-            maxlen=20,
-            compression="downsample",
-            compression_params={"factor": 2}
+            maxlen=20, compression="downsample", compression_params={"factor": 2}
         )
 
         rng = jax.random.PRNGKey(42)
@@ -114,8 +110,8 @@ class TestCompressedBuffer:
 
         outputs = []
         for x in sequence:
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
             outputs.append(output)
 
         # Should have downsampled the data
@@ -130,7 +126,7 @@ class TestCompressedBuffer:
         buffer = CompressedBuffer(
             maxlen=1000,
             compression="sketching",
-            compression_params={"num_hashes": 3, "num_buckets": 64}
+            compression_params={"num_hashes": 3, "num_buckets": 64},
         )
 
         rng = jax.random.PRNGKey(42)
@@ -142,8 +138,8 @@ class TestCompressedBuffer:
 
         outputs = []
         for x in sequence:
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
             outputs.append(output)
 
         # Should return sketch summary
@@ -153,10 +149,7 @@ class TestCompressedBuffer:
 
     def test_no_compression(self):
         """Test no compression (regular buffer)."""
-        buffer = CompressedBuffer(
-            maxlen=5,
-            compression="none"
-        )
+        buffer = CompressedBuffer(maxlen=5, compression="none")
 
         rng = jax.random.PRNGKey(42)
         variables = buffer.init(rng, jnp.array(1.0))
@@ -167,8 +160,8 @@ class TestCompressedBuffer:
 
         outputs = []
         for x in sequence:
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
             outputs.append(output)
 
         # Should behave like regular buffer
@@ -205,7 +198,7 @@ class TestHierarchicalBuffer:
             medium_maxlen=20,
             long_maxlen=100,
             medium_compression="ewma",
-            long_compression="quantile"
+            long_compression="quantile",
         )
 
         rng = jax.random.PRNGKey(42)
@@ -217,8 +210,8 @@ class TestHierarchicalBuffer:
 
         outputs = []
         for x in sequence:
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
             outputs.append(output)
 
         # Check final output structure
@@ -240,11 +233,7 @@ class TestHierarchicalBuffer:
 
     def test_memory_efficiency(self):
         """Test memory efficiency of hierarchical buffer."""
-        buffer = HierarchicalBuffer(
-            recent_maxlen=100,
-            medium_maxlen=1000,
-            long_maxlen=10000
-        )
+        buffer = HierarchicalBuffer(recent_maxlen=100, medium_maxlen=1000, long_maxlen=10000)
 
         memory_usage = buffer.get_total_memory_usage()
 
@@ -269,7 +258,7 @@ class TestHierarchicalBuffer:
             medium_maxlen=10,
             long_maxlen=50,
             medium_compression="downsample",
-            long_compression="ewma"
+            long_compression="ewma",
         )
 
         rng = jax.random.PRNGKey(42)
@@ -280,8 +269,8 @@ class TestHierarchicalBuffer:
         current_vars = variables
 
         for x in sequence:
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
 
         # Should work with different compression strategies
         assert True  # If we get here without errors, test passes
@@ -296,11 +285,7 @@ class TestStreamingDecorators:
         @streaming_compressed_memory(maxlen=100, compression="ewma")
         def compressed_processor(buffered_data, x):
             """Process with compressed memory."""
-            return {
-                "input": x,
-                "compressed": buffered_data,
-                "processed": buffered_data * 2
-            }
+            return {"input": x, "compressed": buffered_data, "processed": buffered_data * 2}
 
         # Test the decorated function
         rng = jax.random.PRNGKey(42)
@@ -312,9 +297,7 @@ class TestStreamingDecorators:
 
         outputs = []
         for x in sequence:
-            output, current_state = compressed_processor.apply(
-                params, current_state, None, x
-            )
+            output, current_state = compressed_processor.apply(params, current_state, None, x)
             outputs.append(output)
 
         # Check outputs
@@ -329,11 +312,7 @@ class TestStreamingDecorators:
     def test_hierarchical_memory_decorator(self):
         """Test @streaming_hierarchical_memory decorator."""
 
-        @streaming_hierarchical_memory(
-            recent_maxlen=3,
-            medium_maxlen=10,
-            long_maxlen=50
-        )
+        @streaming_hierarchical_memory(recent_maxlen=3, medium_maxlen=10, long_maxlen=50)
         def hierarchical_processor(memory_levels, x):
             """Process with hierarchical memory."""
             recent = memory_levels["recent"]
@@ -345,7 +324,7 @@ class TestStreamingDecorators:
                 "recent_mean": jnp.mean(recent),
                 "medium_compressed": medium,
                 "long_compressed": long_term,
-                "combined": jnp.mean(recent) + medium
+                "combined": jnp.mean(recent) + medium,
             }
 
         # Test the decorated function
@@ -358,9 +337,7 @@ class TestStreamingDecorators:
 
         outputs = []
         for x in sequence:
-            output, current_state = hierarchical_processor.apply(
-                params, current_state, None, x
-            )
+            output, current_state = hierarchical_processor.apply(params, current_state, None, x)
             outputs.append(output)
 
         # Check outputs
@@ -407,11 +384,7 @@ class TestCompressionPerformance:
 
     def test_long_sequence_processing(self):
         """Test processing very long sequences."""
-        buffer = HierarchicalBuffer(
-            recent_maxlen=10,
-            medium_maxlen=100,
-            long_maxlen=1000
-        )
+        buffer = HierarchicalBuffer(recent_maxlen=10, medium_maxlen=100, long_maxlen=1000)
 
         rng = jax.random.PRNGKey(42)
         variables = buffer.init(rng, jnp.array(1.0))
@@ -423,8 +396,8 @@ class TestCompressionPerformance:
         # Should handle arbitrarily long sequences
         for i in range(sequence_length):
             x = jnp.sin(i * 0.1)  # Some pattern
-            output, new_vars = buffer.apply(current_vars, x, mutable=['state'])
-            current_vars = {**current_vars, 'state': new_vars['state']}
+            output, new_vars = buffer.apply(current_vars, x, mutable=["state"])
+            current_vars = {**current_vars, "state": new_vars["state"]}
 
             # Memory usage should remain bounded
             if i % 500 == 0:  # Check periodically
@@ -472,5 +445,5 @@ class TestCompressionPerformance:
         variables = buffer.init(rng, jnp.array(1.0))
 
         # Should work with minimal buffer size
-        output, _ = buffer.apply(variables, jnp.array(1.0), mutable=['state'])
+        output, _ = buffer.apply(variables, jnp.array(1.0), mutable=["state"])
         assert jnp.isfinite(output)

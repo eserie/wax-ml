@@ -237,7 +237,10 @@ class ComputationGraphRenderer:
 
             if isinstance(value, dict):
                 # This might be a nested module
-                if any(k in value for k in ["kernel", "weight", "bias", "alpha", "scale", "logcom", "maxlen"]):
+                if any(
+                    k in value
+                    for k in ["kernel", "weight", "bias", "alpha", "scale", "logcom", "maxlen"]
+                ):
                     # This looks like a leaf module with parameters
                     module_type = self._infer_module_type(key, value)
 

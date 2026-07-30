@@ -13,7 +13,6 @@
 # limitations under the License.
 """Relative change between the current and a prior element."""
 
-
 import haiku as hk
 import jax.numpy as jnp
 

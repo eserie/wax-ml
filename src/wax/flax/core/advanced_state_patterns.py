@@ -232,11 +232,11 @@ class HierarchicalStateMachine(nn.Module):
         coordinated_outputs = self.coordinate_states(state_outputs, coord_state)
 
         # Update coordination state (JAX-compatible)
-        new_last_updates = coord_state['last_updates'] + 1  # Increment all counters
+        new_last_updates = coord_state["last_updates"] + 1  # Increment all counters
         new_coord_state = {
-            'num_active_states': coord_state['num_active_states'],
-            'state_priorities': coord_state['state_priorities'],
-            'last_updates': new_last_updates
+            "num_active_states": coord_state["num_active_states"],
+            "state_priorities": coord_state["state_priorities"],
+            "last_updates": new_last_updates,
         }
         self.coordination_state.value = new_coord_state
 
@@ -258,8 +258,7 @@ class AttentionBasedStateSelector(nn.Module):
         """Initialize attention mechanism and state storage."""
         # Multi-head attention for state selection
         self.attention = nn.MultiHeadDotProductAttention(
-            num_heads=self.num_heads,
-            qkv_features=self.embed_dim
+            num_heads=self.num_heads, qkv_features=self.embed_dim
         )
 
         # State embedding layers
@@ -268,12 +267,11 @@ class AttentionBasedStateSelector(nn.Module):
 
         # Historical state buffer
         self.state_buffer = self.variable(
-            'state', 'history',
-            lambda: jnp.zeros((self.max_history_length, self.embed_dim))
+            "state", "history", lambda: jnp.zeros((self.max_history_length, self.embed_dim))
         )
 
-        self.buffer_pointer = self.variable('state', 'pointer', lambda: 0)
-        self.buffer_size = self.variable('state', 'size', lambda: 0)
+        self.buffer_pointer = self.variable("state", "pointer", lambda: 0)
+        self.buffer_size = self.variable("state", "size", lambda: 0)
 
     def add_to_history(self, state_embedding: jnp.ndarray):
         """Add new state to circular buffer."""
@@ -296,16 +294,20 @@ class AttentionBasedStateSelector(nn.Module):
         # Encode current state as query
         if isinstance(current_state, dict):
             # Flatten dictionary state to vector
-            state_vector = jnp.concatenate([
-                jnp.atleast_1d(v) if isinstance(v, int | float | jnp.ndarray) else jnp.array([0.0])
-                for v in current_state.values()
-            ])
+            state_vector = jnp.concatenate(
+                [
+                    jnp.atleast_1d(v)
+                    if isinstance(v, int | float | jnp.ndarray)
+                    else jnp.array([0.0])
+                    for v in current_state.values()
+                ]
+            )
         else:
             state_vector = jnp.atleast_1d(current_state)
 
         # Pad or truncate to fixed size
         if len(state_vector) > self.embed_dim:
-            state_vector = state_vector[:self.embed_dim]
+            state_vector = state_vector[: self.embed_dim]
         else:
             state_vector = jnp.pad(state_vector, (0, self.embed_dim - len(state_vector)))
 
@@ -324,10 +326,7 @@ class AttentionBasedStateSelector(nn.Module):
         else:
             # Handle circular buffer
             pointer = self.buffer_pointer.value
-            valid_history = jnp.concatenate([
-                buffer[pointer:],
-                buffer[:pointer]
-            ])
+            valid_history = jnp.concatenate([buffer[pointer:], buffer[:pointer]])
 
         keys = values = valid_history[None, :, :]  # [1, history_len, embed_dim]
 
@@ -348,16 +347,20 @@ class AttentionBasedStateSelector(nn.Module):
         """Process current state with attention to historical context."""
         # Encode current state
         if isinstance(current_state, dict):
-            state_vector = jnp.concatenate([
-                jnp.atleast_1d(v) if isinstance(v, int | float | jnp.ndarray) else jnp.array([0.0])
-                for v in current_state.values()
-            ])
+            state_vector = jnp.concatenate(
+                [
+                    jnp.atleast_1d(v)
+                    if isinstance(v, int | float | jnp.ndarray)
+                    else jnp.array([0.0])
+                    for v in current_state.values()
+                ]
+            )
         else:
             state_vector = jnp.atleast_1d(current_state)
 
         # Pad or truncate
         if len(state_vector) > self.embed_dim:
-            state_vector = state_vector[:self.embed_dim]
+            state_vector = state_vector[: self.embed_dim]
         else:
             state_vector = jnp.pad(state_vector, (0, self.embed_dim - len(state_vector)))
 
@@ -377,10 +380,7 @@ class AttentionBasedStateSelector(nn.Module):
             else:
                 # Handle circular buffer
                 pointer = self.buffer_pointer.value
-                valid_history = jnp.concatenate([
-                    buffer[pointer:],
-                    buffer[:pointer]
-                ])
+                valid_history = jnp.concatenate([buffer[pointer:], buffer[:pointer]])
 
             # Use the actual query for attention
             query = dummy_query  # Already computed above
@@ -414,7 +414,7 @@ class AttentionBasedStateSelector(nn.Module):
             "original_state": state_embedding,
             "relevant_history": relevant_states,
             "attention_weights": relevant_weights,
-            "current_state": current_state
+            "current_state": current_state,
         }
 
 
@@ -502,17 +502,18 @@ def streaming_state_machine(
             # State machine handles coordination automatically
             pass
     """
+
     def decorator(fn: Callable) -> StreamingTransform:
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
-            hsm = HierarchicalStateMachine(
-                state_modules, dependencies, coordination_strategy
-            )
+            hsm = HierarchicalStateMachine(state_modules, dependencies, coordination_strategy)
             state_outputs = hsm(*args, **kwargs)
 
             # Call original function with state outputs
             return fn(state_outputs, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -525,13 +526,12 @@ def streaming_attention_state(embed_dim: int = 64, num_heads: int = 4, max_histo
             # Function receives enhanced state with attention context
             pass
     """
+
     def decorator(fn: Callable) -> StreamingTransform:
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
             attention_selector = AttentionBasedStateSelector(
-                embed_dim=embed_dim,
-                num_heads=num_heads,
-                max_history_length=max_history
+                embed_dim=embed_dim, num_heads=num_heads, max_history_length=max_history
             )
 
             # Use first argument as current state
@@ -540,7 +540,9 @@ def streaming_attention_state(embed_dim: int = 64, num_heads: int = 4, max_histo
 
             # Call original function with attention-enhanced context
             return fn(attention_output, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -557,6 +559,7 @@ def streaming_compose_states(*state_modules: nn.Module, strategy: str = "pipelin
             # All state patterns are composed automatically
             pass
     """
+
     def decorator(fn: Callable) -> StreamingTransform:
         @streaming_transform_with_state
         def wrapper(*args, **kwargs):
@@ -568,5 +571,7 @@ def streaming_compose_states(*state_modules: nn.Module, strategy: str = "pipelin
 
             # Call original function with composed outputs
             return fn(composed_output, *args, **kwargs)
+
         return wrapper
+
     return decorator

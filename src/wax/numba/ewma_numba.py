@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Compute exponentioal moving average."""
+
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, cast
 
@@ -83,9 +84,7 @@ def ewma(
 
         initial_value : initial value for the state.
     """
-    assert (
-        com is not None or alpha is not None
-    ), "com or alpha parameters must be specified."
+    assert com is not None or alpha is not None, "com or alpha parameters must be specified."
     if com is not None:
         assert alpha is None
     elif alpha is not None:
@@ -129,7 +128,6 @@ def ewma(
 
     @numba.jit(nopython=True, nogil=True, parallel=False)
     def numba_apply(values, mean, old_wt, nobs):
-
         """
         Compute online exponentially weighted mean per column over 2D values.
 
@@ -158,9 +156,7 @@ def ewma(
                             old_wt_factor = 1.0
                         else:
                             if old_wt[j] > 0:
-                                old_wt_factor = np.maximum(
-                                    0.0, (old_wt[j] - 1.0) / old_wt[j]
-                                )
+                                old_wt_factor = np.maximum(0.0, (old_wt[j] - 1.0) / old_wt[j])
                             else:
                                 old_wt_factor = 0.0
                         old_wt[j] = np.minimum(old_wt[j], com)

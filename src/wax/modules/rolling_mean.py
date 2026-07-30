@@ -13,7 +13,6 @@
 # limitations under the License.
 """Rolling mean."""
 
-
 import haiku as hk
 import jax.numpy as jnp
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Flax-based Exponentially Weighted Moving Variance module."""
 
-
 import flax.linen as nn
 import jax.numpy as jnp
 from flax.linen import initializers

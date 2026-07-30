@@ -44,7 +44,9 @@ def test_func_optimizer():
             yp = hk.Linear(1, with_bias=False)(x)
             return loss(y, yp.reshape(y.shape)), yp
 
-        (loss_val, yp), params = FuncOptimizer(cost, OptaxOptimizer(optax.sgd(1.0e-2)), has_aux=True)(x, y)
+        (loss_val, yp), params = FuncOptimizer(
+            cost, OptaxOptimizer(optax.sgd(1.0e-2)), has_aux=True
+        )(x, y)
 
         return (loss_val, yp), params
 

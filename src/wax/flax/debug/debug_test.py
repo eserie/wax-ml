@@ -41,6 +41,7 @@ class TestDebugHook:
 
     def test_basic_hook_creation(self):
         """Test basic debug hook creation and configuration."""
+
         def condition(step, state, inp, out):
             return step % 5 == 0
 
@@ -55,6 +56,7 @@ class TestDebugHook:
 
     def test_hook_condition_checking(self):
         """Test hook condition evaluation."""
+
         def always_true(step, state, inp, out):
             return True
 
@@ -69,6 +71,7 @@ class TestDebugHook:
 
     def test_hook_trigger_and_events(self):
         """Test hook triggering and event recording."""
+
         def threshold_condition(step, state, inp, out):
             return inp > 5.0
 
@@ -81,7 +84,7 @@ class TestDebugHook:
             state={"value": 10},
             input_data=6.0,
             output=12.0,
-            metadata={"test": True}
+            metadata={"test": True},
         )
 
         assert hook.hit_count == 1
@@ -100,7 +103,7 @@ class TestDebugHook:
 
         # Add more events than the limit
         for i in range(5):
-            hook.trigger(i, "module", {}, i, i*2)
+            hook.trigger(i, "module", {}, i, i * 2)
 
         # Should only keep the last 3 events
         assert len(hook.events) == 3
@@ -153,13 +156,13 @@ class TestStreamingDebugger:
             state={"test": "value"},
             input_data=5.0,
             output=10.0,
-            execution_time=0.001
+            execution_time=0.001,
         )
 
         assert debugger.current_step == 1
         assert hook.hit_count == 1
-        assert len(debugger.performance_data['execution_time']) == 1
-        assert debugger.performance_data['execution_time'][0] == 0.001
+        assert len(debugger.performance_data["execution_time"]) == 1
+        assert debugger.performance_data["execution_time"][0] == 0.001
 
     def test_debugger_summary(self):
         """Test debugger summary generation."""
@@ -170,15 +173,15 @@ class TestStreamingDebugger:
         debugger.add_hook(hook)
 
         for i in range(5):
-            debugger.step("module", {}, i, i*2, execution_time=0.001*i)
+            debugger.step("module", {}, i, i * 2, execution_time=0.001 * i)
 
         summary = debugger.get_summary()
 
-        assert summary['total_steps'] == 5
-        assert 'hooks' in summary
-        assert 'performance' in summary
-        assert summary['hooks']['test_hook']['hit_count'] == 0  # No condition, so no hits
-        assert summary['performance']['total_steps'] == 5
+        assert summary["total_steps"] == 5
+        assert "hooks" in summary
+        assert "performance" in summary
+        assert summary["hooks"]["test_hook"]["hit_count"] == 0  # No condition, so no hits
+        assert summary["performance"]["total_steps"] == 5
 
 
 class TestStreamingProfiler:
@@ -217,7 +220,7 @@ class TestStreamingProfiler:
             module_name="test_module",
             execution_time=0.005,
             input_data=test_input,
-            output_data=test_output
+            output_data=test_output,
         )
 
         assert profiler.step_count == 1
@@ -281,8 +284,8 @@ class TestStreamingProfiler:
         assert result.total_steps == 5
         assert len(result.metrics) == 5
         assert result.session_duration > 0
-        assert 'mean' in result.execution_stats
-        assert 'mean' in result.memory_stats
+        assert "mean" in result.execution_stats
+        assert "mean" in result.memory_stats
 
 
 class TestMemoryTracker:
@@ -296,7 +299,7 @@ class TestMemoryTracker:
         assert tracker.step_count == 0
         assert len(tracker.snapshots) == 0
 
-    @patch('psutil.Process')
+    @patch("psutil.Process")
     def test_memory_snapshot(self, mock_process):
         """Test memory snapshot creation."""
         # Mock psutil
@@ -321,14 +324,8 @@ class TestMemoryTracker:
 
         # Create test state with JAX arrays
         test_state = {
-            'params': {
-                'weights': jnp.ones((10, 10)),
-                'bias': jnp.zeros(10)
-            },
-            'state': {
-                'buffer': jnp.zeros(100),
-                'counter': 5
-            }
+            "params": {"weights": jnp.ones((10, 10)), "bias": jnp.zeros(10)},
+            "state": {"buffer": jnp.zeros(100), "counter": 5},
         }
 
         state_mb, params_mb, buffers_mb = tracker._analyze_state_memory(test_state)
@@ -480,7 +477,7 @@ class TestIntegration:
         debug_summary = debugger.get_summary()
         profile_result = profiler.finalize()
 
-        assert debug_summary['total_steps'] >= 10
+        assert debug_summary["total_steps"] >= 10
         assert profile_result.total_steps >= 10
 
     def test_full_monitoring_stack(self):
@@ -518,8 +515,11 @@ class TestIntegration:
         memory_summary = memory_tracker.get_memory_summary()
 
         # All should have captured the computations
-        assert all(summary.get('total_steps', 0) >= 15 for summary in [
-            debug_summary,
-            {'total_steps': profile_result.total_steps},
-            memory_summary['session']
-        ])
+        assert all(
+            summary.get("total_steps", 0) >= 15
+            for summary in [
+                debug_summary,
+                {"total_steps": profile_result.total_steps},
+                memory_summary["session"],
+            ]
+        )

@@ -42,12 +42,7 @@ class SimpleRegimeDetector(nn.Module):
         signal = self.ewma(x)
         regime_active = jnp.abs(signal) > self.threshold
 
-        return {
-            "regime": self.regime_name,
-            "signal": signal,
-            "active": regime_active,
-            "input": x
-        }
+        return {"regime": self.regime_name, "signal": signal, "active": regime_active, "input": x}
 
 
 class TestHierarchicalStateMachine:
@@ -59,10 +54,7 @@ class TestHierarchicalStateMachine:
         market_detector = SimpleRegimeDetector(threshold=0.5, regime_name="market")
         volatility_detector = SimpleRegimeDetector(threshold=1.0, regime_name="volatility")
 
-        state_modules = {
-            "market": market_detector,
-            "volatility": volatility_detector
-        }
+        state_modules = {"market": market_detector, "volatility": volatility_detector}
 
         # Create hierarchical state machine
         hsm = HierarchicalStateMachine(state_modules)
@@ -76,7 +68,7 @@ class TestHierarchicalStateMachine:
         assert "state" in variables
 
         # Apply the state machine
-        output, new_variables = hsm.apply(variables, jnp.array(1.5), mutable=['state'])
+        output, new_variables = hsm.apply(variables, jnp.array(1.5), mutable=["state"])
 
         # Should have outputs for both state modules
         assert "market" in output
@@ -96,10 +88,7 @@ class TestHierarchicalStateMachine:
         market_detector = SimpleRegimeDetector(threshold=0.5, regime_name="market")
         volatility_detector = SimpleRegimeDetector(threshold=1.0, regime_name="volatility")
 
-        state_modules = {
-            "market": market_detector,
-            "volatility": volatility_detector
-        }
+        state_modules = {"market": market_detector, "volatility": volatility_detector}
 
         # Volatility depends on market
         dependencies = {"volatility": ["market"]}
@@ -115,7 +104,7 @@ class TestHierarchicalStateMachine:
         rng = jax.random.PRNGKey(42)
         variables = hsm.init(rng, jnp.array(1.0))
 
-        output, new_variables = hsm.apply(variables, jnp.array(1.5), mutable=['state'])
+        output, new_variables = hsm.apply(variables, jnp.array(1.5), mutable=["state"])
 
         assert "market" in output
         assert "volatility" in output
@@ -125,10 +114,7 @@ class TestHierarchicalStateMachine:
         market_detector = SimpleRegimeDetector(threshold=0.5, regime_name="market")
         volatility_detector = SimpleRegimeDetector(threshold=1.0, regime_name="volatility")
 
-        state_modules = {
-            "market": market_detector,
-            "volatility": volatility_detector
-        }
+        state_modules = {"market": market_detector, "volatility": volatility_detector}
 
         # Test different strategies
         for strategy in ["sequential", "parallel", "hierarchical"]:
@@ -137,7 +123,7 @@ class TestHierarchicalStateMachine:
             rng = jax.random.PRNGKey(42)
             variables = hsm.init(rng, jnp.array(1.0))
 
-            output, _ = hsm.apply(variables, jnp.array(1.5), mutable=['state'])
+            output, _ = hsm.apply(variables, jnp.array(1.5), mutable=["state"])
 
             # Should work with all strategies
             assert "market" in output
@@ -146,10 +132,12 @@ class TestHierarchicalStateMachine:
     def test_state_machine_decorator(self):
         """Test the @streaming_state_machine decorator."""
 
-        @streaming_state_machine({
-            "trend": SimpleRegimeDetector(threshold=0.3, regime_name="trend"),
-            "momentum": SimpleRegimeDetector(threshold=0.7, regime_name="momentum")
-        })
+        @streaming_state_machine(
+            {
+                "trend": SimpleRegimeDetector(threshold=0.3, regime_name="trend"),
+                "momentum": SimpleRegimeDetector(threshold=0.7, regime_name="momentum"),
+            }
+        )
         def multi_regime_processor(state_outputs, price):
             """Process with multiple regime detection."""
             # Combine regime signals
@@ -163,16 +151,14 @@ class TestHierarchicalStateMachine:
                 "trend_signal": trend_signal,
                 "momentum_signal": momentum_signal,
                 "combined_signal": combined_signal,
-                "regimes": {name: output["regime"] for name, output in state_outputs.items()}
+                "regimes": {name: output["regime"] for name, output in state_outputs.items()},
             }
 
         # Test the decorated function
         rng = jax.random.PRNGKey(42)
         params, state = multi_regime_processor.init(rng, jnp.array(100.0))
 
-        output, new_state = multi_regime_processor.apply(
-            params, state, None, jnp.array(105.0)
-        )
+        output, new_state = multi_regime_processor.apply(params, state, None, jnp.array(105.0))
 
         # Check output structure
         assert "price" in output
@@ -203,7 +189,7 @@ class TestAttentionBasedStateSelector:
         # Test with simple state
         current_state = jnp.array([1.0, 2.0, 3.0])
         output, new_variables = attention_selector.apply(
-            variables, current_state, mutable=['state']
+            variables, current_state, mutable=["state"]
         )
 
         # Check output structure
@@ -228,22 +214,24 @@ class TestAttentionBasedStateSelector:
         variables = attention_selector.init(rng, jnp.array([1.0, 2.0, 3.0]))
 
         # Process sequence of states to build history
-        states = [jnp.array([float(i), float(i+1), float(i+2)]) for i in range(7)]
+        states = [jnp.array([float(i), float(i + 1), float(i + 2)]) for i in range(7)]
         outputs = []
         current_variables = variables
 
         for state in states:
             output, new_state = attention_selector.apply(
-                current_variables, state, mutable=['state']
+                current_variables, state, mutable=["state"]
             )
             # Update only the state collection, keeping params intact
-            current_variables = {**current_variables, 'state': new_state['state']}
+            current_variables = {**current_variables, "state": new_state["state"]}
             outputs.append(output)
 
         # Check that attention weights have the expected shapes and are meaningful
         # Early in the sequence, buffer is small
         early_weights = outputs[1]["attention_weights"]  # Should have 1 weight (1 state in buffer)
-        late_weights = outputs[-1]["attention_weights"]   # Should have max 5 weights (max buffer size)
+        late_weights = outputs[-1][
+            "attention_weights"
+        ]  # Should have max 5 weights (max buffer size)
 
         # Verify that attention weights are valid probabilities
         assert jnp.all(early_weights >= 0)
@@ -271,7 +259,7 @@ class TestAttentionBasedStateSelector:
                 "input": x,
                 "processed": processed,
                 "enhanced_state": enhanced_state,
-                "attention_strength": jnp.sum(attention_weights)
+                "attention_strength": jnp.sum(attention_weights),
             }
 
         # Test the decorated function
@@ -307,7 +295,7 @@ class TestAttentionBasedStateSelector:
 
         # Test with dictionary state
         dict_state = {"price": 105.0, "volume": 1200.0, "signal": 0.5}
-        output, _ = attention_selector.apply(variables, dict_state, mutable=['state'])
+        output, _ = attention_selector.apply(variables, dict_state, mutable=["state"])
 
         # Should handle dictionary states correctly
         assert "enhanced_state" in output
@@ -319,6 +307,7 @@ class TestCompositeStateManager:
 
     def test_pipeline_composition(self):
         """Test pipeline composition strategy."""
+
         # Create simple state patterns
         class SimpleProcessor(nn.Module):
             name: str
@@ -331,7 +320,7 @@ class TestCompositeStateManager:
 
         state_patterns = {
             "first": SimpleProcessor(name="first"),
-            "second": SimpleProcessor(name="second")
+            "second": SimpleProcessor(name="second"),
         }
 
         composer = CompositeStateManager(state_patterns, "pipeline")
@@ -341,7 +330,7 @@ class TestCompositeStateManager:
         variables = composer.init(rng, jnp.array(1.0))
 
         # Apply pipeline
-        output, _ = composer.apply(variables, jnp.array(1.0), mutable=['state'])
+        output, _ = composer.apply(variables, jnp.array(1.0), mutable=["state"])
 
         # Should have outputs from both patterns
         assert "first" in output
@@ -354,10 +343,13 @@ class TestCompositeStateManager:
 
         # Verify the pipeline behavior: second processes output of first
         assert output["first"]["state_patterns_first_processed"] == 2.0  # 1.0 + 1
-        assert output["second"]["state_patterns_second_processed"] == 3.0  # value from first (2.0) + 1
+        assert (
+            output["second"]["state_patterns_second_processed"] == 3.0
+        )  # value from first (2.0) + 1
 
     def test_parallel_composition(self):
         """Test parallel composition strategy."""
+
         class IdentityProcessor(nn.Module):
             name: str
 
@@ -366,7 +358,7 @@ class TestCompositeStateManager:
 
         state_patterns = {
             "pattern_a": IdentityProcessor(name="a"),
-            "pattern_b": IdentityProcessor(name="b")
+            "pattern_b": IdentityProcessor(name="b"),
         }
 
         composer = CompositeStateManager(state_patterns, "parallel")
@@ -374,7 +366,7 @@ class TestCompositeStateManager:
         rng = jax.random.PRNGKey(42)
         variables = composer.init(rng, jnp.array(2.0))
 
-        output, _ = composer.apply(variables, jnp.array(2.0), mutable=['state'])
+        output, _ = composer.apply(variables, jnp.array(2.0), mutable=["state"])
 
         # Both patterns should process the same input
         assert "pattern_a" in output
@@ -403,11 +395,7 @@ class TestCompositeStateManager:
                 else:
                     return {"multiplied": x * 2}
 
-        @streaming_compose_states(
-            AddOneProcessor(),
-            MultiplyTwoProcessor(),
-            strategy="pipeline"
-        )
+        @streaming_compose_states(AddOneProcessor(), MultiplyTwoProcessor(), strategy="pipeline")
         def composed_processor(composed_output, x):
             """Process with composed state patterns."""
             # Extract results from composition
@@ -418,7 +406,7 @@ class TestCompositeStateManager:
                 "input": x,
                 "added": added_result,
                 "multiplied": multiplied_result,
-                "final": added_result + multiplied_result
+                "final": added_result + multiplied_result,
             }
 
         # Test the decorated function
@@ -453,10 +441,9 @@ class TestAdvancedStateIntegration:
             market_detector = SimpleRegimeDetector(threshold=0.5, regime_name="market")
             volatility_detector = SimpleRegimeDetector(threshold=1.0, regime_name="volatility")
 
-            hsm = HierarchicalStateMachine({
-                "market": market_detector,
-                "volatility": volatility_detector
-            })
+            hsm = HierarchicalStateMachine(
+                {"market": market_detector, "volatility": volatility_detector}
+            )
 
             regime_outputs = hsm(price)
 
@@ -476,7 +463,7 @@ class TestAdvancedStateIntegration:
                 "volume": volume,
                 "regimes": regime_outputs,
                 "attention": attention_output,
-                "combined_signal": combined_signal
+                "combined_signal": combined_signal,
             }
 
         # Test integrated processor
@@ -508,9 +495,9 @@ class TestAdvancedStateIntegration:
     def test_jax_transformations_compatibility(self):
         """Test that advanced state patterns work with JAX transformations."""
 
-        @streaming_state_machine({
-            "detector": SimpleRegimeDetector(threshold=1.0, regime_name="test")
-        })
+        @streaming_state_machine(
+            {"detector": SimpleRegimeDetector(threshold=1.0, regime_name="test")}
+        )
         def simple_state_system(state_outputs, x):
             signal = state_outputs["detector"]["signal"]
             return {"input": x, "output": signal * 2}
@@ -532,5 +519,3 @@ class TestAdvancedStateIntegration:
         assert "input" in output
         assert "output" in output
         assert jnp.isfinite(output["output"])
-
-

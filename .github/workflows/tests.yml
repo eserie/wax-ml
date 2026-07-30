@@ -25,15 +25,18 @@ jobs:
       if: ${{ needs.skip_duplicate.outputs.should_skip == 'false' }}
       strategy:
         matrix:
-          python-version: [ "3.10", "3.11", "3.12" ]
+          # Must stay within the requires-python floor declared in pyproject.toml.
+          python-version: [ "3.11", "3.12", "3.13" ]
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
           uses: actions/checkout@v4
+        # Deliberately unpinned: uv.lock is written in a revision that older uv
+        # releases cannot parse, and a pin here silently outlives the lock format.
         - name: Install uv
-          uses: astral-sh/setup-uv@v4
+          uses: astral-sh/setup-uv@v9
           with:
-            version: "0.5.18"
+            enable-cache: true
         - name: Set up Python ${{ matrix.python-version }}
           run: uv python install ${{ matrix.python-version }}
         - name: Install dependencies

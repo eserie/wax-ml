@@ -13,11 +13,13 @@
 # limitations under the License.
 """Flax-based FillNanInf module."""
 
-from typing import Any
+from typing import Any, TypeVar
 
 import flax.linen as nn
 import jax.numpy as jnp
 from jax.tree_util import tree_map
+
+T = TypeVar("T")
 
 
 class FillNanInf(nn.Module):
@@ -25,7 +27,9 @@ class FillNanInf(nn.Module):
 
     fill_value: Any = 0.0
 
-    def __call__(self, input: Any) -> Any:
+    # tree_map rebuilds the pytree it was given, so the result has the same type as
+    # the input. Saying so lets callers that pass an array keep an array.
+    def __call__(self, input: T) -> T:
         """Fill NaN and infinity values in input.
 
         Args:

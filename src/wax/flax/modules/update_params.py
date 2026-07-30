@@ -55,7 +55,9 @@ class UpdateParams(nn.Module):
         # or will handle its own parameter initialization
 
         # Store non-trainable parameters separately
-        non_trainable_params = self.variable("non_trainable", "params", lambda: {})
+        non_trainable_params: nn.Variable[dict[str, Any]] = self.variable(
+            "non_trainable", "params", lambda: {}
+        )
 
         # Apply the function
         # In a full implementation, this would involve:

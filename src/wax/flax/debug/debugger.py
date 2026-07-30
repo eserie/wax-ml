@@ -294,7 +294,7 @@ class StreamingDebugger:
             else:
                 return type(x).__name__
 
-        return jax.tree_map(shape_fn, tree)
+        return jax.tree_util.tree_map(shape_fn, tree)
 
     def _safe_copy_tree(self, tree: Any) -> Any:
         """Safely copy a tree structure."""

@@ -67,7 +67,9 @@ class FuncOptimizer(nn.Module):
             Function output and optimization info
         """
         # Initialize trainable parameters
-        trainable_params = self.variable("trainable_params", "params", lambda: {})
+        trainable_params: nn.Variable[dict[str, Any]] = self.variable(
+            "trainable_params", "params", lambda: {}
+        )
 
         # Initialize function if needed
         if not trainable_params.value:

@@ -62,6 +62,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# PEP 561 marker. Without it the annotations are invisible to type checkers running
+# against an installed wax-ml -- including mypy in this project's own CI, which
+# resolves the package rather than the source tree.
+[tool.setuptools.package-data]
+wax = ["py.typed", "VERSION"]
+
 [tool.setuptools.dynamic]
 version = {file = "src/wax/VERSION"}
 
@@ -149,5 +155,23 @@ module = [
     "haiku.*",
     "jax.*",
     "jaxopt.*",
+]
+ignore_missing_imports = true
+
+# Optional dependencies of the debugging and visualization layers. They ship no type
+# information, and they are imported behind availability guards rather than required,
+# so a missing stub says nothing about this project's own correctness.
+[[tool.mypy.overrides]]
+module = [
+    "bokeh.*",
+    "flask.*",
+    "flask_socketio.*",
+    "graphviz.*",
+    "ipywidgets.*",
+    "networkx.*",
+    "numba.*",
+    "plotly.*",
+    "psutil.*",
+    "streamlit.*",
 ]
 ignore_missing_imports = true

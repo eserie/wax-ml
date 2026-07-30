@@ -136,7 +136,7 @@ class MemoryTracker:
 
         # Baseline measurements
         self.baseline_memory = None
-        self.last_snapshot = None
+        self.last_snapshot: MemorySnapshot | None = None
 
         # Thread safety
         self._lock = threading.RLock()
@@ -357,7 +357,7 @@ class MemoryTracker:
             return x
 
         try:
-            jax.tree_map(accumulate_memory, tree)
+            jax.tree_util.tree_map(accumulate_memory, tree)
         except Exception:
             # If tree mapping fails, estimate based on type
             if hasattr(tree, 'nbytes'):

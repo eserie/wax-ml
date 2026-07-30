@@ -42,13 +42,13 @@ jobs:
         if: ${{ github.ref != 'refs/heads/main' }}
       - uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v9
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync --extra optional
+        run: uv sync --dev --extra optional
 
       # Executing a notebook is the expensive part of this build. jupyter-cache keys
       # its entries on notebook content, so a run that changes only prose replays the

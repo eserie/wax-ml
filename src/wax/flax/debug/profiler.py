@@ -148,8 +148,8 @@ class StreamingProfiler:
         self.last_memory_usage = 0.0
 
         # JIT compilation tracking
-        self.jit_cache = set()
-        self.compilation_events = []
+        self.jit_cache: set[str] = set()
+        self.compilation_events: list[dict[str, Any]] = []
 
         # Thread safety
         self._lock = threading.RLock()
@@ -335,7 +335,7 @@ class StreamingProfiler:
 
     def generate_optimization_recommendations(self) -> list[str]:
         """Generate optimization recommendations based on profiling data."""
-        recommendations = []
+        recommendations: list[str] = []
 
         with self._lock:
             if not self.metrics:

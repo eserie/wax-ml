@@ -2,7 +2,12 @@
 DOCS_DIR = docs
 SPHINXBUILD = sphinx-build
 GRAPHVIZ_DOT = dot
+# Path to the sources, for tools that walk a directory.
 PACKAGE_NAME = src/wax
+# Importable name, for tools that resolve a package rather than a path. Since the
+# move to a src/ layout the two are no longer interchangeable: `mypy -p src/wax`
+# is rejected outright, because -p takes a module path, not a filesystem one.
+PACKAGE_IMPORT_NAME = wax
 IPYKERNEL_NAME = python3
 
 # Always rebuild these targets
@@ -85,7 +90,7 @@ flake8:
 
 .PHONY: mypy
 mypy:
-	python -m mypy -p $(PACKAGE_NAME)
+	python -m mypy -p $(PACKAGE_IMPORT_NAME)
 
 
 .PHONY: tests

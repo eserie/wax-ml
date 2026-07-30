@@ -23,8 +23,10 @@ class BufferState(NamedTuple):
     """State structure for buffer operations."""
 
     buffer: Any  # Ordered buffer view (oldest-first)
-    len_buffer: int
-    write_idx: int
+    # Traced scalars, not Python ints: these are carried through jit and scan, so
+    # they arrive as rank-0 arrays rather than as concrete values.
+    len_buffer: jnp.ndarray
+    write_idx: jnp.ndarray
 
 
 class Buffer(nn.Module):
@@ -54,15 +56,19 @@ class Buffer(nn.Module):
                     or tuple with state if return_state=True
         """
         # Internal circular buffer (physical order, not logical)
-        buffer = self.variable(
+        buffer: nn.Variable[jnp.ndarray] = self.variable(
             "state",
             "buffer",
             lambda: jnp.full((self.maxlen,) + input.shape, self.fill_value, dtype=input.dtype),
         )
 
-        len_buffer = self.variable("state", "len_buffer", lambda: jnp.array(0, dtype=jnp.int32))
+        len_buffer: nn.Variable[jnp.ndarray] = self.variable(
+            "state", "len_buffer", lambda: jnp.array(0, dtype=jnp.int32)
+        )
 
-        write_idx = self.variable("state", "write_idx", lambda: jnp.array(0, dtype=jnp.int32))
+        write_idx: nn.Variable[jnp.ndarray] = self.variable(
+            "state", "write_idx", lambda: jnp.array(0, dtype=jnp.int32)
+        )
 
         current_buffer = buffer.value
         current_len = len_buffer.value

@@ -31,16 +31,19 @@ jobs:
       steps:
         - name: Checkout
           uses: actions/checkout@v4
-        # Deliberately unpinned: uv.lock is written in a revision that older uv
-        # releases cannot parse, and a pin here silently outlives the lock format.
+        # The action is pinned; the uv release it installs deliberately is not.
+        # uv.lock is written in a revision that older uv cannot parse, and a
+        # "version:" pin here would silently outlive the format it was chosen for.
+        # Note that setup-uv publishes no moving major tag beyond v7, so this has
+        # to name a full release.
         - name: Install uv
-          uses: astral-sh/setup-uv@v9
+          uses: astral-sh/setup-uv@v9.0.0
           with:
             enable-cache: true
         - name: Set up Python ${{ matrix.python-version }}
           run: uv python install ${{ matrix.python-version }}
         - name: Install dependencies
-          run: uv sync --dev
+          run: uv sync --dev --extra optional
         - name: Run flake8
           run: uv run make flake8
         - name: Run mypy

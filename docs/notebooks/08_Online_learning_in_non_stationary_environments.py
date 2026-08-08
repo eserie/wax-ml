@@ -315,7 +315,7 @@ def scan_hparams_newton():
 
 
 def cross_validate_newton(BEST_HPARAMS, BEST_NEWTON_GYM):
-    (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
+    STEP_SIZE, NEWTON_EPS = BEST_HPARAMS
     plt.figure()
 
     # def measure(reward):
@@ -389,7 +389,7 @@ def plot_everything(BEST_STEP_SIZE, BEST_GYM, BEST_HPARAMS, BEST_NEWTON_GYM):
             )
 
         i = 4
-        (STEP_SIZE, NEWTON_EPS) = BEST_HPARAMS
+        STEP_SIZE, NEWTON_EPS = BEST_HPARAMS
         gym = BEST_NEWTON_GYM
         MEASUR_FUNC(gym.reward).plot(
             label=rf"Newton    -    $\eta$={STEP_SIZE:.2e},    $\epsilon$={NEWTON_EPS:.2e}",

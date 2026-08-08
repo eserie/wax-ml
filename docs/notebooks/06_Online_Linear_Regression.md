@@ -227,7 +227,7 @@ X, Y = generate_many_observations(T)
 ### Unroll the learner
 
 ```python
-(output, info) = unroll(learner, rng=next(seq))(X, Y)
+output, info = unroll(learner, rng=next(seq))(X, Y)
 ```
 
 ### Plot the regret
@@ -379,7 +379,7 @@ seq = hk.PRNGSequence(42)
 T = 3000
 raw_observations = generate_many_raw_observations(T)
 rng = next(seq)
-(gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(raw_observations)
+gym_output, gym_info = unroll(gym_fun, rng=rng, skip_first=True)(raw_observations)
 ```
 
 <!-- #region -->
@@ -461,7 +461,7 @@ def gym_fun(raw_obs):
 T = 6000
 raw_observations = generate_many_raw_observations(T)
 rng = jax.random.PRNGKey(42)
-(gym_output, gym_info) = unroll(gym_fun, rng=rng, skip_first=True)(
+gym_output, gym_info = unroll(gym_fun, rng=rng, skip_first=True)(
     raw_observations,
 )
 ```

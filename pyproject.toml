@@ -111,6 +111,15 @@ complete = [
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+# Setuptools sets this to true by default for pyproject-configured projects, which
+# sweeps anything MANIFEST.in mentions into the wheel as package data -- including
+# src/wax/flax/examples/, a directory with no __init__.py that the `exclude` below
+# therefore never sees (find_packages does not discover it, so there is nothing to
+# exclude). Turning it off makes package-data explicit, and the two entries under
+# [tool.setuptools.package-data] are the complete list of non-code files we ship.
+include-package-data = false
+
 [tool.setuptools.packages.find]
 where = ["src"]
 # Demo material, not API: nothing in the package imports wax.flax.examples, and the

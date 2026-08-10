@@ -222,12 +222,19 @@ sequence axis via `jax.lax.scan`. Both produce identical results.
 
 ### The module library (`src/wax/flax/modules/`)
 
-Flax equivalents of the Haiku modules — EWMA, EWMVar, EWMCov, Buffer,
-CompressedBuffer, ARMA, SNARIMAX, Lag, Diff, PctChange, RollingMean, OHLC, Counter,
-FFill, FillNanInf, HasChanged, masking modules, `GymFeedback`, `OnlineOptimizer`,
-`OptaxOptimizer`, `FuncOptimizer`, `UpdateParams`, `Vmap`. These are ordinary
-`nn.Module` classes: instantiate and call them *inside* a function passed to
+Flax equivalents of the Haiku modules. These are ordinary `nn.Module` classes:
+instantiate and call them *inside* a function passed to
 `streaming_transform_with_state`.
+
+Re-exported from `wax.flax.modules`: `ARMA`, `ApplyMask`, `Buffer`, `Counter`, `Diff`,
+`EWMA`, `EWMCov`, `EWMVar`, `Ffill`, `FillNanInf`, `HasChanged`, `Lag`, `MaskMean`,
+`MaskNormalize`, `MaskStd`, `OHLC`, `OnlineOptimizer`, `OptaxOptimizer`, `PctChange`,
+`RollingMean`, `VMap`.
+
+Present in the tree but **not** re-exported — import from their own submodule:
+`CompressedBuffer` and `HierarchicalBuffer` (`.compressed_buffer`), `SNARIMAX`
+(`.snarimax`), `GymFeedback` (`.gym_feedback`), `FuncOptimizer` (`.func_optimizer`),
+`UpdateParams` (`.update_params`).
 
 ### Symbols that are not peers of the transform
 
@@ -255,8 +262,9 @@ shapes:
   `wax.flax.core.streaming_transforms`. It differentiates a single scalar scale
   parameter, not the model's own parameters.
 
-See `ROADMAP.md` (Phase 1.2, 1.3) for the work that would make the last two behave as
-their names suggest.
+See `ROADMAP.md` Phase 1.2 (`update_on_event` state rollback) and Phase 1.3
+(`streaming_optimizer` full-parameter gradients) for the work that would make these
+behave as their names suggest.
 
 ### Examples and demonstrations
 
@@ -565,7 +573,7 @@ Comprehensive demonstration materials are available:
 - **Use Cases**: System monitoring, pipeline analysis, production deployment
 
 #### Modern Interactive Visualization Demo
-- **Location**: `notebooks/modern_visualization_demo.ipynb` (Jupyter) or `notebooks/modern_visualization_demo.py`
+- **Location**: `notebooks/modern_visualization_demo.py`
 - **Features**: Plotly interactive charts, Bokeh streaming, ipywidgets controls, 3D visualizations
 - **Use Cases**: Real-time monitoring, parameter tuning, advanced analysis, presentation-quality outputs
 
@@ -581,6 +589,4 @@ uv run python notebooks/debugging_and_profiling_demo.py
 uv run python notebooks/pipeline_visualization_demo.py
 uv run python notebooks/modern_visualization_demo.py
 
-# For interactive Jupyter experience (requires optional dependencies)
-jupyter lab notebooks/modern_visualization_demo.ipynb
 ```

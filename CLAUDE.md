@@ -70,7 +70,7 @@ make check-format
 ## High-Level Architecture
 
 ### Core Design Philosophy
-WAX-ML is a **functional programming** library built on JAX with dual backend support (Haiku and Flax) for streaming time-series data processing. It follows a research-oriented design that emphasizes pure functions over object-oriented patterns, with a new Flax-based streaming architecture providing advanced streaming transforms and optimization capabilities.
+WAX-ML is a **functional programming** library built on JAX with dual backend support (Haiku and Flax) for streaming time-series data processing. It follows a research-oriented design that emphasizes pure functions over object-oriented patterns, with a Flax-based streaming architecture built around a single streaming transform and a library of streaming modules.
 
 ### Key Architectural Components
 
@@ -111,14 +111,17 @@ Enables JAX compatibility for non-native types:
 - **Reversible transformations**: All encodings support decode operations
 
 #### 6. Flax Streaming Architecture (`src/wax/flax/`)
-**NEW**: Advanced streaming transforms built on Flax for next-generation streaming computation:
-- **Core streaming transforms** (`src/wax/flax/core/streaming_transforms.py`):
-  - **`@streaming_transform_with_state`**: Core transform decorator for stateful streaming functions
-  - **`@update_on_event`**: Conditional computation decorator for event-driven processing
-  - **`@streaming_scan`**: Scan operations with reset capabilities for episode boundaries
-  - **`@streaming_optimizer`**: Automatic gradient flow and parameter optimization for online learning
+Streaming computation built on Flax. There is **one** transform, plus a module library:
+- **The transform** (`src/wax/flax/core/streaming_transforms.py`):
+  `@streaming_transform_with_state` turns a function containing Flax modules into a
+  `StreamingTransform` exposing `.init(rng, *args)`, `.apply(params, state, rng, *args)`
+  and `.scan(params, state, rng, inputs)`. Everything else in the Flax streaming layer
+  is either a module used inside such a function, or a composition built on top of it.
 - **Streaming modules** (`src/wax/flax/modules/`): Flax-based equivalents of Haiku modules (EWMA, Buffer, ARMA, etc.)
 - **Transform layer** (`src/wax/flax/core/transform.py`): Flax-compatible transform utilities
+- **In-tree but not public surface for 0.7.0**: `update_on_event`, `streaming_scan`,
+  `streaming_optimizer`. See "Symbols that are not peers of the transform" below before
+  using any of them.
 
 #### 7. Gym Integration (`src/wax/gym/`)
 Reinforcement learning and feedback loop support:
@@ -149,32 +152,23 @@ def model(x):
 outputs, final_state = data.wax.stream().apply(model)
 ```
 
-**Flax (New Streaming Architecture)**:
+**Flax (Streaming Architecture)**:
 ```python
-# Streaming transform with state management
+from wax.flax.core import streaming_transform_with_state
+
+# The transform: state management for a function containing Flax modules
 @streaming_transform_with_state
 def streaming_model(x):
     ewma = EWMA(alpha=0.1)
     buffer = Buffer(maxlen=10)
     return ewma(buffer(x))
 
-# Event-driven computation
-@update_on_event(event_fn=lambda x: x > threshold)
-def conditional_model(x):
-    model = EWMA(alpha=0.2)
-    return model(x)
+# Step-by-step
+params, state = streaming_model.init(rng, x0)
+output, state = streaming_model.apply(params, state, None, x1)
 
-# Streaming scan with reset capabilities
-@streaming_scan(reset_on=lambda x: x == 0)
-def episode_processor(x):
-    return accumulate_rewards(x)
-
-# Automatic optimization
-@streaming_optimizer(optax.adam(0.001), mse_loss)
-def online_learner(x, y):
-    model = EWMA(alpha=0.1)
-    prediction = model(x)
-    return prediction
+# Or over a whole sequence, via jax.lax.scan
+outputs, final_state = streaming_model.scan(params, state, None, xs)
 ```
 
 ### Dependencies and Ecosystem
@@ -202,75 +196,79 @@ def online_learner(x, y):
 
 The architecture enables efficient processing of streaming time-series data while maintaining functional purity for JAX optimization and hardware acceleration.
 
-## Flax Streaming Architecture (NEW)
+## Flax Streaming Architecture
 
-### Core Streaming Transforms
+### The transform
 
-The new Flax-based streaming architecture provides four fundamental decorators for streaming computation:
+There is exactly one transform. `streaming_transform_with_state` wraps a function that
+instantiates Flax modules and returns a `StreamingTransform`:
 
-#### 1. `@streaming_transform_with_state`
-Core transform decorator that enables writing stateful-looking streaming code that compiles to pure JAX functions:
 ```python
+from wax.flax.core import streaming_transform_with_state
+
 @streaming_transform_with_state
 def streaming_model(x):
     buffer = Buffer(maxlen=10)
     ewma = EWMA(alpha=0.1)
     return ewma(buffer(x))
+
+params, state = streaming_model.init(rng, x0)          # -> (params, state)
+output, state = streaming_model.apply(params, state, None, x1)
+outputs, final_state = streaming_model.scan(params, state, None, xs)
 ```
 
-#### 2. `@update_on_event`
-Conditional computation decorator for event-driven processing:
-```python
-@update_on_event(event_fn=lambda x: x > threshold)
-def conditional_processor(x):
-    model = EWMA(alpha=0.2)
-    return model(x)
-```
+`.apply` is the single-step form; `.scan` runs the same computation over a leading
+sequence axis via `jax.lax.scan`. Both produce identical results.
 
-#### 3. `@streaming_scan`
-Scan operations with reset capabilities for episode boundaries:
-```python
-@streaming_scan(reset_on=lambda x: x == 0)
-def episode_processor(x):
-    buffer = Buffer(maxlen=5)
-    return jnp.sum(buffer(x))
-```
+### The module library (`src/wax/flax/modules/`)
 
-#### 4. `@streaming_optimizer`
-Automatic gradient flow and parameter optimization for online learning:
-```python
-@streaming_optimizer(optax.adam(0.001), mse_loss)
-def online_learner(x, y):
-    model = EWMA(alpha=0.1)
-    prediction = model(x)
-    return prediction
-```
+Flax equivalents of the Haiku modules — EWMA, EWMVar, EWMCov, Buffer,
+CompressedBuffer, ARMA, SNARIMAX, Lag, Diff, PctChange, RollingMean, OHLC, Counter,
+FFill, FillNanInf, HasChanged, masking modules, `GymFeedback`, `OnlineOptimizer`,
+`OptaxOptimizer`, `FuncOptimizer`, `UpdateParams`, `Vmap`. These are ordinary
+`nn.Module` classes: instantiate and call them *inside* a function passed to
+`streaming_transform_with_state`.
 
-### Implementation Status (✅ COMPLETED)
+### Symbols that are not peers of the transform
 
-The complete Flax streaming architecture has been successfully implemented with:
+`update_on_event`, `streaming_scan` and `streaming_optimizer` exist in
+`src/wax/flax/core/streaming_transforms.py`. They are **not** part of the public
+surface for 0.7.0, and none of them is a fourth "fundamental transform". Their real
+shapes:
 
-- **174 comprehensive tests** passing across all modules and examples
-- **Full transform composition system** with hierarchical and conditional patterns
-- **JAX compatibility** including JIT compilation and scan optimization
-- **Production-ready code quality** with ruff formatting and mypy type checking
-- **Extensive examples** demonstrating real-world usage patterns
+- **`update_on_event(event_fn=...)`** is decorator sugar over the
+  `ConditionalComputation` Flax **module**. The decorated object is a plain function
+  with no `.init` / `.apply`; calling it directly raises
+  `flax.errors.CallCompactUnboundModuleError`. It only works when the decorated
+  function is then wrapped by `streaming_transform_with_state`. Note also that the
+  current implementation caches the output correctly but does **not** roll back inner
+  module state — child modules (EWMA etc.) still advance on non-event steps, unlike
+  the Haiku `UpdateOnEvent`.
+- **`streaming_scan(reset_on=...)`** returns a non-callable `StreamingScanResult`;
+  calling it raises `TypeError: 'StreamingScanResult' object is not callable`. The
+  usable entry point is its `scan_apply(inputs, params=None, state=None, rng=None)`
+  method. Conceptually this is the `.scan` method of `StreamingTransform` plus a reset
+  predicate, not a separate concept.
+- **`streaming_optimizer(optimizer, loss_fn)`** is a composite: the transform applied
+  over the `StreamingOptimizer` module. It is *not* exported from `wax.flax.core` —
+  `from wax.flax.core import streaming_optimizer` raises `ImportError`; import it from
+  `wax.flax.core.streaming_transforms`. It differentiates a single scalar scale
+  parameter, not the model's own parameters.
 
-#### Examples and Demonstrations
+See `ROADMAP.md` (Phase 1.2, 1.3) for the work that would make the last two behave as
+their names suggest.
 
-Comprehensive examples are available in:
-- `src/wax/flax/examples/transform_compositions.py` - Technical indicators, trading systems
-- `src/wax/flax/examples/jax_scan_compatibility.py` - Performance optimization patterns
-- Complete test suites demonstrating usage patterns and integration
+### Examples and demonstrations
 
-### Key Features
+- `src/wax/flax/examples/transform_compositions.py` — technical indicators, trading systems
+- `src/wax/flax/examples/jax_scan_compatibility.py` — performance optimization patterns
+- The test suites next to each module, which are the most reliable usage reference
 
-- **JAX Compatibility**: All transforms work with JAX transformations (JIT, vmap, etc.)
-- **State Management**: Automatic state threading and management across time steps
-- **Reset Capabilities**: Support for episode boundaries and conditional state resets
-- **Optimization Integration**: Built-in support for online learning with Optax optimizers
-- **Type Safety**: Full mypy coverage with proper type annotations
-- **Performance**: Optimized for streaming workloads with minimal overhead
+### Key properties
+
+- **JAX Compatibility**: `StreamingTransform` works under JIT and `jax.lax.scan`
+- **State Management**: Automatic state threading across time steps
+- **Type Safety**: mypy coverage with modern type annotations
 
 ### Testing Flax Modules
 
@@ -298,11 +296,14 @@ uv run pytest src/wax/flax/debug/debug_test.py -v
 uv run pytest src/wax/flax/visualization/visualization_test.py -v
 ```
 
-## Advanced Streaming Features (✅ COMPLETED)
+## Advanced Streaming Features
 
-### Phase 1.1: Advanced State Patterns
+These are experimental in-tree surfaces, not part of the 0.7.0 public API. Check the
+adjacent test file before relying on any of them.
 
-WAX-ML provides sophisticated state management patterns for complex streaming systems:
+### Advanced State Patterns (`wax.flax.core.advanced_state_patterns`)
+
+State management patterns for complex streaming systems:
 
 #### Hierarchical State Machines
 Multi-level state coordination with dependency management:
@@ -345,7 +346,7 @@ def integrated_analysis_system(composed_output, price, volume):
     return combine_analysis_results(composed_output, price, volume)
 ```
 
-### Phase 2.1: Development Tools
+### Development Tools
 
 Comprehensive debugging and profiling tools for streaming computation:
 
@@ -395,7 +396,7 @@ def buffer_processor(x):
 print(tracker.generate_memory_report())
 ```
 
-### Phase 2.2: Pipeline Visualization
+### Pipeline Visualization
 
 Comprehensive visualization tools for monitoring and analyzing streaming pipelines:
 
@@ -444,7 +445,7 @@ dashboard.start_server()
 # Visit http://localhost:8080 for real-time monitoring
 ```
 
-### Phase 2.3: Modern Jupyter Visualizations (NEW)
+### Modern Jupyter Visualizations
 
 State-of-the-art interactive visualization tools designed specifically for Jupyter notebooks:
 
@@ -563,7 +564,7 @@ Comprehensive demonstration materials are available:
 - **Features**: Graph rendering, data flow visualization, interactive dashboards
 - **Use Cases**: System monitoring, pipeline analysis, production deployment
 
-#### Modern Interactive Visualization Demo (NEW)
+#### Modern Interactive Visualization Demo
 - **Location**: `notebooks/modern_visualization_demo.ipynb` (Jupyter) or `notebooks/modern_visualization_demo.py`
 - **Features**: Plotly interactive charts, Bokeh streaming, ipywidgets controls, 3D visualizations
 - **Use Cases**: Real-time monitoring, parameter tuning, advanced analysis, presentation-quality outputs

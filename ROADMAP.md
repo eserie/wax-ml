@@ -6,7 +6,7 @@ WAX-ML has two backends: Haiku (legacy) and Flax (new). Both have full module
 coverage (27 modules each) with 430+ passing tests across the project.
 
 **What works today:**
-- Core streaming transforms: `@streaming_transform_with_state`, `@update_on_event`, `@streaming_scan`, `@streaming_optimizer`
+- The core streaming transform: `@streaming_transform_with_state`, giving a `StreamingTransform` with `.init` / `.apply` / `.scan`
 - All Haiku modules ported to Flax with numerical consistency verified
 - JIT/scan compatibility, transform compositions, advanced state patterns
 - Debugging/profiling tools, visualization, interactive dashboards
@@ -15,7 +15,8 @@ coverage (27 modules each) with 430+ passing tests across the project.
 **What doesn't:**
 - The `.wax` accessor and `Stream` class are hardwired to Haiku. Flax modules can only be used through the lower-level `flax_transform_with_state` / `flax_unroll_transform` API.
 - `update_on_event` caches output correctly but does not roll back child module state (EWMA etc. still advance on non-events). The Haiku `UpdateOnEvent` does full state rollback.
-- `streaming_optimizer` optimizes a scalar scale parameter, not the full model graph.
+- `streaming_optimizer` optimizes a scalar scale parameter, not the full model graph. It is also not exported from `wax.flax.core`; it must be imported from `wax.flax.core.streaming_transforms`.
+- `streaming_scan` returns a non-callable `StreamingScanResult`. The usable entry point is its `scan_apply` method, not the decorated object itself.
 
 ---
 

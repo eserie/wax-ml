@@ -9,6 +9,89 @@ Remember to align the itemized text with the first line of an item within a list
 PLEASE REMEMBER TO CHANGE THE '..main' WITH AN ACTUAL TAG in GITHUB LINK.
 -->
 
+## wax 0.7.0 (August 10 2026)
+
+The first release since 0.6.4, and a large one. It adds a Flax backend alongside
+the existing Haiku one, moves the package to a `src/` layout, and raises the
+supported Python and JAX floors.
+
+### Breaking changes
+
+* **Python 3.11 or later is required** (was 3.9). On an older interpreter `pip`
+  refuses the install rather than resolving an old release.
+* Core dependency floors move to JAX 0.9, Flax 0.12.4, Haiku 0.0.16, NumPy 2.2 and
+  pandas 2.3.
+* The package moved to a `src/` layout. This changes nothing for users installing
+  from PyPI; it matters if you were importing from a checkout.
+* `pip install "wax-ml[dev,complete]"` no longer resolves silently to nothing —
+  those extras did not exist. See the new extras below.
+
+### New: a Flax backend for streaming
+
+`wax.flax` adds a Flax implementation of the streaming module library (EWMA,
+Buffer, ARMA and friends) and one state-threading transform.
+
+`wax.flax.core` exports exactly six names: `FlaxTransformed`,
+`flax_transform_with_state`, `flax_unroll`, `flax_unroll_transform`,
+`StreamingTransform` and `streaming_transform_with_state`. The Haiku API is
+unchanged and remains the supported path for everything else.
+
+`wax.flax.debug` (profiler, memory tracker) and `wax.flax.visualization` (graph
+rendering, Jupyter and Bokeh backends, dashboard) ship as optional surfaces behind
+their own extras.
+
+**Known limitations, deliberately not exported in 0.7.0.** Three symbols exist in
+the tree but are not part of the public surface, because their behaviour does not
+match what a caller would reasonably expect:
+
+* `streaming_optimizer` / `StreamingOptimizer` fits a single scalar gain on top of
+  a frozen model. It does not update the model's parameters, and the value it
+  returns is not the scaled one. Verified by execution, not by reading.
+* `streaming_scan`'s reset restores a state that has already consumed the first
+  element of the sequence, so history leaks across a reset. A failing test
+  (`xfail`) documents this precisely.
+* `update_on_event` collides by name with the Haiku `UpdateOnEvent` module while
+  differing from it in semantics — its Flax form does not roll back child state.
+
+They remain importable by full module path for anyone who wants to experiment.
+Promoting them is 0.8 work.
+
+### Install extras
+
+| Extra | What it enables |
+| --- | --- |
+| `numba` | `wax.numba` |
+| `debug` | `wax.flax.debug` |
+| `visualization` | `wax.flax.visualization` |
+| `complete` | all of the above, plus the plotting and I/O helpers the notebooks use |
+| `optional` | kept unchanged for 0.6.x compatibility |
+
+Each extra now names every *direct* requirement of the submodules it covers;
+nothing relies on a dependency arriving transitively.
+
+### Fixes
+
+* `wax.numba`: `DataFrame.wax_numba.ewm(...)` raised `TypeError: got multiple
+  values for argument 'accessor'` for any positional argument.
+* `wax.flax.debug`: `jax.tree_map` was removed in JAX 0.9; the profiler and memory
+  tracker called it.
+* `wax.flax.visualization`: `circle(size=...)` was deprecated in Bokeh 3.4, and
+  graph rendering dispatched on the available backends before the requested output
+  format, so `output_format="text"` reached matplotlib.
+* The Colab notebooks' install cell was commented out, so a fresh runtime never
+  installed WAX-ML.
+
+### Packaging and project
+
+* Distributions no longer ship the test suite or the demo modules — 58 test files
+  and roughly 400 kB left the wheel. `py.typed` is shipped, so annotations are
+  visible to type checkers.
+* The release workflow now asserts that the tag matches `src/wax/VERSION` and that
+  the released commit is reachable from the default branch, then clean-installs and
+  smoke-tests the built wheel before publishing it.
+* Documentation is built and published from CI to GitHub Pages.
+* ruff is the single linter and formatter; flake8, black and isort are gone.
+
 ## wax 0.6.4 (April 22 2023)
 
 * upgrade CI to python 3.9

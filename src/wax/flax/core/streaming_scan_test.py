@@ -22,8 +22,8 @@ from wax.flax.modules.buffer import Buffer
 from wax.flax.modules.ewma import EWMA
 
 
-class TestStreamingScan:
-    """Test cases for StreamingScan module."""
+class TestStreamingScanDecorator:
+    """Test cases for the ``streaming_scan`` decorator."""
 
     def test_basic_scan_operation(self):
         """Test basic scan without reset functionality using the decorator."""

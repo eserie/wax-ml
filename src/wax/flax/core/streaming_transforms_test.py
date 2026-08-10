@@ -214,8 +214,8 @@ class TestUpdateOnEvent:
             assert not jnp.allclose(outputs[i - 1], outputs[i])
 
 
-class TestStreamingScan:
-    """Test streaming scan functionality."""
+class TestScanOverSequences:
+    """Test scan-over-sequence functionality (raw lax.scan and the decorator)."""
 
     def test_basic_scan_operation(self):
         """Test basic scan over sequence."""

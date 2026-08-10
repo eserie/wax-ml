@@ -20,7 +20,8 @@ when specific events occur, preserving computational efficiency.
 import jax
 import jax.numpy as jnp
 
-from wax.flax.core import streaming_transform_with_state, update_on_event
+from wax.flax.core import streaming_transform_with_state
+from wax.flax.core.streaming_transforms import update_on_event
 from wax.flax.modules import EWMA, Buffer
 
 

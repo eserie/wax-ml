@@ -13,14 +13,7 @@
 # limitations under the License.
 """Core Flax-based WAX-ML functionality."""
 
-from .streaming_transforms import (
-    ConditionalComputation,
-    StreamingScan,
-    StreamingTransform,
-    streaming_scan,
-    streaming_transform_with_state,
-    update_on_event,
-)
+from .streaming_transforms import StreamingTransform, streaming_transform_with_state
 from .transform import FlaxTransformed, flax_transform_with_state
 from .unroll import flax_unroll, flax_unroll_transform
 
@@ -31,8 +24,4 @@ __all__ = [
     "flax_unroll_transform",
     "StreamingTransform",
     "streaming_transform_with_state",
-    "update_on_event",
-    "streaming_scan",
-    "ConditionalComputation",
-    "StreamingScan",
 ]

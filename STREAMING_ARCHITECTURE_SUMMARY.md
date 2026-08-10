@@ -60,7 +60,7 @@ final_state, outputs = jax.lax.scan(scan_fn, initial_state, price_stream)
 class StreamingTransform:
     """Enhanced transform providing streaming-specific functionality."""
     
-    def __init__(self, fn: Callable, *, auto_cache: bool = True, ...):
+    def __init__(self, fn: Callable):
         # Wrap function in @compact Flax module
         class StreamingModule(nn.Module):
             @nn.compact  

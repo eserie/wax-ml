@@ -119,9 +119,11 @@ Streaming computation built on Flax. There is **one** transform, plus a module l
   is either a module used inside such a function, or a composition built on top of it.
 - **Streaming modules** (`src/wax/flax/modules/`): Flax-based equivalents of Haiku modules (EWMA, Buffer, ARMA, etc.)
 - **Transform layer** (`src/wax/flax/core/transform.py`): Flax-compatible transform utilities
-- **In-tree but not public surface for 0.7.0**: `update_on_event`, `streaming_scan`,
-  `streaming_optimizer`. See "Symbols that are not peers of the transform" below before
-  using any of them.
+- **In-tree but not public surface for 0.7.0**: `update_on_event`,
+  `ConditionalComputation`, `streaming_scan`, `streaming_optimizer`. None of these is
+  exported from `wax.flax.core`; import them from
+  `wax.flax.core.streaming_transforms`. See "Symbols that are not peers of the
+  transform" below before using any of them.
 
 #### 7. Gym Integration (`src/wax/gym/`)
 Reinforcement learning and feedback loop support:
@@ -240,11 +242,13 @@ Present in the tree but **not** re-exported — import from their own submodule:
 
 `update_on_event`, `streaming_scan` and `streaming_optimizer` exist in
 `src/wax/flax/core/streaming_transforms.py`. They are **not** part of the public
-surface for 0.7.0, and none of them is a fourth "fundamental transform". Their real
-shapes:
+surface for 0.7.0 — `wax.flax.core` exports exactly six names (`FlaxTransformed`,
+`flax_transform_with_state`, `flax_unroll`, `flax_unroll_transform`,
+`StreamingTransform`, `streaming_transform_with_state`) — and none of them is a fourth
+"fundamental transform". Their real shapes:
 
 - **`update_on_event(event_fn=...)`** is decorator sugar over the
-  `ConditionalComputation` Flax **module**. The decorated object is a plain function
+  `ConditionalComputation` Flax **module** (also unexported). The decorated object is a plain function
   with no `.init` / `.apply`; calling it directly raises
   `flax.errors.CallCompactUnboundModuleError`. It only works when the decorated
   function is then wrapped by `streaming_transform_with_state`. Note also that the
@@ -255,12 +259,15 @@ shapes:
   calling it raises `TypeError: 'StreamingScanResult' object is not callable`. The
   usable entry point is its `scan_apply(inputs, params=None, state=None, rng=None)`
   method. Conceptually this is the `.scan` method of `StreamingTransform` plus a reset
-  predicate, not a separate concept.
+  predicate, not a separate concept. Its reset is also known-wrong: it rewinds to a
+  state that has already consumed `inputs[0]`, not to a fresh module (xfail test in
+  `streaming_scan_test.py`).
 - **`streaming_optimizer(optimizer, loss_fn)`** is a composite: the transform applied
   over the `StreamingOptimizer` module. It is *not* exported from `wax.flax.core` —
   `from wax.flax.core import streaming_optimizer` raises `ImportError`; import it from
   `wax.flax.core.streaming_transforms`. It differentiates a single scalar scale
-  parameter, not the model's own parameters.
+  parameter, not the model's own parameters — and returns the *unscaled* output, so
+  even that scalar never reaches the caller's prediction.
 
 See `ROADMAP.md` Phase 1.2 (`update_on_event` state rollback) and Phase 1.3
 (`streaming_optimizer` full-parameter gradients) for the work that would make these

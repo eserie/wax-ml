@@ -348,27 +348,13 @@ class StreamingTransform:
     code that compiles to pure functional JAX operations.
     """
 
-    def __init__(
-        self,
-        fn: Callable,
-        *,
-        auto_cache: bool = True,
-        event_driven: bool = False,
-        scan_mode: bool = False,
-        state_pattern: str | None = None,
-    ):
+    def __init__(self, fn: Callable):
         """Initialize streaming transform.
 
         Args:
             fn: Function to transform
-            auto_cache: Whether to automatically cache outputs when state unchanged
-            event_driven: Whether this transform supports event-driven computation
-            scan_mode: Whether to use scan semantics for sequence processing
         """
         self.fn = fn
-        self.auto_cache = auto_cache
-        self.event_driven = event_driven
-        self.scan_mode = scan_mode
 
         # We need to wrap the function to make it compatible with flax_transform_with_state
         # Create a module that wraps the function
@@ -379,10 +365,6 @@ class StreamingTransform:
 
         # Build the base transform with the module
         self._base_transform = flax_transform_with_state(StreamingModule())
-
-        # Cache for last output when auto_cache is enabled
-        self._output_cache = None
-        self._state_cache = None
 
     def init(self, rng: jax.Array, *args, **kwargs) -> tuple[FrozenDict, FrozenDict]:
         """Initialize parameters and state."""
@@ -462,7 +444,7 @@ def streaming_transform_with_state(fn: StreamingFn) -> StreamingTransform:
         params, state = streaming_model.init(rng, x0)
         output, new_state = streaming_model.apply(params, state, None, x1)
     """
-    return StreamingTransform(fn, auto_cache=True)
+    return StreamingTransform(fn)
 
 
 class ConditionalComputation(nn.Module):
@@ -572,92 +554,45 @@ def update_on_event(
     return decorator
 
 
-class StreamingScan(nn.Module):
-    """Module for scan operations with streaming-specific features.
-
-    This provides JAX-compatible scan operations with reset capabilities,
-    essential for streaming time-series processing with episode boundaries.
-    """
-
-    fn: Callable
-    reset_fn: Callable | None = None
-    preserve_state: bool = True
-
-    @nn.compact
-    def __call__(self, inputs: jax.Array, initial_state: Any = None) -> tuple[jax.Array, Any]:
-        """Apply function in scan mode with optional resets.
-
-        Args:
-            inputs: Sequence of inputs to process (shape: [seq_len, ...])
-            initial_state: Initial state for the scan. If None, will be inferred.
-
-        Returns:
-            Tuple of (outputs, final_state)
-        """
-        # Handle initial state initialization
-        if initial_state is None:
-            # Create a consistent initial state for scan
-            initial_state = 0  # Simple scalar initial state
-
-        # Store reference to initial state for resets
-        def scan_fn(carry, x):
-            """Inner scan function with reset logic."""
-
-            # Check if we should reset state
-            should_reset = False
-            if self.reset_fn is not None:
-                should_reset = self.reset_fn(x)
-
-            # Reset state if needed
-            if should_reset and self.preserve_state:
-                # Reset to initial state
-                carry = initial_state
-
-            # Apply the streaming function
-            # For now, we'll implement a simple pass-through that maintains carry structure
-            output = self.fn(x)
-
-            # Keep carry structure consistent
-            new_carry = carry
-
-            return new_carry, output
-
-        # Use JAX scan for efficient sequence processing
-        final_carry, outputs = jax.lax.scan(scan_fn, initial_state, inputs)
-
-        return outputs, final_carry
-
-
 def streaming_scan(
     fn: StreamingFn = None,
     *,
     reset_on: Callable[..., bool] | None = None,
     preserve_state: bool = True,
 ) -> Callable:
-    """Transform decorator for streaming scan operations with reset capabilities.
+    """Wrap a function as a ``streaming_transform_with_state`` plus a reset predicate.
 
-    This enables efficient processing of sequences while maintaining state across
-    elements, with optional reset conditions for episode boundaries or other events.
+    Not part of the public 0.7.0 surface; import it from this module by full path.
+
+    The returned object is **not callable**. It is a small holder exposing:
+
+    - ``scan_apply(inputs, params=None, state=None, rng=None)`` — run the
+      transform over a leading sequence axis with ``jax.lax.scan``;
+    - ``init`` / ``apply`` — forwarded from the underlying ``StreamingTransform``.
+
+    Known limitations (see ``ROADMAP.md``, deferred to 0.8):
+
+    - When ``params``/``state`` are not supplied, ``scan_apply`` initialises from
+      ``inputs[0]``, so the "initial" state has *already consumed* the first
+      element. ``reset_on`` therefore rewinds to "just after ``inputs[0]``", not to
+      a fresh module. See the xfail test in ``streaming_scan_test.py``.
+    - The reset takes effect on the step *after* the trigger; the output at the
+      trigger index itself is computed before the ``jax.lax.select``.
+    - ``preserve_state=False`` disables the reset entirely rather than
+      reinitialising anything.
 
     Args:
-        fn: Function to apply in scan mode (if used as decorator without parentheses)
-        reset_on: Function that determines when to reset state based on input
-        preserve_state: Whether to preserve and reset state (vs. reinitialize)
+        fn: Function to apply (if used as decorator without parentheses)
+        reset_on: Predicate on the input element selecting the initial state back in
+        preserve_state: If False, ``reset_on`` is ignored
 
     Returns:
-        Streaming scan transform that can be used with JAX transformations
+        A ``StreamingScanResult`` holder (see above) — not a callable.
 
     Example::
 
-        # As decorator with reset condition
-        @streaming_scan(reset_on=lambda x: x > 10)
-        def accumulator(x):
-            buffer = Buffer(maxlen=5)
-            return jnp.sum(buffer(x))
-
-        # Manual usage
         scan_fn = streaming_scan(my_function, reset_on=lambda x: x == 0)
-        outputs, final_state = scan_fn(sequence_data)
+        outputs, final_state = scan_fn.scan_apply(sequence_data)
     """
 
     def decorator(scan_fn: StreamingFn):
@@ -713,15 +648,23 @@ def streaming_scan(
 
 
 class StreamingOptimizer(nn.Module):
-    """Module for streaming optimization with automatic gradient flow.
+    """Fit a single scalar gain on top of a model whose parameters are left frozen.
 
-    This provides a streaming-aware optimizer that maintains optimizer state
-    across time steps and computes real gradients via ``jax.value_and_grad``
-    for the given loss function.
+    This is **not** an optimizer of the wrapped model. ``model_fn(*args)`` is
+    evaluated *outside* ``jax.value_and_grad``, so it is a constant with respect to
+    the differentiated closure. The only differentiated quantity is a scalar
+    ``scale`` held in the ``learnable`` collection: each step computes
+    ``d loss_fn(model_output * scale, target) / d scale`` and applies the optax
+    update to ``scale``. The model's own parameters are bit-identical before and
+    after any number of steps.
 
-    A learnable *scale* parameter modulates the model output.  Gradients of
-    ``loss_fn(model_output * scale, target)`` w.r.t. ``scale`` are computed
-    and used to update the optimizer state each step.
+    The returned prediction is the **unscaled** ``model_output``, so the fitted
+    ``scale`` never reaches the caller through the loss/output tuple; it is
+    observable only in the returned ``params_info`` dict and in the ``learnable``
+    collection of the state.
+
+    See ``ROADMAP.md`` Phase 1.3 for the work that would make this differentiate
+    the model's parameters.
     """
 
     optimizer: optax.GradientTransformation
@@ -790,32 +733,34 @@ class StreamingOptimizer(nn.Module):
 def streaming_optimizer(
     optimizer: optax.GradientTransformation, loss_fn: Callable, *, has_aux: bool = False
 ) -> Callable:
-    """Transform decorator for streaming optimization with automatic gradient flow.
+    """Apply ``streaming_transform_with_state`` over the ``StreamingOptimizer`` module.
 
-    This enables automatic gradient computation and parameter updates for streaming
-    learning scenarios, maintaining optimizer state across time steps.
+    Not part of the public 0.7.0 surface; import it from this module by full path.
+
+    **This does not train the decorated model.** As documented on
+    ``StreamingOptimizer``, only a single scalar ``scale`` is differentiated and
+    updated; the model's own parameters never receive a gradient, and the returned
+    prediction is unscaled. Use it as an online loss/optimizer-state tracker, not as
+    an online learner. See ``ROADMAP.md`` Phase 1.3.
 
     Args:
         optimizer: Optax optimizer (e.g., optax.adam(0.001))
-        loss_fn: Loss function that takes (predictions, targets, ...)
+        loss_fn: Loss function that takes (predictions, targets)
         has_aux: Whether model function returns auxiliary outputs
 
     Returns:
-        Streaming optimizer transform that can be applied to model functions
+        A decorator turning a model function into a ``StreamingTransform`` whose
+        output is ``(loss, model_output)`` — or ``(loss, model_output, aux)`` when
+        ``has_aux``.
 
     Example::
 
-        # Create optimized streaming model
         @streaming_optimizer(optax.adam(0.001), mse_loss)
         def online_learner(x, y):
-            model = EWMA(alpha=0.1)
-            prediction = model(x)
-            return prediction
+            return EWMA(alpha=0.1)(x)
 
-        # Use with streaming transform
-        learner = streaming_transform_with_state(online_learner)
-        params, state = learner.init(rng, x0, y0)
-        (loss, pred), new_state = learner.apply(params, state, None, x1, y1)
+        params, state = online_learner.init(rng, x0, y0)
+        (loss, pred), new_state = online_learner.apply(params, state, None, x1, y1)
     """
 
     def decorator(model_fn: StreamingFn) -> StreamingTransform:
@@ -846,6 +791,5 @@ __all__ = [
     "streaming_scan",
     "streaming_optimizer",
     "ConditionalComputation",
-    "StreamingScan",
     "StreamingOptimizer",
 ]

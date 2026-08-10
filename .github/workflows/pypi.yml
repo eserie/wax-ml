@@ -4,11 +4,73 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for PyPI trusted publishing (OIDC). Harmless when the job
+      # falls back to the API-token path -- see "Publishing credentials" below.
+      id-token: write
     steps:
     - uses: actions/checkout@v4
+      with:
+        # Full history: the identity check below needs to decide whether the
+        # released commit is reachable from the release branch.
+        fetch-depth: 0
+
+    # The release event checks out whatever ref the release points at. Nothing
+    # guarantees that ref is the reviewed code: a stale tag left over from an
+    # abandoned release candidate sits on a divergent history and still carries a
+    # plausible VERSION file, so a name check alone would wave it through.
+    # Two assertions, both blocking:
+    #   * the tag names the packaged version, and
+    #   * the released commit is reachable from the default branch, i.e. it is
+    #     code that was merged and reviewed rather than a detached side history.
+    # The resolved commit is recorded in the job summary either way, so the
+    # published artifact is traceable to an exact revision.
+    - name: Assert the release identity
+      env:
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: |
+        set -euo pipefail
+        version="$(cat src/wax/VERSION)"
+        expected_tag="v${version}"
+        echo "src/wax/VERSION      = ${version}"
+        echo "github.ref_name      = ${GITHUB_REF_NAME}"
+        echo "resolved commit      = ${GITHUB_SHA}"
+        echo "default branch       = ${DEFAULT_BRANCH}"
+
+        if [ "${GITHUB_REF_NAME}" != "${expected_tag}" ]; then
+          echo "::error::Release ref '${GITHUB_REF_NAME}' does not match the packaged version; expected '${expected_tag}'. Fix src/wax/VERSION or retag."
+          exit 1
+        fi
+
+        # If a release is ever deliberately cut from a maintenance branch rather
+        # than the default one, change the ref compared against here -- do not
+        # drop the check.
+        release_ref="refs/remotes/origin/${DEFAULT_BRANCH}"
+        git fetch --no-tags --quiet origin "+refs/heads/${DEFAULT_BRANCH}:${release_ref}"
+        if ! git merge-base --is-ancestor "${GITHUB_SHA}" "${release_ref}"; then
+          echo "::error::Commit ${GITHUB_SHA} is not reachable from ${DEFAULT_BRANCH}. This tag points at a divergent history and must not be published."
+          exit 1
+        fi
+        echo "OK: ${GITHUB_SHA} is reachable from ${DEFAULT_BRANCH}"
+
+        {
+          echo "### Release identity"
+          echo
+          echo "| field | value |"
+          echo "| --- | --- |"
+          echo "| tag | \`${GITHUB_REF_NAME}\` |"
+          echo "| src/wax/VERSION | \`${version}\` |"
+          echo "| commit | \`${GITHUB_SHA}\` |"
+          echo "| reachable from | \`${DEFAULT_BRANCH}\` |"
+        } >> "${GITHUB_STEP_SUMMARY}"
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -16,10 +78,21 @@ jobs:
         # range avoids surprises from a toolchain older than the requires-python
         # floor declared in pyproject.toml.
         python-version: '3.12'
+
     - name: Install pypa/build
       run: python -m pip install --upgrade pip build
+
+    # Build exactly once. Every later step -- verification and both uploads --
+    # operates on this directory; nothing is rebuilt, so what was verified is
+    # byte-identical to what is published.
     - name: Build a binary wheel and a source tarball
       run: python -m build --sdist --wheel --outdir dist/ .
+
+    # Inspect the wheel, install that exact file into a fresh venv outside the
+    # checkout, import it, and run one end-to-end example. Fails the job before
+    # anything reaches an index.
+    - name: Verify the built wheel
+      run: build/verify_wheel.sh dist
 
     # Test PyPI first, as a dry run of the real upload. skip-existing keeps a
     # re-run of an already-uploaded version from failing here and blocking the
@@ -31,6 +104,26 @@ jobs:
         repository-url: https://test.pypi.org/legacy/
         skip-existing: true
 
+    # Publishing credentials
+    # ----------------------
+    # `password` is passed from a repository secret. When that secret exists the
+    # action uses the API token, exactly as before. When it is absent the input
+    # expands to an empty string and pypa/gh-action-pypi-publish falls back to
+    # trusted publishing over the OIDC token granted by `id-token: write` above.
+    # So this file works today with tokens and needs no edit once trusted
+    # publishing is configured.
+    #
+    # To move to trusted publishing (removes the long-lived credential), an
+    # operator with PyPI access must, on PyPI's side:
+    #   1. Go to https://pypi.org/manage/project/wax-ml/settings/publishing/
+    #      (and https://test.pypi.org/manage/project/wax-ml/settings/publishing/
+    #      for the TestPyPI step).
+    #   2. Add a GitHub publisher: owner `eserie`, repository `wax-ml`,
+    #      workflow filename `pypi.yml`, environment left empty (this job
+    #      declares no `environment:`).
+    #   3. Only then delete the `PYPI_API_TOKEN` / `TEST_PYPI_API_TOKEN`
+    #      repository secrets. Deleting them first is safe for the workflow but
+    #      the upload will fail until step 2 is done.
     - name: Publish distribution to PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@v1.14.2

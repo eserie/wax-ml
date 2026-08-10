@@ -5,21 +5,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands for Development
 
 ### Code Quality and Linting
+
+ruff is the **only** linter and formatter. Its configuration lives in `[tool.ruff]`
+and `[tool.ruff.lint]` in `pyproject.toml`, and it is what `make lint` and the CI
+workflow run — there is no second linter and no `.flake8`.
+
 ```bash
-# Format code with ruff (primary formatter)
+# Format code with ruff (the formatter)
 uv run ruff format src
 
-# Check linting issues with ruff (primary linter)
+# Check linting issues with ruff (the linter) -- same as `make lint`
 uv run ruff check src
 
 # Fix auto-fixable linting issues
 uv run ruff check --fix src
 
-# Run type checking with mypy
-uv run mypy src
+# Run type checking with mypy (`make mypy` resolves the package instead of the path)
+uv run mypy -p wax
 
 # Combined quality check
-uv run ruff check src && uv run ruff format --check src && uv run mypy src
+uv run ruff check src && uv run ruff format --check src && uv run mypy -p wax
 ```
 
 ### Testing
@@ -42,8 +47,10 @@ uv run pytest --doctest-modules src
 # Build package for distribution
 uv build
 
-# Install in development mode
-uv sync --dev
+# Install in development mode. `complete` is the union of every feature extra
+# (numba, debug, visualization, optional); CI syncs the same set, so a local run
+# exercises the same submodules CI does.
+uv sync --dev --extra complete
 ```
 
 ### Documentation
@@ -55,15 +62,24 @@ make docs
 make docs-fast
 ```
 
-### Legacy Makefile Commands (being migrated to ruff/uv)
+### Makefile targets (what CI runs)
+
+`.github/workflows/tests.yml` calls these targets, so they are the gate:
+
 ```bash
-# Run comprehensive checks (flake8, mypy, tests, format, license)
+# Lint with ruff -- the authoritative linter
+make lint
+
+# Type check
+make mypy
+
+# Run comprehensive checks: lint, mypy, license, format, coverage, notebooks
 make act
 
 # Run tests with coverage
 make coverage
 
-# Check formatting (uses legacy black/isort, prefer ruff)
+# Reformat with ruff and fail if anything changed
 make check-format
 ```
 

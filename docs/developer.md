@@ -57,12 +57,12 @@ or
 make mypy
 ```
 
-# Flake8
+# Lint
 
-We use `flake8` to check that the code follow the pep8 standard.
+We use `ruff` -- the project's single linter -- to check the code.
 To check the code, you can run
 ```
-make flake8
+make lint
 ```
 
 # Formatting code
@@ -98,7 +98,7 @@ You can check that everything is ok by running:
 ```bash
 make act
 ```
-This will check flake8, mypy, isort and black formatting, licenses headers
+This will check ruff lint, mypy, formatting, licenses headers
 and run tests and coverage.
 
 # Update documentation

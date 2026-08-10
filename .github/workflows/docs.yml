@@ -47,8 +47,11 @@ jobs:
           enable-cache: true
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
+      # Same extra as the CI workflow: `complete` is the declared union of the
+      # feature extras, so the notebooks execute against every backend the package
+      # ships rather than the subset `optional` happens to name.
       - name: Install dependencies
-        run: uv sync --dev --extra optional
+        run: uv sync --dev --extra complete
 
       # Executing a notebook is the expensive part of this build. jupyter-cache keys
       # its entries on notebook content, so a run that changes only prose replays the

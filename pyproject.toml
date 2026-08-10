@@ -141,7 +141,6 @@ dev = [
     "autopep8>=2.3.2",
     "black>=25.1.0",
     "coverage>=7.9.1",
-    "flake8>=7.3.0",
     "flaky>=3.8.1",
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.7",
@@ -189,6 +188,10 @@ ignore = [
     "E203", # whitespace before ':'
     "E501", # line too long (handled by ruff formatter)
     "C901", # too complex
+    # `isinstance(x, (A, B))` -> `isinstance(x, A | B)`. Deprecated by ruff itself:
+    # the PEP 604 spelling is slower in `isinstance`, and it wrongly suggests that
+    # the rest of the typing syntax works there too. The tuple form stays.
+    "UP038", # non-pep604-isinstance
 ]
 
 [tool.ruff.lint.per-file-ignores]

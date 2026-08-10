@@ -414,7 +414,7 @@ class MemoryTracker:
                             total_leaked=total_growth,
                             first_step=recent_snapshots[0].step,
                             last_step=recent_snapshots[-1].step,
-                            affected_modules=list(set(s.module_name for s in recent_snapshots)),
+                            affected_modules=list({s.module_name for s in recent_snapshots}),
                         )
 
         # Check for growing JAX arrays
@@ -428,7 +428,7 @@ class MemoryTracker:
                     total_leaked=sum(s.jax_arrays_size_mb for s in recent_snapshots[-3:]) / 3,
                     first_step=recent_snapshots[0].step,
                     last_step=recent_snapshots[-1].step,
-                    affected_modules=list(set(s.module_name for s in recent_snapshots)),
+                    affected_modules=list({s.module_name for s in recent_snapshots}),
                 )
 
     def _record_memory_leak(

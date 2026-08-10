@@ -4102,7 +4102,7 @@ requires-dist = [
     { name = "optax", specifier = ">=0.2.5" },
     { name = "optax", marker = "extra == 'complete'", specifier = ">=0.2.5" },
     { name = "optax", marker = "extra == 'optional'", specifier = ">=0.2.5" },
-    { name = "pandas", specifier = ">=2.3.0" },
+    { name = "pandas", specifier = ">=2.3.0,<3" },
     { name = "plotly", marker = "extra == 'complete'", specifier = ">=5.20.0" },
     { name = "plotly", marker = "extra == 'visualization'", specifier = ">=5.20.0" },
     { name = "plotnine", marker = "extra == 'complete'", specifier = ">=0.14.6" },

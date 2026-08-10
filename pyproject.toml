@@ -33,7 +33,12 @@ dependencies = [
     "jaxlib>=0.9.0",
     "numpy>=2.2.6",
     "optax>=0.2.5",
-    "pandas>=2.3.0",
+    # pandas 3 moved the default datetime resolution from nanoseconds to microseconds.
+    # wax.stream only whitelists datetime64[ns] (stream.py) and wax.encode casts to it
+    # explicitly, so a pandas 3 dataset takes a different synchronization path. Supporting
+    # both resolutions is real work in causality-critical code; until it is done, declare
+    # the boundary we actually test rather than let a fresh install find it at runtime.
+    "pandas>=2.3.0,<3",
     "pooch>=1.8.2",
     "scikit-learn>=1.7.0",
     "seaborn>=0.13.2",

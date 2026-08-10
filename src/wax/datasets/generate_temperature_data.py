@@ -18,14 +18,14 @@ import pandas as pd
 import xarray as xr
 
 
-def get_lats_lons_times(n_lat=25, n_lon=53, n_time=124, freq="H"):
+def get_lats_lons_times(n_lat=25, n_lon=53, n_time=124, freq="h"):
     lats = onp.linspace(0, 20, n_lat)
     lons = onp.linspace(0, 11, n_lon)
     times = pd.date_range(start="2000/01/01", freq=freq, periods=n_time)
     return lats, lons, times
 
 
-def generate_data(n_lat=25, n_lon=53, n_time=124, freq="H"):
+def generate_data(n_lat=25, n_lon=53, n_time=124, freq="h"):
     onp.random.seed(3)
     lats, lons, times = get_lats_lons_times(n_lat, n_lon, n_time, freq=freq)
 
@@ -40,7 +40,7 @@ def generate_data(n_lat=25, n_lon=53, n_time=124, freq="H"):
     return data
 
 
-def generate_times_data(n_lat=25, n_lon=53, n_time=124, freq="H"):
+def generate_times_data(n_lat=25, n_lon=53, n_time=124, freq="h"):
     onp.random.seed(3)
 
     lats, lons, times = get_lats_lons_times(n_lat, n_lon, n_time, freq=freq)
@@ -63,6 +63,6 @@ def generate_temperature_data():
 
 def generate_temperature_data_multi_time_scale():
     da = xr.Dataset()
-    da["air"] = generate_data(n_time=12, freq="d").rename({"time": "day"})
-    da["ground"] = generate_data(freq="H")
+    da["air"] = generate_data(n_time=12, freq="D").rename({"time": "day"})
+    da["ground"] = generate_data(freq="h")
     return da

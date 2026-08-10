@@ -21,6 +21,12 @@ supported Python and JAX floors.
   refuses the install rather than resolving an old release.
 * Core dependency floors move to JAX 0.9, Flax 0.12.4, Haiku 0.0.16, NumPy 2.2 and
   pandas 2.3.
+* **pandas is capped below 3.0.** pandas 3 changed the default datetime resolution
+  from nanoseconds to microseconds; `wax.stream` whitelists `datetime64[ns]` and
+  `wax.encode` casts to it explicitly, so a pandas 3 dataset takes a different
+  synchronization path. Supporting both resolutions is planned for a follow-up —
+  the cap is there so a fresh install gets a combination that is actually tested,
+  rather than discovering the difference at runtime.
 * The package moved to a `src/` layout. This changes nothing for users installing
   from PyPI; it matters if you were importing from a checkout.
 * `pip install "wax-ml[dev,complete]"` no longer resolves silently to nothing —

@@ -16,9 +16,16 @@
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, cast
 
-import numba
 import numpy as np
 import pandas as pd
+
+try:
+    import numba
+except ModuleNotFoundError as exc:  # pragma: no cover - depends on the install profile
+    raise ModuleNotFoundError(
+        "wax.numba.ewma_numba requires numba, which is an optional dependency of "
+        "wax-ml. Install it with:  pip install 'wax-ml[numba]'"
+    ) from exc
 
 
 class EWMAState(NamedTuple):

@@ -147,10 +147,14 @@ class InteractivePipelineGraph:
         self.config = config or JupyterVizConfig()
 
         if not HAS_PLOTLY:
-            warnings.warn("Plotly not available. Install with: pip install plotly", stacklevel=2)
+            warnings.warn(
+                "Plotly not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
+            )
         if not HAS_NETWORKX:
             warnings.warn(
-                "NetworkX not available. Install with: pip install networkx", stacklevel=2
+                "NetworkX not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
             )
 
     def create_pipeline_graph(
@@ -167,7 +171,9 @@ class InteractivePipelineGraph:
             Interactive Plotly FigureWidget
         """
         if not HAS_PLOTLY or not HAS_NETWORKX:
-            raise ImportError("Plotly and NetworkX required for interactive graphs")
+            raise ImportError(
+                "Plotly and NetworkX required for interactive graphs. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Analyze the pipeline structure
         renderer = ComputationGraphRenderer()
@@ -295,7 +301,10 @@ class StreamingDataVisualizer:
         self._update_thread = None
 
         if not HAS_PLOTLY:
-            warnings.warn("Plotly not available. Install with: pip install plotly", stacklevel=2)
+            warnings.warn(
+                "Plotly not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
+            )
 
     def create_streaming_plot(
         self, plot_type: str = "line", title: str = "Streaming Data", y_label: str = "Value"
@@ -311,7 +320,9 @@ class StreamingDataVisualizer:
             Interactive Plotly FigureWidget
         """
         if not HAS_PLOTLY:
-            raise ImportError("Plotly required for streaming plots")
+            raise ImportError(
+                "Plotly required for streaming plots. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         fig = go.FigureWidget()
 
@@ -400,7 +411,8 @@ class InteractiveParameterControls:
 
         if not HAS_WIDGETS:
             warnings.warn(
-                "ipywidgets not available. Install with: pip install ipywidgets", stacklevel=2
+                "ipywidgets not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
             )
 
     def create_parameter_panel(self, parameters: dict[str, dict[str, Any]]) -> widgets.VBox:
@@ -414,7 +426,9 @@ class InteractiveParameterControls:
             Widget container with all controls
         """
         if not HAS_WIDGETS:
-            raise ImportError("ipywidgets required for parameter controls")
+            raise ImportError(
+                "ipywidgets required for parameter controls. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         controls = []
 
@@ -498,7 +512,10 @@ class AnimatedPipelineFlow:
         self._animation_thread: threading.Thread | None = None
 
         if not HAS_PLOTLY:
-            warnings.warn("Plotly not available. Install with: pip install plotly", stacklevel=2)
+            warnings.warn(
+                "Plotly not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
+            )
 
     def create_flow_animation(
         self, pipeline_stages: list[str], data_tracker: DataFlowTracker
@@ -513,7 +530,9 @@ class AnimatedPipelineFlow:
             Animated Plotly figure
         """
         if not HAS_PLOTLY:
-            raise ImportError("Plotly required for flow animations")
+            raise ImportError(
+                "Plotly required for flow animations. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Create figure with subplots for each stage
         fig = make_subplots(

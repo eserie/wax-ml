@@ -148,7 +148,10 @@ class BokehStreamingPlot:
         self._update_thread = None
 
         if not HAS_BOKEH:
-            warnings.warn("Bokeh not available. Install with: pip install bokeh", stacklevel=2)
+            warnings.warn(
+                "Bokeh not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
+            )
 
     def create_streaming_line_plot(
         self, title: str = "Streaming Data", x_label: str = "Time", y_label: str = "Value"
@@ -164,7 +167,9 @@ class BokehStreamingPlot:
             Bokeh figure object
         """
         if not HAS_BOKEH:
-            raise ImportError("Bokeh required for streaming plots")
+            raise ImportError(
+                "Bokeh required for streaming plots. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Enable notebook output
         output_notebook()
@@ -274,7 +279,10 @@ class BokehHeatmapVisualizer:
         self.config = config or BokehVizConfig()
 
         if not HAS_BOKEH:
-            warnings.warn("Bokeh not available. Install with: pip install bokeh", stacklevel=2)
+            warnings.warn(
+                "Bokeh not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
+            )
 
     def create_state_heatmap(
         self,
@@ -295,7 +303,9 @@ class BokehHeatmapVisualizer:
             Bokeh figure object
         """
         if not HAS_BOKEH:
-            raise ImportError("Bokeh required for heatmaps")
+            raise ImportError(
+                "Bokeh required for heatmaps. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Prepare data
         h, w = data.shape
@@ -364,7 +374,10 @@ class BokehMultiPanelDashboard:
         self.layout = None
 
         if not HAS_BOKEH:
-            warnings.warn("Bokeh not available. Install with: pip install bokeh", stacklevel=2)
+            warnings.warn(
+                "Bokeh not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
+            )
 
     def create_dashboard(self, data_tracker: DataFlowTracker, layout_type: str = "grid") -> Any:
         """Create a comprehensive multi-panel dashboard.
@@ -377,7 +390,9 @@ class BokehMultiPanelDashboard:
             Bokeh layout object
         """
         if not HAS_BOKEH:
-            raise ImportError("Bokeh required for dashboard")
+            raise ImportError(
+                "Bokeh required for dashboard. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Create individual panels
 
@@ -602,7 +617,9 @@ def create_bokeh_streaming_demo(data_tracker: DataFlowTracker) -> Any:
         Bokeh layout with streaming visualizations
     """
     if not HAS_BOKEH:
-        raise ImportError("Bokeh required for streaming demo")
+        raise ImportError(
+            "Bokeh required for streaming demo. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+        )
 
     config = BokehVizConfig()
 
@@ -634,7 +651,9 @@ def display_bokeh_visualization(layout: Any) -> None:
         layout: Bokeh layout object to display
     """
     if not HAS_BOKEH:
-        raise ImportError("Bokeh required for display")
+        raise ImportError(
+            "Bokeh required for display. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+        )
 
     if not HAS_IPYTHON:
         warnings.warn("IPython not available - using Bokeh show()", stacklevel=2)

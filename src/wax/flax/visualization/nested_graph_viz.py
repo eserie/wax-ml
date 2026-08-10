@@ -319,7 +319,8 @@ class GraphvizNestedRenderer:
 
         if not HAS_GRAPHVIZ:
             warnings.warn(
-                "Graphviz not available. Install with: pip install graphviz", stacklevel=2
+                "Graphviz not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                stacklevel=2,
             )
 
     def render_hierarchical_graph(
@@ -335,7 +336,9 @@ class GraphvizNestedRenderer:
             Path to rendered file or dot source
         """
         if not HAS_GRAPHVIZ:
-            raise ImportError("Graphviz required for hierarchical rendering")
+            raise ImportError(
+                "Graphviz required for hierarchical rendering. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Create main graph
         dot = graphviz.Digraph(

@@ -1,2 +1,6 @@
-include wax/VERSION
+include src/wax/VERSION
 include LICENSE
+
+# The test suite is colocated with the code (see setup.py) but is not part of what
+# users install. Keep it out of the sdist as well as the wheel.
+global-exclude *_test.py

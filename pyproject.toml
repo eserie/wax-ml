@@ -46,6 +46,37 @@ Homepage = "https://github.com/eserie/wax-ml"
 Repository = "https://github.com/eserie/wax-ml"
 
 [project.optional-dependencies]
+# Feature extras. Each one names every *direct* requirement of the shipped
+# submodules it covers, so `pip install "wax-ml[<extra>]"` is sufficient to
+# import them. Nothing here relies on a dependency arriving transitively.
+
+# wax.numba.ewma_numba
+numba = [
+    "numba>=0.61.2",
+]
+
+# wax.flax.debug -- the profiler and the memory tracker read process and system
+# memory through psutil.
+debug = [
+    "psutil>=5.9.0",
+]
+
+# wax.flax.visualization -- every backend the package guards an import for.
+visualization = [
+    "bokeh>=3.4.0",
+    "flask>=3.0.0",
+    "flask-socketio>=5.3.0",
+    "graphviz>=0.21",
+    "ipython>=8.0.0",
+    "ipywidgets>=8.1.7",
+    "matplotlib>=3.10.3",
+    "networkx>=3.2",
+    "plotly>=5.20.0",
+    "streamlit>=1.30.0",
+]
+
+# Kept for backwards compatibility: this is the set of extras 0.6.x shipped, with
+# the same contents. Prefer the feature extras above, or `complete`.
 optional = [
     "graphviz>=0.21",
     "numba>=0.61.2",
@@ -55,12 +86,36 @@ optional = [
     "pyarrow>=20.0.0",
 ]
 
+# Everything optional, in one name. This is what the README and the Colab
+# notebooks install; it must stay the union of the extras above.
+complete = [
+    "bokeh>=3.4.0",
+    "flask>=3.0.0",
+    "flask-socketio>=5.3.0",
+    "graphviz>=0.21",
+    "ipython>=8.0.0",
+    "ipywidgets>=8.1.7",
+    "matplotlib>=3.10.3",
+    "networkx>=3.2",
+    "numba>=0.61.2",
+    "optax>=0.2.5",
+    "plotly>=5.20.0",
+    "plotnine>=0.14.6",
+    "pooch>=1.8.2",
+    "psutil>=5.9.0",
+    "pyarrow>=20.0.0",
+    "streamlit>=1.30.0",
+]
+
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+# Demo material, not API: nothing in the package imports wax.flax.examples, and the
+# docs point at it as source to read in the repository, not as an importable module.
+exclude = ["wax.flax.examples", "wax.flax.examples.*"]
 
 # PEP 561 marker. Without it the annotations are invisible to type checkers running
 # against an installed wax-ml -- including mypy in this project's own CI, which

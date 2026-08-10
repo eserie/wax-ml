@@ -14,9 +14,24 @@
 # ---
 
 # %%
-# Uncomment to run the notebook in Colab
-# # ! pip install -q "wax-ml[complete]@git+https://github.com/eserie/wax-ml.git"
-# # ! pip install -q --upgrade jax
+# Colab bootstrap. Installs WAX-ML and its optional dependencies on a fresh runtime,
+# and is a no-op anywhere the package is already importable, so it is safe to re-run.
+import importlib.util
+import subprocess
+import sys
+
+if importlib.util.find_spec("wax") is None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-q",
+            "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git@main",
+        ],
+        check=True,
+    )
 
 # %%
 # %matplotlib inline

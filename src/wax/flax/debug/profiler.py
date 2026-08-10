@@ -43,7 +43,14 @@ from typing import Any
 
 import jax
 import jax.numpy as jnp
-import psutil
+
+try:
+    import psutil
+except ModuleNotFoundError as exc:  # pragma: no cover - depends on the install profile
+    raise ModuleNotFoundError(
+        "wax.flax.debug requires psutil, which is an optional dependency of wax-ml. "
+        "Install it with:  pip install 'wax-ml[debug]'"
+    ) from exc
 
 
 @dataclass

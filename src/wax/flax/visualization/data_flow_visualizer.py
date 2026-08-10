@@ -39,31 +39,23 @@ from typing import Any
 
 import jax.numpy as jnp
 
+from ._extra import VISUALIZATION_EXTRA_HINT
+
 # Optional dependencies for visualization
 try:
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
-    import numpy as np
 
     HAS_MATPLOTLIB = True
-except ImportError:
-    plt = None
-    animation = None
-    np = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_MATPLOTLIB = False
 
 try:
-    import plotly.express as px
     import plotly.graph_objects as go
-    import plotly.offline as pyo
     from plotly.subplots import make_subplots
 
     HAS_PLOTLY = True
-except ImportError:
-    go = None
-    px = None
-    make_subplots = None
-    pyo = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_PLOTLY = False
 
 
@@ -199,10 +191,18 @@ class DataFlowVisualizer:
 
         # Validate backend availability
         if backend == "matplotlib" and not HAS_MATPLOTLIB:
-            warnings.warn("Matplotlib not available, falling back to text mode", stacklevel=2)
+            warnings.warn(
+                f"Matplotlib not available, falling back to the text backend. "
+                f"{VISUALIZATION_EXTRA_HINT}",
+                stacklevel=2,
+            )
             self.backend = "text"
         elif backend == "plotly" and not HAS_PLOTLY:
-            warnings.warn("Plotly not available, falling back to matplotlib", stacklevel=2)
+            warnings.warn(
+                f"Plotly not available, falling back to the matplotlib backend. "
+                f"{VISUALIZATION_EXTRA_HINT}",
+                stacklevel=2,
+            )
             self.backend = "matplotlib" if HAS_MATPLOTLIB else "text"
 
     def attach_tracker(self, tracker: DataFlowTracker) -> None:

@@ -43,57 +43,27 @@ from typing import Any
 
 # Core visualization dependencies
 try:
-    import plotly.express as px
     import plotly.graph_objects as go
-    import plotly.offline as pyo
     from plotly.graph_objs import FigureWidget
     from plotly.subplots import make_subplots
 
     HAS_PLOTLY = True
-except ImportError:
-    go = None
-    px = None
-    make_subplots = None
-    pyo = None
-    FigureWidget = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_PLOTLY = False
-
-try:
-    import bokeh.palettes as bp
-    from bokeh.io import push_notebook
-    from bokeh.layouts import column, row
-    from bokeh.models import ColumnDataSource, HoverTool
-    from bokeh.plotting import figure, output_notebook, show
-
-    HAS_BOKEH = True
-except ImportError:
-    figure = None
-    show = None
-    output_notebook = None
-    ColumnDataSource = None
-    HoverTool = None
-    column = None
-    row = None
-    push_notebook = None
-    bp = None
-    HAS_BOKEH = False
 
 try:
     import ipywidgets as widgets
     from IPython.display import display
 
     HAS_WIDGETS = True
-except ImportError:
-    widgets = None
-    display = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_WIDGETS = False
 
 try:
     import networkx as nx
 
     HAS_NETWORKX = True
-except ImportError:
-    nx = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_NETWORKX = False
 
 from .computation_graph import ComputationGraphRenderer

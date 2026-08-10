@@ -219,6 +219,44 @@ class TestStreamingScan:
         assert outputs.shape == inputs.shape
         assert jnp.all(jnp.isfinite(outputs))
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            "Known defect, recorded by molecule task-20260810-cb09: "
+            "streaming_scan's reset does fire, but it restores the state "
+            "captured by scan_apply's own init() call — which has already "
+            "consumed inputs[0] — instead of a genuinely fresh state. The "
+            "pre-reset running mean therefore still leaks into the tail. "
+            "A downstream molecule owns the decision to fix or drop the "
+            "feature; do not 'fix' streaming_scan to make this pass."
+        ),
+    )
+    def test_reset_restores_fresh_start_behaviour_of_stateful_module(self):
+        """Reset must make a stateful module behave as if it had just started.
+
+        Unlike the other reset tests in this file, the decorated body is
+        *stateful* (an EWMA), so this assertion is sensitive to whether the
+        reset actually fires: with a working reset, the tail of the run must
+        reproduce a run started fresh on the same tail; without one, the
+        pre-reset running mean leaks into the tail outputs.
+        """
+
+        def build_scan():
+            @streaming_scan(reset_on=lambda x: x == 0.0)
+            def smoothed(x):
+                return EWMA(alpha=0.5)(x)
+
+            return smoothed
+
+        # Reset fires at index 3; the tail is everything after it.
+        inputs = jnp.array([1.0, 2.0, 3.0, 0.0, 10.0, 11.0, 12.0])
+        outputs, _ = build_scan().scan_apply(inputs)
+
+        tail = inputs[4:]
+        fresh_outputs, _ = build_scan().scan_apply(tail)
+
+        assert jnp.allclose(outputs[4:], fresh_outputs)
+
     def test_scan_state_management(self):
         """Test that scan properly manages state across calls."""
 

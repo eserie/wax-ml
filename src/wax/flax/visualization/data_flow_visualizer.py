@@ -240,7 +240,9 @@ class DataFlowVisualizer:
     ) -> Any:
         """Create matplotlib-based streaming plot."""
         if not HAS_MATPLOTLIB:
-            raise ImportError("Matplotlib not available")
+            raise ImportError(
+                "Matplotlib not available. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         fig, axes = plt.subplots(2, 2, figsize=self.figure_size)
         fig.suptitle("WAX-ML Streaming Data Flow", fontsize=16, fontweight="bold")
@@ -291,7 +293,9 @@ class DataFlowVisualizer:
     ) -> Any:
         """Create Plotly-based interactive streaming plot."""
         if not HAS_PLOTLY:
-            raise ImportError("Plotly not available")
+            raise ImportError(
+                "Plotly not available. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Create subplots
         fig = make_subplots(
@@ -625,7 +629,9 @@ def create_flow_animation(
         Path to animation file
     """
     if not HAS_MATPLOTLIB:
-        raise ImportError("Matplotlib required for animation")
+        raise ImportError(
+            "Matplotlib required for animation. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+        )
 
     visualizer = DataFlowVisualizer(backend="matplotlib", update_interval=1.0 / fps)
     visualizer.attach_tracker(tracker)

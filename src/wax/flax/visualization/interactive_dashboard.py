@@ -148,7 +148,8 @@ class InteractiveDashboard:
             self._setup_streamlit_app()
         else:
             warnings.warn(
-                "No web framework available. Install flask or streamlit for dashboard.",
+                "No web framework available. Install the visualization extra:  "
+                "pip install 'wax-ml[visualization]'",
                 stacklevel=2,
             )
 
@@ -717,7 +718,10 @@ class InteractiveDashboard:
             blocking: Whether to block the current thread
         """
         if not HAS_FLASK:
-            print("❌ Flask not available. Install with: pip install flask flask-socketio")
+            print(
+                "❌ Flask not available. Install the visualization extra:  "
+                "pip install 'wax-ml[visualization]'"
+            )
             return
 
         if self.running:

@@ -369,7 +369,10 @@ class ComputationGraphRenderer:
     def _render_graphviz(self, output_path: str | None = None) -> str:
         """Render using Graphviz."""
         if not HAS_GRAPHVIZ:
-            raise ImportError("Graphviz not available. Install with: pip install graphviz")
+            raise ImportError(
+                "Graphviz not available. Install the visualization extra:  "
+                "pip install 'wax-ml[visualization]'"
+            )
 
         dot_content = self._generate_dot_content()
 
@@ -394,7 +397,9 @@ class ComputationGraphRenderer:
     def _render_matplotlib(self, output_path: str | None = None) -> str:
         """Render using matplotlib and networkx."""
         if not HAS_MATPLOTLIB:
-            raise ImportError("Matplotlib/NetworkX not available")
+            raise ImportError(
+                "Matplotlib/NetworkX not available. Install the visualization extra:  pip install 'wax-ml[visualization]'"
+            )
 
         # Create networkx graph
         G = nx.DiGraph()

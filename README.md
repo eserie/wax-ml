@@ -650,16 +650,41 @@ The WAX-ML team is open to discussion and collaboration with contributors from a
 
 ## ⚒ Installation ⚒
 
+WAX-ML requires **Python 3.11 or later**. On an older interpreter `pip` will refuse the
+install rather than resolve an old release.
+
 You can install WAX-ML with the command:
 
 ```bash
 pip install wax-ml
 ```
 
+That gives you the core library. The optional feature sets are published as extras:
+
+| Extra | What it enables |
+| --- | --- |
+| `numba` | `wax.numba` — the numba-accelerated EWMA reference implementation |
+| `debug` | `wax.flax.debug` — the streaming profiler and memory tracker |
+| `visualization` | `wax.flax.visualization` — graph rendering, Jupyter, Bokeh and dashboard backends |
+| `complete` | all of the above, plus the plotting and I/O helpers used by the notebooks |
+
+```bash
+pip install "wax-ml[complete]"
+```
+
 To install the latest version from source, you can use the command :
 
 ```bash
-pip install "wax-ml[dev,complete] @ git+https://github.com/eserie/wax-ml.git"
+pip install "wax-ml[complete] @ git+https://github.com/eserie/wax-ml.git"
+```
+
+To work on WAX-ML itself, clone the repository and use the `dev` dependency group
+(a PEP 735 group, not an extra — `pip install .[dev]` does not exist):
+
+```bash
+git clone https://github.com/eserie/wax-ml.git
+cd wax-ml
+uv sync --dev --extra complete
 ```
 
 ## Disclaimer

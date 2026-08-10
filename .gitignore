@@ -3,6 +3,10 @@
 *.egg-info
 *.whl
 dist/
+# `build/` holds the project's own release scripts, so it cannot be ignored wholesale;
+# these two are what `python -m build` scratches into it.
+build/lib/
+build/bdist.*/
 .ipynb_checkpoints
 .DS_Store
 .mypy_cache/

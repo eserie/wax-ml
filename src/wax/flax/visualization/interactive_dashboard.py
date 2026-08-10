@@ -43,29 +43,21 @@ from typing import Any
 
 # Optional web framework dependencies
 try:
-    import flask
-    from flask import Flask, jsonify, render_template, request
+    from flask import Flask, jsonify, request
     from flask_socketio import SocketIO, emit
 
     HAS_FLASK = True
-except ImportError:
-    flask = None
-    Flask = None
-    render_template = None
-    request = None
-    jsonify = None
-    SocketIO = None
-    emit = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_FLASK = False
 
 try:
-    import streamlit as st
+    import streamlit as st  # noqa: F401 -- probed for availability, not called here
 
     HAS_STREAMLIT = True
-except ImportError:
-    st = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_STREAMLIT = False
 
+from ._extra import VISUALIZATION_EXTRA_HINT, require
 from .computation_graph import ComputationGraphRenderer
 from .data_flow_visualizer import DataFlowTracker, DataFlowVisualizer
 
@@ -148,8 +140,8 @@ class InteractiveDashboard:
             self._setup_streamlit_app()
         else:
             warnings.warn(
-                "No web framework available. Install the visualization extra:  "
-                "pip install 'wax-ml[visualization]'",
+                f"No web framework available -- the dashboard cannot serve. "
+                f"{VISUALIZATION_EXTRA_HINT}",
                 stacklevel=2,
             )
 
@@ -716,13 +708,12 @@ class InteractiveDashboard:
 
         Args:
             blocking: Whether to block the current thread
+
+        Raises:
+            ImportError: If Flask is not installed.
         """
-        if not HAS_FLASK:
-            print(
-                "❌ Flask not available. Install the visualization extra:  "
-                "pip install 'wax-ml[visualization]'"
-            )
-            return
+        # Printing and returning left the caller believing a server was up.
+        require(HAS_FLASK, "the dashboard server", "Flask")
 
         if self.running:
             print("⚠️ Dashboard server already running")

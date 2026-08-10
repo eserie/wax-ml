@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 import jax
 import jax.numpy as jnp
+import pytest
 
 from wax.flax.core.streaming_transforms import streaming_transform_with_state
 from wax.flax.modules.buffer import Buffer
@@ -30,6 +31,7 @@ from wax.flax.visualization import (
     InteractiveDashboard,
     PipelineEdge,
     PipelineNode,
+    computation_graph,
     render_pipeline_graph,
     visualize_streaming_data,
 )
@@ -102,6 +104,45 @@ class TestComputationGraphRenderer:
 
         assert "WAX-ML Streaming Pipeline Graph" in text_output
         assert "main: Main (Function)" in text_output
+
+    def test_render_text_format_is_not_handed_to_an_image_backend(self):
+        """A textual format renders as text even when image backends are installed.
+
+        The dispatch used to test the *backends* before the *format*, so with
+        matplotlib installed a request for ``text`` was answered with a rendered
+        PNG (and, when an output path was given, matplotlib rejected the path's
+        extension outright).
+        """
+        renderer = ComputationGraphRenderer(output_format="text")
+        renderer.add_node(PipelineNode(id="main", name="Main", module_type="Function"))
+
+        with tempfile.NamedTemporaryFile(suffix=".txt") as tmp:
+            assert renderer.render(tmp.name) == tmp.name
+            with open(tmp.name) as handle:
+                content = handle.read()
+
+        assert "WAX-ML Streaming Pipeline Graph" in content
+        assert "main: Main (Function)" in content
+
+    def test_render_rejects_an_unknown_format(self):
+        """An unsupported format is refused by name, not silently rendered."""
+        renderer = ComputationGraphRenderer(output_format="jpeg2000")
+        renderer.add_node(PipelineNode(id="main", name="Main", module_type="Function"))
+
+        with pytest.raises(ValueError, match="Unsupported output format 'jpeg2000'"):
+            renderer.render()
+
+    def test_image_format_without_a_backend_names_the_extra(self):
+        """Asking for PNG with no backend installed must not degrade to text."""
+        renderer = ComputationGraphRenderer(output_format="png")
+        renderer.add_node(PipelineNode(id="main", name="Main", module_type="Function"))
+
+        with (
+            patch.object(computation_graph, "HAS_GRAPHVIZ", False),
+            patch.object(computation_graph, "HAS_MATPLOTLIB", False),
+            pytest.raises(ImportError, match=r"wax-ml\[visualization\]"),
+        ):
+            renderer.render()
 
     def test_render_to_dot(self):
         """Test rendering graph to DOT format."""
@@ -250,6 +291,16 @@ class TestDataFlowVisualizer:
         assert visualizer.backend == "text"
         assert visualizer.max_points == 200
         assert visualizer.tracker is None
+
+    def test_backend_fallback_warning_names_the_extra(self):
+        """Degrading to a weaker backend must tell the user how to get the real one."""
+        with (
+            patch("wax.flax.visualization.data_flow_visualizer.HAS_MATPLOTLIB", False),
+            pytest.warns(UserWarning, match=r"wax-ml\[visualization\]"),
+        ):
+            visualizer = DataFlowVisualizer(backend="matplotlib")
+
+        assert visualizer.backend == "text"
 
     def test_attach_tracker(self):
         """Test attaching a data tracker."""
@@ -446,6 +497,23 @@ class TestInteractiveDashboard:
         # Should handle gracefully
         assert dashboard.app is None
         assert dashboard.socketio is None
+
+    @patch("wax.flax.visualization.interactive_dashboard.HAS_FLASK", False)
+    @patch("wax.flax.visualization.interactive_dashboard.HAS_STREAMLIT", False)
+    def test_dashboard_without_any_web_framework_names_the_extra(self):
+        """With neither Flask nor Streamlit, the warning must be actionable."""
+        with pytest.warns(UserWarning, match=r"wax-ml\[visualization\]"):
+            InteractiveDashboard()
+
+    @patch("wax.flax.visualization.interactive_dashboard.HAS_FLASK", False)
+    def test_start_server_without_flask_raises_naming_the_extra(self):
+        """`start_server` used to print and return, leaving the caller none the wiser."""
+        dashboard = InteractiveDashboard()
+
+        with pytest.raises(ImportError, match=r"Flask.*wax-ml\[visualization\]"):
+            dashboard.start_server()
+
+        assert not dashboard.running
 
     def test_render_dashboard_html(self):
         """Test HTML dashboard rendering."""

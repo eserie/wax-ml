@@ -35,68 +35,65 @@ from __future__ import annotations
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
-# Bokeh imports with fallback
+# Bokeh imports behind an availability guard: importing this module must work
+# without the `visualization` extra, and every entry point that needs bokeh raises
+# a message naming the extra (see `_require_bokeh`).
+#
+# The submodules are imported directly rather than through the `bokeh.models`
+# facade: that facade builds its `__all__` by unpacking the `__all__` of its
+# children, which mypy cannot evaluate, so star-imported names are not visible as
+# re-exports even though they exist at runtime.
 try:
-    from bokeh.application import Application
-    from bokeh.application.handlers import FunctionHandler
-    from bokeh.io import curdoc, push_notebook
     from bokeh.layouts import column, gridplot, row
-    from bokeh.models import (
-        BasicTicker,
-        Button,
-        ColorBar,
-        ColumnDataSource,
-        Div,
-        HoverTool,
-        LinearColorMapper,
-        PrintfTickFormatter,
-        Select,
-        Slider,
-    )
-    from bokeh.palettes import Category10, Viridis256
+    from bokeh.models.annotations.legends import ColorBar
+    from bokeh.models.formatters import PrintfTickFormatter
+    from bokeh.models.mappers import LinearColorMapper
+    from bokeh.models.sources import ColumnDataSource
+    from bokeh.models.tickers import BasicTicker
+    from bokeh.models.tools import HoverTool
+    from bokeh.models.widgets.markups import Div
+    from bokeh.palettes import Viridis256
     from bokeh.plotting import figure, output_notebook, show
     from bokeh.transform import transform
 
     HAS_BOKEH = True
-except ImportError:
-    figure = None
-    show = None
-    output_notebook = None
-    ColumnDataSource = None
-    HoverTool = None
-    LinearColorMapper = None
-    ColorBar = None
-    BasicTicker = None
-    PrintfTickFormatter = None
-    Select = None
-    Button = None
-    Slider = None
-    Div = None
-    column = None
-    row = None
-    gridplot = None
-    push_notebook = None
-    curdoc = None
-    Viridis256 = None
-    Category10 = None
-    transform = None
-    Application = None
-    FunctionHandler = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_BOKEH = False
 
 try:
-    from IPython.display import display
+    import IPython.display  # noqa: F401 -- probed for availability, not called here
 
     HAS_IPYTHON = True
-except ImportError:
-    display = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_IPYTHON = False
 
+from ._extra import VISUALIZATION_EXTRA_HINT, require
 from .data_flow_visualizer import DataFlowTracker
+
+ToolbarLocation = Literal["above", "below", "left", "right"]
+
+
+def _require_bokeh(feature: str) -> None:
+    """Raise an actionable error when `feature` is used without bokeh installed."""
+    require(HAS_BOKEH, feature, "Bokeh")
+
+
+def _make_figure(**options: Any) -> Any:
+    """Create a bokeh figure, forwarding every `figure()` option.
+
+    bokeh 3.x accepts the options that `bokeh.plotting._figure.FigureOptions`
+    declares as `InitVar` fields -- `tools`, `x_axis_label`, `y_axis_label`,
+    `x_axis_type`, ... -- but mypy's dataclass plugin drops those fields when it
+    derives `figure.__init__` from bokeh's bundled stubs, and reports every such
+    keyword as `call-arg`. Funnelling construction through one wrapper keeps that
+    single known gap in one documented place instead of scattering `type: ignore`
+    comments over every call site.
+    """
+    return figure(**options)
 
 
 @dataclass
@@ -134,7 +131,7 @@ class BokehVizConfig:
 
     # Performance
     webgl: bool = True
-    toolbar_location: str = "above"
+    toolbar_location: ToolbarLocation = "above"
 
 
 class BokehStreamingPlot:
@@ -149,7 +146,8 @@ class BokehStreamingPlot:
 
         if not HAS_BOKEH:
             warnings.warn(
-                "Bokeh not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                f"Bokeh not available -- visualizations will not render. "
+                f"{VISUALIZATION_EXTRA_HINT}",
                 stacklevel=2,
             )
 
@@ -166,16 +164,16 @@ class BokehStreamingPlot:
         Returns:
             Bokeh figure object
         """
-        if not HAS_BOKEH:
-            raise ImportError(
-                "Bokeh required for streaming plots. Install the visualization extra:  pip install 'wax-ml[visualization]'"
-            )
+        _require_bokeh("streaming plots")
 
-        # Enable notebook output
-        output_notebook()
-
-        # Create figure
-        p = figure(
+        # No `output_notebook()` here: it installs bokeh's notebook hook and, as a
+        # side effect, instantiates a bare `IPython.core.interactiveshell.
+        # InteractiveShell`. Once that global exists, matplotlib's
+        # `install_repl_displayhook` calls `ip.enable_gui(...)` on it, which the base
+        # shell does not implement -- so any later `DataFrame.plot()` anywhere in the
+        # process raises `NotImplementedError`. Building a figure must stay free of
+        # global side effects; notebook output is `display_bokeh_visualization`'s job.
+        p = _make_figure(
             title=title,
             x_axis_label=x_label,
             y_axis_label=y_label,
@@ -227,7 +225,7 @@ class BokehStreamingPlot:
         )
 
         # Add circle markers
-        plot.circle("x", "y", source=source, size=self.config.point_size, color=color, alpha=0.6)
+        plot.scatter("x", "y", source=source, size=self.config.point_size, color=color, alpha=0.6)
 
         # Add hover tool
         hover = HoverTool(
@@ -255,13 +253,13 @@ class BokehStreamingPlot:
 
         source = self.data_sources[stream_name]
 
-        # Get current data
-        current_data = source.data
-
-        # Add new point
-        new_data = dict(current_data)
-        new_data["x"] = list(current_data["x"]) + [x_value]
-        new_data["y"] = list(current_data["y"]) + [y_value]
+        # `source.data` is a column -> sequence mapping; rebuild it as plain lists so
+        # the appended point does not depend on the concrete sequence type bokeh
+        # happens to hold (list, ndarray or pandas Series).
+        current_data: Any = source.data
+        new_data: dict[str, Any] = {key: list(values) for key, values in current_data.items()}
+        new_data["x"] = new_data["x"] + [x_value]
+        new_data["y"] = new_data["y"] + [y_value]
 
         # Limit data points
         if len(new_data["x"]) > self.config.max_points:
@@ -280,7 +278,8 @@ class BokehHeatmapVisualizer:
 
         if not HAS_BOKEH:
             warnings.warn(
-                "Bokeh not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                f"Bokeh not available -- visualizations will not render. "
+                f"{VISUALIZATION_EXTRA_HINT}",
                 stacklevel=2,
             )
 
@@ -302,10 +301,7 @@ class BokehHeatmapVisualizer:
         Returns:
             Bokeh figure object
         """
-        if not HAS_BOKEH:
-            raise ImportError(
-                "Bokeh required for heatmaps. Install the visualization extra:  pip install 'wax-ml[visualization]'"
-            )
+        _require_bokeh("heatmaps")
 
         # Prepare data
         h, w = data.shape
@@ -327,7 +323,7 @@ class BokehHeatmapVisualizer:
         color_mapper = LinearColorMapper(palette=Viridis256, low=np.min(data), high=np.max(data))
 
         # Create figure
-        p = figure(
+        p = _make_figure(
             title=title,
             x_axis_label=x_label,
             y_axis_label=y_label,
@@ -371,11 +367,12 @@ class BokehMultiPanelDashboard:
     def __init__(self, config: BokehVizConfig = None):
         self.config = config or BokehVizConfig()
         self.panels: dict[str, Any] = {}
-        self.layout = None
+        self.layout: Any = None
 
         if not HAS_BOKEH:
             warnings.warn(
-                "Bokeh not available. Install the visualization extra:  pip install 'wax-ml[visualization]'",
+                f"Bokeh not available -- visualizations will not render. "
+                f"{VISUALIZATION_EXTRA_HINT}",
                 stacklevel=2,
             )
 
@@ -389,10 +386,7 @@ class BokehMultiPanelDashboard:
         Returns:
             Bokeh layout object
         """
-        if not HAS_BOKEH:
-            raise ImportError(
-                "Bokeh required for dashboard. Install the visualization extra:  pip install 'wax-ml[visualization]'"
-            )
+        _require_bokeh("the multi-panel dashboard")
 
         # Create individual panels
 
@@ -430,7 +424,7 @@ class BokehMultiPanelDashboard:
 
     def _create_time_series_panel(self, data_tracker: DataFlowTracker) -> Any:
         """Create time series visualization panel."""
-        p = figure(
+        p = _make_figure(
             title="Pipeline Data Time Series",
             x_axis_label="Time Step",
             y_axis_label="Value",
@@ -457,7 +451,7 @@ class BokehMultiPanelDashboard:
 
                     p.line(steps, values, legend_label=module_name, line_width=2, line_color=color)
 
-                    p.circle(steps, values, size=4, color=color, alpha=0.6)
+                    p.scatter(steps, values, size=4, color=color, alpha=0.6)
 
         p.legend.location = "top_left"
         p.legend.click_policy = "hide"
@@ -466,7 +460,7 @@ class BokehMultiPanelDashboard:
 
     def _create_distribution_panel(self, data_tracker: DataFlowTracker) -> Any:
         """Create data distribution visualization panel."""
-        p = figure(
+        p = _make_figure(
             title="Data Distribution",
             x_axis_label="Value",
             y_axis_label="Frequency",
@@ -502,7 +496,7 @@ class BokehMultiPanelDashboard:
 
     def _create_performance_panel(self, data_tracker: DataFlowTracker) -> Any:
         """Create performance metrics visualization panel."""
-        p = figure(
+        p = _make_figure(
             title="Performance Metrics",
             x_axis_label="Time Step",
             y_axis_label="Processing Time (ms)",
@@ -526,7 +520,7 @@ class BokehMultiPanelDashboard:
                 legend_label="Processing Time",
             )
 
-            p.circle(steps, processing_times, size=4, color="red", alpha=0.6)
+            p.scatter(steps, processing_times, size=4, color="red", alpha=0.6)
 
             # Add threshold line
             threshold = 5.0
@@ -545,7 +539,7 @@ class BokehMultiPanelDashboard:
 
     def _create_correlation_panel(self, data_tracker: DataFlowTracker) -> Any:
         """Create state correlation visualization panel."""
-        p = figure(
+        p = _make_figure(
             title="Module Correlations",
             width=self.config.plot_width // 2,
             height=self.config.plot_height,
@@ -616,10 +610,7 @@ def create_bokeh_streaming_demo(data_tracker: DataFlowTracker) -> Any:
     Returns:
         Bokeh layout with streaming visualizations
     """
-    if not HAS_BOKEH:
-        raise ImportError(
-            "Bokeh required for streaming demo. Install the visualization extra:  pip install 'wax-ml[visualization]'"
-        )
+    _require_bokeh("the streaming demo")
 
     config = BokehVizConfig()
 
@@ -650,10 +641,7 @@ def display_bokeh_visualization(layout: Any) -> None:
     Args:
         layout: Bokeh layout object to display
     """
-    if not HAS_BOKEH:
-        raise ImportError(
-            "Bokeh required for display. Install the visualization extra:  pip install 'wax-ml[visualization]'"
-        )
+    _require_bokeh("display")
 
     if not HAS_IPYTHON:
         warnings.warn("IPython not available - using Bokeh show()", stacklevel=2)

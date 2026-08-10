@@ -22,7 +22,7 @@ of streaming computation graphs, including:
 
 Key features:
 - Automatic pipeline structure detection
-- Multiple output formats (PNG, SVG, HTML, DOT)
+- Multiple output formats (PNG, SVG, PDF, HTML, DOT, TEXT)
 - Interactive exploration with zoom/pan
 - Real-time graph updates for streaming pipelines
 - Integration with debugging and profiling tools
@@ -40,13 +40,14 @@ from typing import Any, Protocol, cast
 import jax
 import jax.numpy as jnp
 
+from ._extra import VISUALIZATION_EXTRA_HINT
+
 # Optional dependencies for visualization
 try:
     import graphviz
 
     HAS_GRAPHVIZ = True
-except ImportError:
-    graphviz = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_GRAPHVIZ = False
 
 try:
@@ -55,11 +56,18 @@ try:
     import networkx as nx
 
     HAS_MATPLOTLIB = True
-except ImportError:
-    plt = None
-    patches = None
-    nx = None
+except ImportError:  # pragma: no cover - exercised only without the extra
     HAS_MATPLOTLIB = False
+
+# Formats served by pure-Python renderers, which are always available.
+TEXT_FORMATS = frozenset({"text", "txt"})
+DOT_FORMATS = frozenset({"dot"})
+HTML_FORMATS = frozenset({"html"})
+
+# Formats that need a rendering backend (graphviz, or matplotlib + networkx).
+IMAGE_FORMATS = frozenset({"png", "svg", "pdf"})
+
+SUPPORTED_FORMATS = TEXT_FORMATS | DOT_FORMATS | HTML_FORMATS | IMAGE_FORMATS
 
 
 @dataclass
@@ -139,7 +147,7 @@ class ComputationGraphRenderer:
         """Initialize the computation graph renderer.
 
         Args:
-            output_format: Output format ('png', 'svg', 'pdf', 'dot', 'html')
+            output_format: Output format ('png', 'svg', 'pdf', 'dot', 'html', 'text')
             include_shapes: Whether to include tensor shapes in labels
             include_parameters: Whether to include module parameters
             simplify_graph: Whether to simplify complex graphs
@@ -338,22 +346,48 @@ class ComputationGraphRenderer:
     def render(self, output_path: str | None = None) -> str:
         """Render the computation graph.
 
+        The requested format decides which renderer runs; the available backends
+        only decide *how* an image format is produced. A textual format is never
+        handed to an image backend, and an image format never silently degrades
+        to text.
+
         Args:
             output_path: Output file path (optional)
 
         Returns:
-            Path to rendered file or HTML content
+            Path to the rendered file when ``output_path`` is given, otherwise the
+            rendered content itself for the textual formats (``text``, ``dot``,
+            ``html``) or the path of a temporary file for the image formats.
+
+        Raises:
+            ValueError: If ``output_format`` is not one of ``SUPPORTED_FORMATS``.
+            ImportError: If an image format is requested and no rendering backend
+                is installed.
         """
-        if self.output_format == "dot":
+        fmt = self.output_format
+
+        if fmt in DOT_FORMATS:
             return self._render_dot(output_path)
-        elif self.output_format == "html":
+        if fmt in HTML_FORMATS:
             return self._render_html(output_path)
-        elif HAS_GRAPHVIZ and self.output_format in ["png", "svg", "pdf"]:
-            return self._render_graphviz(output_path)
-        elif HAS_MATPLOTLIB:
-            return self._render_matplotlib(output_path)
-        else:
+        if fmt in TEXT_FORMATS:
             return self._render_text(output_path)
+
+        if fmt not in IMAGE_FORMATS:
+            raise ValueError(
+                f"Unsupported output format {fmt!r}. "
+                f"Supported formats: {', '.join(sorted(SUPPORTED_FORMATS))}."
+            )
+
+        if HAS_GRAPHVIZ:
+            return self._render_graphviz(output_path)
+        if HAS_MATPLOTLIB:
+            return self._render_matplotlib(output_path)
+        raise ImportError(
+            f"Rendering the {fmt!r} format needs graphviz or matplotlib+networkx. "
+            f"{VISUALIZATION_EXTRA_HINT} "
+            f"Without a backend, use one of: {', '.join(sorted(SUPPORTED_FORMATS - IMAGE_FORMATS))}."
+        )
 
     def _render_dot(self, output_path: str | None = None) -> str:
         """Render to DOT format."""
@@ -369,10 +403,7 @@ class ComputationGraphRenderer:
     def _render_graphviz(self, output_path: str | None = None) -> str:
         """Render using Graphviz."""
         if not HAS_GRAPHVIZ:
-            raise ImportError(
-                "Graphviz not available. Install the visualization extra:  "
-                "pip install 'wax-ml[visualization]'"
-            )
+            raise ImportError(f"Graphviz not available. {VISUALIZATION_EXTRA_HINT}")
 
         dot_content = self._generate_dot_content()
 
@@ -397,9 +428,7 @@ class ComputationGraphRenderer:
     def _render_matplotlib(self, output_path: str | None = None) -> str:
         """Render using matplotlib and networkx."""
         if not HAS_MATPLOTLIB:
-            raise ImportError(
-                "Matplotlib/NetworkX not available. Install the visualization extra:  pip install 'wax-ml[visualization]'"
-            )
+            raise ImportError(f"Matplotlib/NetworkX not available. {VISUALIZATION_EXTRA_HINT}")
 
         # Create networkx graph
         G = nx.DiGraph()
@@ -461,7 +490,7 @@ class ComputationGraphRenderer:
             plt.close()
             return output_path
         else:
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=f".{self.output_format}", delete=False) as tmp:
                 plt.savefig(tmp.name, dpi=300, bbox_inches="tight")
                 plt.close()
                 return tmp.name
@@ -650,7 +679,7 @@ def render_pipeline_graph(
         streaming_fn: The streaming function to visualize
         input_example: Example input for shape inference
         output_path: Output file path (optional)
-        format: Output format ('png', 'svg', 'pdf', 'dot', 'html')
+        format: Output format ('png', 'svg', 'pdf', 'dot', 'html', 'text')
         **kwargs: Additional arguments for ComputationGraphRenderer
 
     Returns:

@@ -58,7 +58,7 @@ class TestFlaxCounter:
         outputs = []
         current_state = state
 
-        for i in range(5):
+        for _ in range(5):
             output, current_state = tf.apply(params, current_state, None)
             outputs.append(output)
 
@@ -370,7 +370,7 @@ class TestSimpleModulesAutonomous:
         outputs = []
         current_state = state
 
-        for i in range(10):
+        for _ in range(10):
             output, current_state = tf.apply(params, current_state, None)
             outputs.append(output)
 

@@ -219,7 +219,7 @@ def demo_volume_based_conditional():
         )
 
     print("\n📈 Signal Evolution:")
-    for i, (data, result) in enumerate(zip(market_data, results, strict=False)):
+    for i, (_data, result) in enumerate(zip(market_data, results, strict=False)):
         signal = float(result["signal"])
         vol_ratio = float(result["volume_ratio"])
 

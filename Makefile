@@ -17,8 +17,8 @@ IPYKERNEL_NAME = python3
 help:
 	@echo "Usage: make <target>"
 	@echo
-	@echo "	 act		 Run actions: flake8, mypy, tests"
-	@echo "	 flake8		 Run the flake8."
+	@echo "	 act		 Run actions: lint, mypy, tests"
+	@echo "	 lint		 Run the linter (ruff)."
 	@echo "	 format		 Format python files with autofloke, isort and black."
 	@echo "	 tests		 Run the tests."
 	@echo "	 coverage	Generate a coverage report for unit tests."
@@ -84,14 +84,15 @@ check-format: format
 	git diff
 	./build/has_changed.sh
 
-.PHONY: flake8
-flake8:
-	# stop the build if there are Python syntax errors or undefined names
-	python -m flake8 --count --select=E9,F63,F7,F82 --show-source --statistics $(PACKAGE_NAME)
-	# all Python files should follow PEP8 (except some notebooks, see setup.cfg)
-	python -m flake8 $(PACKAGE_NAME)
-	# exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
-	# flake8 . --count --exit-zero --max-complexity=10 --statistics
+# ruff is the project's one linter, configured in [tool.ruff.lint] in
+# pyproject.toml. It was picked over flake8 because it is already the formatter here
+# and its rule set is a superset of the one flake8 was configured with (E/W/F, plus
+# B, C4, I and UP). flake8 and its .flake8 file were removed rather than left in
+# place: two ignore lists over the same tree drift apart, and the last time they did
+# the documented gate was red while CI stayed green.
+.PHONY: lint
+lint:
+	python -m ruff check $(PACKAGE_NAME)
 
 
 .PHONY: mypy
@@ -174,7 +175,7 @@ run-notebooks :
 	cd docs/notebooks && $(MAKE) run
 
 .PHONY: act
-act : flake8 mypy check-license check-format coverage run-notebooks
+act : lint mypy check-license check-format coverage run-notebooks
 
 .PHONY: pre-commit
 pre-commit:

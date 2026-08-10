@@ -165,7 +165,7 @@ class ComputationGraphRenderer:
 
     def analyze_streaming_function(
         self, streaming_fn: Callable, input_example: Any, rng_key: jax.Array | None = None
-    ) -> "ComputationGraphRenderer":
+    ) -> ComputationGraphRenderer:
         """Analyze a streaming function to extract computation graph.
 
         Args:
@@ -333,12 +333,12 @@ class ComputationGraphRenderer:
 
         return simplified
 
-    def add_node(self, node: PipelineNode) -> "ComputationGraphRenderer":
+    def add_node(self, node: PipelineNode) -> ComputationGraphRenderer:
         """Add a node to the graph."""
         self.nodes[node.id] = node
         return self
 
-    def add_edge(self, edge: PipelineEdge) -> "ComputationGraphRenderer":
+    def add_edge(self, edge: PipelineEdge) -> ComputationGraphRenderer:
         """Add an edge to the graph."""
         self.edges.append(edge)
         return self

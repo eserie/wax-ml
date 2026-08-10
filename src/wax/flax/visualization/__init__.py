@@ -57,10 +57,12 @@ try:
         InteractivePipelineGraph,
         JupyterVizConfig,
         StreamingDataVisualizer,
-        create_pipeline_dashboard as create_jupyter_dashboard,
         display_pipeline_dashboard,
         quick_pipeline_viz,
         quick_streaming_plot,
+    )
+    from .jupyter_viz import (
+        create_pipeline_dashboard as create_jupyter_dashboard,
     )
 except ImportError:
     pass

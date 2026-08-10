@@ -98,7 +98,7 @@ class TestARMA:
         # Apply step input
         outputs = []
         current_variables = variables
-        for i in range(4):
+        for _ in range(4):
             x = jnp.array(1.0)  # Constant input
             output, current_variables = apply_stateful(arma, current_variables, x)
             outputs.append(float(output))

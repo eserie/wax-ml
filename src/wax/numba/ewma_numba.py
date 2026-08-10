@@ -14,7 +14,7 @@
 """Compute exponentioal moving average."""
 
 from dataclasses import dataclass
-from typing import Any, NamedTuple, Optional, cast
+from typing import Any, NamedTuple, cast
 
 import numpy as np
 import pandas as pd
@@ -36,8 +36,8 @@ class EWMAState(NamedTuple):
 
 def ewma(
     *,
-    com: Optional[float] = None,
-    alpha: Optional[float] = None,
+    com: float | None = None,
+    alpha: float | None = None,
     min_periods: int = 0,
     adjust: bool = True,
     ignore_na: bool = False,
@@ -114,7 +114,7 @@ def ewma(
         )
         return state
 
-    def apply(values: np.ndarray, state: Optional[EWMAState] = None):
+    def apply(values: np.ndarray, state: EWMAState | None = None):
         is_1d = False
         if values.ndim == 1:
             values = values.reshape(-1, 1)
@@ -196,14 +196,14 @@ def ewma(
 
 class WaxAccessor:
     def ewm(self, *args, **kwargs):
-        return NumbaExponentialMovingWindow(accessor=self, *args, **kwargs)
+        return NumbaExponentialMovingWindow(self, *args, **kwargs)
 
 
 @dataclass(frozen=True)
 class NumbaExponentialMovingWindow:
     accessor: WaxAccessor
-    com: Optional[float] = None
-    alpha: Optional[float] = None
+    com: float | None = None
+    alpha: float | None = None
     min_periods: int = 0
     adjust: bool = True
     ignore_na: bool = False
@@ -276,7 +276,7 @@ class WaxNumbaEWMAccessor:
         self._obj = pandas_obj
 
     def ewm(self, *args, **kwargs):
-        return NumbaExponentialMovingWindow(accessor=self, *args, **kwargs)
+        return NumbaExponentialMovingWindow(self, *args, **kwargs)
 
 
 def register_wax_numba():

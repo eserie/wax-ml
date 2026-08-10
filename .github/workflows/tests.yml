@@ -43,9 +43,17 @@ jobs:
         - name: Set up Python ${{ matrix.python-version }}
           run: uv python install ${{ matrix.python-version }}
         - name: Install dependencies
-          run: uv sync --dev --extra optional
-        - name: Run flake8
-          run: uv run make flake8
+          # `complete` rather than `optional`: it is the declared union of every
+          # feature extra, so CI imports and tests every shipped submodule --
+          # wax.numba, wax.flax.debug and wax.flax.visualization included. Syncing
+          # only `optional` left the visualization backends absent, and the tests
+          # that need them (e.g. flax/visualization/bokeh_viz_test.py) skipped
+          # themselves silently. The marginal cost is 31 extra packages, about 95
+          # seconds of download and install on a cold cache and near zero on a warm
+          # one, since setup-uv caches them.
+          run: uv sync --dev --extra complete
+        - name: Run lint
+          run: uv run make lint
         - name: Run mypy
           run: uv run make mypy
         - name: Check license

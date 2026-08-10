@@ -16,9 +16,10 @@ To upgrade to the latest version from GitHub, just run `git pull` from the WAX-M
 repository root. You shouldn't have to reinstall `wax` because `pip install -e`
 sets up symbolic links from site-packages into the repository.
 
-You can install `wax` development tools by running:
+The development tools are declared as a PEP 735 dependency group named `dev`, not as an
+extra, so `pip install -e .[dev]` does not exist. Install them with `uv`:
 ```bash
-pip install -e .[dev]  # install wax-development-tools
+uv sync --dev --extra complete  # install wax plus the development tools
 ```
 
 # Running the tests
